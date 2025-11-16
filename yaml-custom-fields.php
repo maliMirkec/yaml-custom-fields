@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: A WordPress plugin for managing YAML frontmatter schemas in theme templates
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Silvestar Bistrović
  * Author URI: https://www.silvestar.codes
  * Author Email: me@silvestar.codes
@@ -257,6 +257,7 @@ class YAML_Custom_Fields {
     add_action('save_post', [$this, 'save_schema_data']);
     add_action('delete_post', [$this, 'handle_post_deletion']);
     add_action('wp_ajax_yaml_cf_save_template_settings', [$this, 'ajax_save_template_settings']);
+    add_action('wp_ajax_yaml_cf_toggle_use_global', [$this, 'ajax_toggle_use_global']);
     add_action('wp_ajax_yaml_cf_save_schema', [$this, 'ajax_save_schema']);
     add_action('wp_ajax_yaml_cf_get_schema', [$this, 'ajax_get_schema']);
     add_action('wp_ajax_yaml_cf_get_partial_data', [$this, 'ajax_get_partial_data']);
@@ -304,6 +305,44 @@ class YAML_Custom_Fields {
       'manage_options',
       'yaml-cf-edit-partial',
       [$this, 'render_edit_partial_page']
+    );
+
+    // Global Schema pages
+    add_submenu_page(
+      'yaml-custom-fields',
+      __('Edit Global Schema', 'yaml-custom-fields'),
+      __('Edit Global Schema', 'yaml-custom-fields'),
+      'manage_options',
+      'yaml-cf-edit-global-schema',
+      [$this, 'render_edit_global_schema_page']
+    );
+
+    add_submenu_page(
+      'yaml-custom-fields',
+      __('Manage Global Data', 'yaml-custom-fields'),
+      __('Manage Global Data', 'yaml-custom-fields'),
+      'manage_options',
+      'yaml-cf-manage-global-data',
+      [$this, 'render_manage_global_data_page']
+    );
+
+    // Template Global pages (hidden from menu)
+    add_submenu_page(
+      null,
+      __('Edit Template Global Schema', 'yaml-custom-fields'),
+      __('Edit Template Global Schema', 'yaml-custom-fields'),
+      'manage_options',
+      'yaml-cf-edit-template-global',
+      [$this, 'render_edit_template_global_schema_page']
+    );
+
+    add_submenu_page(
+      null,
+      __('Manage Template Global Data', 'yaml-custom-fields'),
+      __('Manage Template Global Data', 'yaml-custom-fields'),
+      'manage_options',
+      'yaml-cf-manage-template-global',
+      [$this, 'render_manage_template_global_data_page']
     );
 
     // Data Validation
@@ -376,6 +415,11 @@ class YAML_Custom_Fields {
       $data_object_types = get_option('yaml_cf_data_object_types', []);
       $has_data_object_types = !empty($data_object_types);
 
+      // Check if there is a global schema with fields
+      $global_schema_yaml = get_option('yaml_cf_global_schema', '');
+      $global_schema = $this->parse_yaml_schema($global_schema_yaml);
+      $has_global_schema = !empty($global_schema) && !empty($global_schema['fields']);
+
       foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
         $menu_slug = $menu_item[2];
 
@@ -396,6 +440,11 @@ class YAML_Custom_Fields {
 
         // Always hide "Manage Data Object Entries" from menu - it's accessed via Data Objects page
         if ($menu_slug === 'yaml-cf-manage-data-object-entries' && $current_page !== 'yaml-cf-manage-data-object-entries') {
+          unset($submenu['yaml-custom-fields'][$key]);
+        }
+
+        // Hide "Manage Global Data" if no global schema or no fields defined
+        if ($menu_slug === 'yaml-cf-manage-global-data' && !$has_global_schema) {
           unset($submenu['yaml-custom-fields'][$key]);
         }
       }
@@ -590,6 +639,9 @@ class YAML_Custom_Fields {
     $partials = $theme_files['partials'];
     $template_settings = get_option('yaml_cf_template_settings', []);
     $schemas = get_option('yaml_cf_schemas', []);
+    $global_schema = get_option('yaml_cf_global_schema', '');
+    $global_schema_parsed = $this->parse_yaml_schema($global_schema);
+    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
 
     include YAML_CF_PLUGIN_DIR . 'templates/admin-page.php';
   }
@@ -706,6 +758,157 @@ class YAML_Custom_Fields {
     }
 
     include YAML_CF_PLUGIN_DIR . 'templates/edit-schema-page.php';
+  }
+
+  public function render_edit_global_schema_page() {
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
+    }
+
+    $global_schema = get_option('yaml_cf_global_schema', '');
+
+    // Check if there's a validation error
+    $error_message = '';
+    if ($this->get_param('error') === '1') {
+      $invalid_schema = get_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
+      if ($invalid_schema !== false) {
+        $global_schema = $invalid_schema;
+        delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
+      }
+
+      $error_msg = $this->get_param('error_msg');
+      if ($error_msg) {
+        $error_message = $error_msg;
+      } else {
+        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
+      }
+    }
+
+    // Check for success message
+    $success_message = '';
+    if ($this->get_param('saved') === '1') {
+      $success_message = __('Global schema saved successfully!', 'yaml-custom-fields');
+    }
+
+    include YAML_CF_PLUGIN_DIR . 'templates/edit-global-schema-page.php';
+  }
+
+  public function render_manage_global_data_page() {
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
+    }
+
+    $global_schema_yaml = get_option('yaml_cf_global_schema', '');
+    $global_schema = $this->parse_yaml_schema($global_schema_yaml);
+
+    if (!$global_schema || !isset($global_schema['fields'])) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-global-schema'));
+      exit;
+    }
+
+    $global_data = get_option('yaml_cf_global_data', []);
+
+    // Check for success message
+    $success_message = '';
+    if ($this->get_param('saved') === '1') {
+      $success_message = __('Global data saved successfully!', 'yaml-custom-fields');
+    }
+
+    include YAML_CF_PLUGIN_DIR . 'templates/manage-global-data-page.php';
+  }
+
+  public function render_edit_template_global_schema_page() {
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
+    }
+
+    $template = $this->get_param('template');
+    if (!$template) {
+      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+    }
+
+    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+    $template_global_schema = isset($template_global_schemas[$template]) ? $template_global_schemas[$template] : '';
+
+    // Check if there's a validation error
+    $error_message = '';
+    if ($this->get_param('error') === '1') {
+      $invalid_schema = get_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
+      if ($invalid_schema !== false) {
+        $template_global_schema = $invalid_schema;
+        delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
+      }
+
+      $error_msg = $this->get_param('error_msg');
+      if ($error_msg) {
+        $error_message = $error_msg;
+      } else {
+        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
+      }
+    }
+
+    // Get template name from theme files
+    $theme_files = $this->get_theme_templates();
+    $template_name = $template;
+    foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
+      if ($item['file'] === $template) {
+        $template_name = $item['name'];
+        break;
+      }
+    }
+
+    // Check for success message
+    $success_message = '';
+    if ($this->get_param('saved') === '1') {
+      $success_message = __('Template global schema saved successfully!', 'yaml-custom-fields');
+    }
+
+    include YAML_CF_PLUGIN_DIR . 'templates/edit-template-global-schema-page.php';
+  }
+
+  public function render_manage_template_global_data_page() {
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
+    }
+
+    $template = $this->get_param('template');
+    if (!$template) {
+      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+    }
+
+    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+
+    if (!isset($template_global_schemas[$template])) {
+      wp_die(esc_html__('No template global schema found for this template.', 'yaml-custom-fields'));
+    }
+
+    $template_global_schema_yaml = $template_global_schemas[$template];
+    $template_global_schema = $this->parse_yaml_schema($template_global_schema_yaml);
+
+    if (!$template_global_schema || !isset($template_global_schema['fields'])) {
+      wp_die(esc_html__('Please create a template global schema first.', 'yaml-custom-fields'));
+    }
+
+    $template_global_data = isset($template_global_data_array[$template]) ? $template_global_data_array[$template] : [];
+
+    // Get template name from theme files
+    $theme_files = $this->get_theme_templates();
+    $template_name = $template;
+    foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
+      if ($item['file'] === $template) {
+        $template_name = $item['name'];
+        break;
+      }
+    }
+
+    // Check for success message
+    $success_message = '';
+    if ($this->get_param('saved') === '1') {
+      $success_message = __('Template global data saved successfully!', 'yaml-custom-fields');
+    }
+
+    include YAML_CF_PLUGIN_DIR . 'templates/manage-template-global-data-page.php';
   }
 
   public function render_docs_page() {
@@ -1127,6 +1330,171 @@ class YAML_Custom_Fields {
       ], admin_url('admin.php')));
       exit;
     }
+
+    // Handle global schema save
+    if (isset($_POST['yaml_cf_save_global_schema_nonce']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_global_schema_nonce'])), 'yaml_cf_save_global_schema')) {
+
+      if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+      }
+
+      $global_schema = isset($_POST['global_schema']) ? sanitize_textarea_field(wp_unslash($_POST['global_schema'])) : '';
+
+      // Validate YAML syntax before saving
+      if (!empty($global_schema)) {
+        $validation_result = $this->validate_yaml_schema($global_schema);
+        if (!$validation_result['valid']) {
+          // Store the invalid schema in a transient so we can display it back
+          set_transient('yaml_cf_invalid_global_schema_' . get_current_user_id(), $global_schema, 60);
+
+          // Redirect back with error message
+          wp_safe_redirect(add_query_arg([
+            'page' => 'yaml-cf-edit-global-schema',
+            'error' => '1',
+            'error_msg' => urlencode($validation_result['message'])
+          ], admin_url('admin.php')));
+          exit;
+        }
+      }
+
+      update_option('yaml_cf_global_schema', $global_schema);
+
+      // Clear any stored invalid schema
+      delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
+
+      // Redirect with success message
+      wp_safe_redirect(add_query_arg([
+        'page' => 'yaml-cf-edit-global-schema',
+        'saved' => '1'
+      ], admin_url('admin.php')));
+      exit;
+    }
+
+    // Handle global data save
+    if (isset($_POST['yaml_cf_global_data_nonce']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_global_data_nonce'])), 'yaml_cf_save_global_data')) {
+
+      if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+      }
+
+      $field_data = [];
+
+      // Get global schema for validation
+      $global_schema_yaml = get_option('yaml_cf_global_schema', '');
+      $global_schema = null;
+      if (!empty($global_schema_yaml)) {
+        $global_schema = $this->parse_yaml_schema($global_schema_yaml);
+      }
+
+      // Collect all field data
+      // Use post_raw() to get unslashed data safely without PHPCS warnings
+      // Data will be sanitized by schema-aware sanitize_field_data()
+      $posted_data = self::post_raw('yaml_cf', []);
+      if (!empty($posted_data) && is_array($posted_data)) {
+        $field_data = $this->sanitize_field_data($posted_data, $global_schema);
+      }
+
+      update_option('yaml_cf_global_data', $field_data);
+
+      // Clear caches
+      $this->clear_data_caches();
+
+      // Redirect with success message
+      wp_safe_redirect(add_query_arg([
+        'page' => 'yaml-cf-manage-global-data',
+        'saved' => '1'
+      ], admin_url('admin.php')));
+      exit;
+    }
+
+    // Handle template global schema save
+    if (isset($_POST['yaml_cf_save_template_global_schema_nonce']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_template_global_schema_nonce'])), 'yaml_cf_save_template_global_schema')) {
+
+      if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+      }
+
+      $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
+      $template_global_schema = isset($_POST['template_global_schema']) ? sanitize_textarea_field(wp_unslash($_POST['template_global_schema'])) : '';
+
+      // Validate YAML syntax before saving
+      if (!empty($template_global_schema)) {
+        $validation_result = $this->validate_yaml_schema($template_global_schema);
+        if (!$validation_result['valid']) {
+          // Store the invalid schema in a transient so we can display it back
+          set_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id(), $template_global_schema, 60);
+
+          // Redirect back with error message
+          wp_safe_redirect(add_query_arg([
+            'page' => 'yaml-cf-edit-template-global',
+            'template' => urlencode($template),
+            'error' => '1',
+            'error_msg' => urlencode($validation_result['message'])
+          ], admin_url('admin.php')));
+          exit;
+        }
+      }
+
+      $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+      $template_global_schemas[$template] = $template_global_schema;
+      update_option('yaml_cf_template_global_schemas', $template_global_schemas);
+
+      // Clear any stored invalid schema
+      delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
+
+      // Redirect with success message
+      wp_safe_redirect(add_query_arg([
+        'page' => 'yaml-cf-edit-template-global',
+        'template' => urlencode($template),
+        'saved' => '1'
+      ], admin_url('admin.php')));
+      exit;
+    }
+
+    // Handle template global data save
+    if (isset($_POST['yaml_cf_save_template_global_data_nonce']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_template_global_data_nonce'])), 'yaml_cf_save_template_global_data')) {
+
+      if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+      }
+
+      $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
+      $field_data = [];
+
+      // Get template global schema for validation
+      $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+      $template_global_schema = null;
+      if (isset($template_global_schemas[$template]) && !empty($template_global_schemas[$template])) {
+        $template_global_schema = $this->parse_yaml_schema($template_global_schemas[$template]);
+      }
+
+      // Collect all field data
+      // Use post_raw() to get unslashed data safely without PHPCS warnings
+      // Data will be sanitized by schema-aware sanitize_field_data()
+      $posted_data = self::post_raw('yaml_cf', []);
+      if (!empty($posted_data) && is_array($posted_data)) {
+        $field_data = $this->sanitize_field_data($posted_data, $template_global_schema);
+      }
+
+      $template_global_data = get_option('yaml_cf_template_global_data', []);
+      $template_global_data[$template] = $field_data;
+      update_option('yaml_cf_template_global_data', $template_global_data);
+
+      // Clear caches
+      $this->clear_data_caches();
+
+      // Redirect with success message
+      wp_safe_redirect(add_query_arg([
+        'page' => 'yaml-cf-manage-template-global',
+        'template' => urlencode($template),
+        'saved' => '1'
+      ], admin_url('admin.php')));
+      exit;
+    }
   }
 
   private function sanitize_field_data($data, $schema = null, $field_name = '') {
@@ -1471,6 +1839,26 @@ class YAML_Custom_Fields {
     ]);
   }
 
+  public function ajax_toggle_use_global() {
+    check_ajax_referer('yaml_cf_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+      wp_send_json_error('Permission denied');
+    }
+
+    $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
+    $use_global = isset($_POST['use_global']) && sanitize_text_field(wp_unslash($_POST['use_global'])) === 'true';
+
+    $settings = get_option('yaml_cf_template_settings', []);
+    $settings[$template . '_use_global'] = $use_global;
+
+    update_option('yaml_cf_template_settings', $settings);
+
+    wp_send_json_success([
+      'use_global' => $use_global
+    ]);
+  }
+
   public function ajax_save_schema() {
     check_ajax_referer('yaml_cf_nonce', 'nonce');
 
@@ -1510,7 +1898,7 @@ class YAML_Custom_Fields {
    * @param WP_Post $post The post object
    * @return string The template filename
    */
-  private function get_template_for_post($post) {
+  public function get_template_for_post($post) {
     $post_type = $post->post_type;
 
     // For pages, check if a custom page template is assigned
@@ -1633,12 +2021,127 @@ class YAML_Custom_Fields {
       $saved_data = [];
     }
 
+    // Get template global schema if it exists
+    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+    $has_template_global = isset($template_global_schemas[$template]) && !empty($template_global_schemas[$template]);
+    $template_global_schema = null;
+    $template_global_data = [];
+    $use_template_global_fields = get_post_meta($post->ID, '_yaml_cf_use_template_global_fields', true);
+    if (empty($use_template_global_fields)) {
+      $use_template_global_fields = [];
+    }
+
+    if ($has_template_global) {
+      $template_global_schema = $this->parse_yaml_schema($template_global_schemas[$template]);
+      $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+      $template_global_data = isset($template_global_data_array[$template]) ? $template_global_data_array[$template] : [];
+    }
+
     echo '<div class="yaml-cf-fields">';
-    $context = ['type' => 'page'];
-    $this->render_schema_fields($schema['fields'], $saved_data, '', $context);
+
+    // Render each field with dual display if it exists in template global
+    foreach ($schema['fields'] as $field) {
+      $field_name = $field['name'];
+      $has_template_global_field = $template_global_schema && isset($template_global_schema['fields']) && $this->field_exists_in_schema($field_name, $template_global_schema['fields']);
+
+      if ($has_template_global_field) {
+        // Render dual field (template global + local + checkbox)
+        $this->render_dual_field($field, $saved_data, $template_global_data, $use_template_global_fields, $template);
+      } else {
+        // Render normal local-only field
+        $context = ['type' => 'page'];
+        $this->render_schema_fields([$field], $saved_data, '', $context);
+      }
+    }
+
+    echo '</div>';
+
+    // Check if this template uses global schema
+    $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
+    if ($use_global) {
+      $global_schema_yaml = get_option('yaml_cf_global_schema', '');
+      if (!empty($global_schema_yaml)) {
+        $global_schema = $this->parse_yaml_schema($global_schema_yaml);
+        if ($global_schema && isset($global_schema['fields'])) {
+          $global_data = get_option('yaml_cf_global_data', []);
+          $manage_global_url = admin_url('admin.php?page=yaml-cf-manage-global-data');
+
+          echo '<div class="yaml-cf-global-fields" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #2271b1;">';
+          echo '<div style="margin-bottom: 15px; padding: 10px; background: #f0f6fc; border-left: 4px solid #2271b1;">';
+          echo '<h3 style="margin: 0 0 5px 0; font-size: 14px;">' . esc_html__('Global Fields', 'yaml-custom-fields') . '</h3>';
+          echo '<p style="margin: 0; font-size: 13px; color: #646970;">';
+          echo esc_html__('These fields are shared across all posts/pages. Changes affect all content using global schema.', 'yaml-custom-fields');
+          echo ' <a href="' . esc_url($manage_global_url) . '" target="_blank">' . esc_html__('Edit Global Data', 'yaml-custom-fields') . '</a>';
+          echo '</p>';
+          echo '</div>';
+
+          $global_context = ['type' => 'global', 'readonly' => true];
+          $this->render_schema_fields($global_schema['fields'], $global_data, '', $global_context);
+          echo '</div>';
+        }
+      }
+    }
+
     echo '</div>';
     echo '</div>';
+  }
+
+  /**
+   * Check if a field exists in a schema fields array
+   */
+  private function field_exists_in_schema($field_name, $fields) {
+    foreach ($fields as $field) {
+      if ($field['name'] === $field_name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Render a dual field (template global + local + checkbox)
+   */
+  private function render_dual_field($field, $saved_data, $template_global_data, $use_template_global_fields, $template) {
+    $field_name = $field['name'];
+    $local_value = isset($saved_data[$field_name]) ? $saved_data[$field_name] : '';
+    $template_global_value = isset($template_global_data[$field_name]) ? $template_global_data[$field_name] : '';
+    $use_global = isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1';
+
+    $manage_template_global_url = admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template));
+
+    echo '<div class="yaml-cf-dual-field" data-field-name="' . esc_attr($field_name) . '" style="margin-bottom: 25px; padding: 15px; background: #f9f9f9; border-radius: 4px;">';
+
+    // Field label
+    echo '<h4 style="margin: 0 0 15px 0; font-size: 14px;">' . esc_html($field['label'] ?? $field_name) . '</h4>';
+
+    // Template global field (readonly, with edit link)
+    echo '<div class="yaml-cf-template-global-part" style="margin-bottom: 15px; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 3px;">';
+    echo '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">';
+    echo '<strong style="font-size: 13px; color: #2271b1;">' . esc_html__('Template Global (All Pages)', 'yaml-custom-fields') . '</strong>';
+    echo '<a href="' . esc_url($manage_template_global_url) . '" target="_blank" class="button button-small">' . esc_html__('Edit', 'yaml-custom-fields') . '</a>';
     echo '</div>';
+    $readonly_context = ['type' => 'template_global', 'readonly' => true, 'id_suffix' => '_global'];
+    $this->render_schema_fields([$field], [$field_name => $template_global_value], '', $readonly_context);
+    echo '</div>';
+
+    // Local field (always editable in HTML, visually blocked by JavaScript/CSS when checkbox is checked)
+    echo '<div class="yaml-cf-local-part" style="margin-bottom: 15px; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 3px;">';
+    echo '<div style="margin-bottom: 8px;">';
+    echo '<strong style="font-size: 13px; color: #046b99;">' . esc_html__('Page-Specific Value', 'yaml-custom-fields') . '</strong>';
+    echo '</div>';
+    $local_context = ['type' => 'page'];
+    $this->render_schema_fields([$field], [$field_name => $local_value], '', $local_context);
+    echo '</div>';
+
+    // Checkbox to toggle between global and local
+    echo '<div class="yaml-cf-field-toggle" style="padding: 10px; background: #fff; border: 1px solid #46b450; border-radius: 3px;">';
+    echo '<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">';
+    echo '<input type="checkbox" name="yaml_cf_use_template_global_fields[' . esc_attr($field_name) . ']" value="1" class="yaml-cf-use-global-checkbox" ' . checked($use_global, true, false) . ' />';
+    echo '<span style="font-weight: 500;">' . esc_html__('Use template global for this field', 'yaml-custom-fields') . '</span>';
+    echo '</label>';
+    echo '</div>';
+
+    echo '</div>'; // yaml-cf-dual-field
   }
 
   private function parse_yaml_schema($yaml) {
@@ -1708,13 +2211,21 @@ class YAML_Custom_Fields {
   }
 
   public function render_schema_fields($fields, $saved_data, $prefix = '', $context = null) {
+    // Check if fields should be readonly
+    $readonly = ($context && is_array($context) && isset($context['readonly']) && $context['readonly']);
+    $disabled_attr = $readonly ? ' disabled="disabled"' : '';
+    $readonly_class = $readonly ? ' yaml-cf-readonly' : '';
+
+    // Get ID suffix if provided in context (for unique IDs in dual fields)
+    $id_suffix = ($context && is_array($context) && isset($context['id_suffix'])) ? $context['id_suffix'] : '';
+
     foreach ($fields as $field) {
       $field_name = $prefix . $field['name'];
-      $field_id = 'ycf_' . str_replace(['[', ']'], ['_', ''], $field_name);
+      $field_id = 'ycf_' . str_replace(['[', ']'], ['_', ''], $field_name) . $id_suffix;
       $field_value = isset($saved_data[$field['name']]) ? $saved_data[$field['name']] : (isset($field['default']) ? $field['default'] : '');
       $field_label = isset($field['label']) ? $field['label'] : ucfirst($field['name']);
 
-      echo '<div class="yaml-cf-field" data-type="' . esc_attr($field['type']) . '">';
+      echo '<div class="yaml-cf-field' . esc_attr($readonly_class) . '" data-type="' . esc_attr($field['type']) . '">';
 
       // Generate code snippet (skip for block type fields as they have their own snippet)
       // Also skip for data_object context (manage entries page)
@@ -2513,6 +3024,12 @@ class YAML_Custom_Fields {
       // Clear caches
       $this->clear_data_caches($post_id);
     }
+
+    // Save per-field template global preferences
+    $use_template_global_fields = isset($_POST['yaml_cf_use_template_global_fields']) && is_array($_POST['yaml_cf_use_template_global_fields'])
+      ? array_map('sanitize_text_field', wp_unslash($_POST['yaml_cf_use_template_global_fields']))
+      : [];
+    update_post_meta($post_id, '_yaml_cf_use_template_global_fields', $use_template_global_fields);
   }
 
   public function ajax_get_partial_data() {
@@ -3114,8 +3631,47 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
   }
 
   $data = get_post_meta($post_id, '_yaml_cf_data', true);
+  if (!is_array($data)) {
+    $data = [];
+  }
 
-  if (is_array($data) && isset($data[$field_name])) {
+  // Check if template global is enabled for this specific field
+  $use_template_global_fields = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
+  if (is_array($use_template_global_fields) && isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1') {
+    // Get the template for this post
+    $post = get_post($post_id);
+    if ($post) {
+      $plugin = YAML_Custom_Fields::get_instance();
+      $template = $plugin->get_template_for_post($post);
+
+      // Get template global data
+      $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+      if (isset($template_global_data_array[$template][$field_name])) {
+        return $template_global_data_array[$template][$field_name];
+      }
+    }
+  }
+
+  // Check for site-wide global data
+  // (Only if the template has site-wide global enabled)
+  $post = $post ?? get_post($post_id);
+  if ($post) {
+    $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
+    $template = $template ?? $plugin->get_template_for_post($post);
+
+    $template_settings = get_option('yaml_cf_template_settings', []);
+    $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
+
+    if ($use_global) {
+      $global_data = get_option('yaml_cf_global_data', []);
+      if (is_array($global_data) && isset($global_data[$field_name])) {
+        return $global_data[$field_name];
+      }
+    }
+  }
+
+  // Finally, check post-specific data
+  if (isset($data[$field_name])) {
     return $data[$field_name];
   }
 
@@ -3151,9 +3707,51 @@ function yaml_cf_get_fields($post_id = null) {
     return [];
   }
 
-  $data = get_post_meta($post_id, '_yaml_cf_data', true);
+  $merged_data = [];
 
-  return is_array($data) ? $data : [];
+  // Start with post data
+  $post_data = get_post_meta($post_id, '_yaml_cf_data', true);
+  if (is_array($post_data)) {
+    $merged_data = $post_data;
+  }
+
+  // Get post and template info
+  $post = get_post($post_id);
+  if (!$post) {
+    return $merged_data;
+  }
+
+  $plugin = YAML_Custom_Fields::get_instance();
+  $template = $plugin->get_template_for_post($post);
+  $template_settings = get_option('yaml_cf_template_settings', []);
+
+  // Merge site-wide global data (if enabled for template)
+  $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
+  if ($use_global) {
+    $global_data = get_option('yaml_cf_global_data', []);
+    if (is_array($global_data)) {
+      $merged_data = array_merge($global_data, $merged_data);
+    }
+  }
+
+  // Merge template global data (if enabled for post)
+  $use_template_global = get_post_meta($post_id, '_yaml_cf_use_template_global', true);
+  if ($use_template_global) {
+    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+    if (isset($template_global_data_array[$template]) && is_array($template_global_data_array[$template])) {
+      $merged_data = array_merge($merged_data, $template_global_data_array[$template]);
+    }
+  }
+
+  // Apply overrides (highest priority)
+  if (isset($post_data['_template_global_override']) && is_array($post_data['_template_global_override'])) {
+    $merged_data = array_merge($merged_data, $post_data['_template_global_override']);
+  }
+
+  // Remove internal keys
+  unset($merged_data['_template_global_override']);
+
+  return $merged_data;
 }
 
 /**
@@ -3165,6 +3763,52 @@ function yaml_cf_get_fields($post_id = null) {
  */
 function yaml_cf_has_field($field_name, $post_id = null) {
   $value = yaml_cf_get_field($field_name, $post_id);
+  return $value !== null;
+}
+
+/**
+ * Get a global field value
+ *
+ * @param string $field_name The name of the field to retrieve
+ * @return mixed The field value or null if not found
+ *
+ * Usage in templates:
+ * - $background = yaml_cf_get_global_field('site_background');
+ */
+function yaml_cf_get_global_field($field_name) {
+  $global_data = get_option('yaml_cf_global_data', []);
+
+  if (is_array($global_data) && isset($global_data[$field_name])) {
+    return $global_data[$field_name];
+  }
+
+  return null;
+}
+
+/**
+ * Get all global fields
+ *
+ * @return array Array of all global field values
+ *
+ * Usage in templates:
+ * - $global_fields = yaml_cf_get_global_fields();
+ */
+function yaml_cf_get_global_fields() {
+  $global_data = get_option('yaml_cf_global_data', []);
+  return is_array($global_data) ? $global_data : [];
+}
+
+/**
+ * Check if a global field exists
+ *
+ * @param string $field_name The name of the field to check
+ * @return bool True if field exists, false otherwise
+ *
+ * Usage in templates:
+ * - if (yaml_cf_has_global_field('site_background')) { ... }
+ */
+function yaml_cf_has_global_field($field_name) {
+  $value = yaml_cf_get_global_field($field_name);
   return $value !== null;
 }
 

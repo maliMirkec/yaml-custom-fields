@@ -19,13 +19,22 @@ if (!defined('ABSPATH')) {
   <li>🎨 <strong>Define YAML schemas</strong> for page templates and template partials</li>
   <li>📝 <strong>15+ field types</strong> including string, rich-text, images, blocks, taxonomies, post types, data objects, and more</li>
   <li>🔧 <strong>Beautiful admin interface</strong> with branded header and intuitive controls</li>
-  <li>🎯 <strong>Per-page data</strong> for templates (stored in post meta)</li>
-  <li>🌐 <strong>Global data</strong> for partials like headers and footers (stored in options)</li>
-  <li>🚀 <strong>Simple template functions</strong> with ACF-like syntax</li>
+  <li>🎯 <strong>Three-level data hierarchy:</strong>
+    <ul>
+      <li>Per-page data for individual customization (stored in post meta)</li>
+      <li>Per-template global data shared across all posts using the same template</li>
+      <li>Site-wide global data for partials like headers and footers</li>
+    </ul>
+  </li>
+  <li>🔀 <strong>Per-field global/local toggle</strong> - Each field can independently use template global data or page-specific data</li>
+  <li>👀 <strong>Visual dual-field interface</strong> - See both template global and page-specific values side-by-side</li>
+  <li>📦 <strong>Data Objects</strong> - Manage structured, reusable data (universities, companies, team members, etc.)</li>
+  <li>🚀 <strong>Simple template functions</strong> with ACF-like syntax and auto-merge behavior</li>
   <li>🗑️ <strong>Clear buttons</strong> for image and file fields</li>
   <li>🔄 <strong>Reset all data</strong> button with confirmation</li>
   <li>🔒 <strong>Administrator-only access</strong> for security</li>
   <li>🧹 <strong>Clean uninstall</strong> removes all database records</li>
+  <li>⚡ <strong>WordPress Coding Standards compliant</strong> with optimized performance</li>
 </ul>
 
 <h2>Screenshots</h2>
@@ -432,6 +441,52 @@ $menu_cta = ycf_get_field('menu_cta', 'partial:header.php');
     &lt;?php get_search_form(); ?&gt;
   &lt;?php endif; ?&gt;
 &lt;/header&gt;</code></pre>
+
+<h2>Template Global Fields</h2>
+
+<p>Template Global Fields allow you to define default values that are shared across all posts using the same template, while still allowing individual posts to override specific fields.</p>
+
+<h3>Setting Up Template Global</h3>
+
+<ol>
+  <li>Go to <strong>YAML Custom Fields</strong> admin page</li>
+  <li>Enable YAML for your template (e.g., <code>page.php</code>)</li>
+  <li>Click <strong>Add Template Global</strong> to define the template global schema</li>
+  <li>Define fields that should have shared default values</li>
+  <li>Click <strong>Manage Template Global Data</strong> to set the default values</li>
+</ol>
+
+<h3>Using Template Global in Posts</h3>
+
+<p>When editing a post that uses a template with Template Global fields, you'll see a dual-field interface for each field:</p>
+
+<ul>
+  <li><strong>Template Global (All Pages)</strong> - Read-only display showing the default value (with Edit link)</li>
+  <li><strong>Page-Specific Value</strong> - Editable field for this post only</li>
+  <li><strong>Checkbox</strong> - "Use template global for this field" - Toggle per field</li>
+</ul>
+
+<h3>Benefits</h3>
+
+<ul>
+  <li><strong>Consistency:</strong> Set default values once, use across all posts</li>
+  <li><strong>Flexibility:</strong> Override any field on any post individually</li>
+  <li><strong>Clarity:</strong> See both global and local values side-by-side</li>
+  <li><strong>Efficiency:</strong> Update template global to affect all posts at once</li>
+</ul>
+
+<h3>Data Priority</h3>
+
+<p>When a field uses template global, <code>ycf_get_field()</code> returns data in this priority order:</p>
+
+<ol>
+  <li>Page-specific value (if "use template global" is unchecked)</li>
+  <li>Template global value (if "use template global" is checked)</li>
+  <li>Site-wide global value (if template has site-wide global enabled)</li>
+  <li><code>null</code> (if no value exists)</li>
+</ol>
+
+<p><strong>Example:</strong> If you set a default hero background image in Template Global, all pages using that template will show that image by default. Individual pages can override it by unchecking "Use template global for this field" and uploading their own image.</p>
 
 <h2>Field Types</h2>
 
@@ -967,9 +1022,26 @@ if ($pdf) {
 
 <h3>Page Templates</h3>
 <ul>
-  <li><strong>Location</strong>: Post meta with key <code>_yaml_cf_data</code></li>
+  <li><strong>Page/Post data</strong>: Post meta with key <code>_yaml_cf_data</code></li>
+  <li><strong>Template Global preferences</strong>: Post meta with key <code>_yaml_cf_use_template_global_fields</code> (per-field array)</li>
   <li><strong>Scope</strong>: Per post/page</li>
   <li><strong>Editing</strong>: WordPress post/page editor</li>
+</ul>
+
+<h3>Template Global Fields</h3>
+<ul>
+  <li><strong>Template Global schemas</strong>: WordPress options with key <code>yaml_cf_template_global_schemas</code></li>
+  <li><strong>Template Global data</strong>: WordPress options with key <code>yaml_cf_template_global_data</code></li>
+  <li><strong>Scope</strong>: Per template (shared across all posts using the same template)</li>
+  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Manage Template Global Data" button</li>
+</ul>
+
+<h3>Site-Wide Global Schema</h3>
+<ul>
+  <li><strong>Global schema</strong>: WordPress options with key <code>yaml_cf_global_schema</code></li>
+  <li><strong>Global data</strong>: WordPress options with key <code>yaml_cf_global_data</code></li>
+  <li><strong>Scope</strong>: Site-wide (available to all templates)</li>
+  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Manage Global Data" button</li>
 </ul>
 
 <h3>Template Partials</h3>
@@ -977,6 +1049,14 @@ if ($pdf) {
   <li><strong>Location</strong>: WordPress options with key <code>yaml_cf_partial_data</code></li>
   <li><strong>Scope</strong>: Global (site-wide)</li>
   <li><strong>Editing</strong>: YAML Custom Fields admin page → "Manage Data" button</li>
+</ul>
+
+<h3>Data Objects</h3>
+<ul>
+  <li><strong>Data Object Types</strong>: WordPress options with key <code>yaml_cf_data_object_types</code></li>
+  <li><strong>Data Object Entries</strong>: WordPress options with keys <code>yaml_cf_data_object_entries_{type_slug}</code></li>
+  <li><strong>Scope</strong>: Global (site-wide)</li>
+  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Data Objects"</li>
 </ul>
 
 <h3>Plugin Settings</h3>
@@ -1099,14 +1179,46 @@ if ($pdf) {
 
 <h2>Changelog</h2>
 
+<h3>Version 1.2.0</h3>
+<ul>
+  <li><strong>NEW: Template Global Fields</strong> - Define shared default values for all posts using the same template</li>
+  <li><strong>NEW: Per-field global/local toggle</strong> - Each field can independently use template global or page-specific data</li>
+  <li><strong>NEW: Dual-field interface</strong> - Visual side-by-side comparison of template global and page-specific values</li>
+  <li><strong>NEW: Auto-merge data hierarchy</strong> - Intelligent data priority system (page > template global > site global)</li>
+  <li>Enhanced post editor UI with clear visual indicators for global vs local data</li>
+  <li>Improved field rendering system with unique IDs for dual fields</li>
+  <li>Added per-field preferences storage for granular control</li>
+  <li>Better reset functionality that preserves global data</li>
+  <li>Enhanced documentation with Template Global Fields guide</li>
+  <li>Improved admin interface organization for template management</li>
+</ul>
+
+<h3>Version 1.1.0</h3>
+<ul>
+  <li>Improved code quality and WordPress Coding Standards compliance</li>
+  <li>Consolidated Export/Import functionality into single admin page</li>
+  <li>Renamed "Export Page Data" to "Export/Import" for clarity</li>
+  <li>Reorganized admin menu structure (Export/Import now positioned above Documentation)</li>
+  <li>Enhanced database query performance with optimized caching strategy</li>
+  <li>Implemented post tracking system for efficient cache management</li>
+  <li>Improved input sanitization using <code>filter_input()</code> throughout the plugin</li>
+  <li>Enhanced output escaping for better security</li>
+  <li>Added production-safe logging system with WordPress hooks</li>
+  <li>Better file upload validation and error handling</li>
+  <li>Removed all <code>phpcs:ignore</code> suppressions in favor of proper WordPress coding practices</li>
+  <li>Added <code>phpcs.xml.dist</code> configuration file for consistent code standards</li>
+</ul>
+
 <h3>Version 1.0.0</h3>
 <ul>
   <li>Initial release</li>
-  <li>Support for 15+ field types
+  <li>Support for 15+ field types</li>
   <li>Template and partial support</li>
-  <li>ACF-like template functions with context_data parameter for block fields</li>
+  <li>ACF-like template functions with <code>context_data</code> parameter for block fields</li>
   <li>Taxonomy field type for categories, tags, and custom taxonomies (single/multiple selection)</li>
-  <li>Enhanced helper functions: <code>ycf_get_field()</code>, <code>ycf_get_image()</code>, <code>ycf_get_file()</code>, <code>ycf_get_term()</code></li>
+  <li>Post Type field type for selecting registered WordPress post types</li>
+  <li>Data Objects feature for managing structured, reusable data (universities, companies, etc.)</li>
+  <li>Enhanced helper functions: <code>ycf_get_field()</code>, <code>ycf_get_image()</code>, <code>ycf_get_file()</code>, <code>ycf_get_term()</code>, <code>ycf_get_post_type()</code>, <code>ycf_get_data_object()</code>, <code>ycf_get_data_objects()</code></li>
   <li>Block/repeater functionality with context-aware field access</li>
   <li>WordPress media integration with attachment ID storage</li>
   <li>Administrator-only access</li>

@@ -34,6 +34,27 @@ if (!defined('ABSPATH')) {
     </p>
     </div>
 
+    <div class="yaml-cf-global-schema-section" style="background: #f9f9f9; padding: 20px; border-left: 4px solid #2271b1; margin: 30px 0;">
+    <h2><?php esc_html_e('Global Schema & Data', 'yaml-custom-fields'); ?></h2>
+    <p><?php esc_html_e('Define a global schema with fields that can be reused across templates. Global data is shared everywhere (not per-post).', 'yaml-custom-fields'); ?></p>
+    <p>
+      <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-global-schema')); ?>" class="button button-primary">
+        <span class="dashicons dashicons-admin-generic" style="margin-top: 3px;"></span>
+        <?php esc_html_e('Edit Global Schema', 'yaml-custom-fields'); ?>
+      </a>
+      <?php if (!empty($global_schema_parsed) && !empty($global_schema_parsed['fields'])) : ?>
+        <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-global-data')); ?>" class="button">
+          <span class="dashicons dashicons-edit" style="margin-top: 3px;"></span>
+          <?php esc_html_e('Manage Global Data', 'yaml-custom-fields'); ?>
+        </a>
+        <span class="dashicons dashicons-yes-alt" style="color: #46b450; margin-left: 10px;"></span>
+        <span class="description"><?php esc_html_e('Global schema configured', 'yaml-custom-fields'); ?></span>
+      <?php else : ?>
+        <span class="description" style="margin-left: 10px;"><?php esc_html_e('No global schema defined yet', 'yaml-custom-fields'); ?></span>
+      <?php endif; ?>
+    </p>
+    </div>
+
     <h2><?php esc_html_e('Page & Post Templates', 'yaml-custom-fields'); ?></h2>
     <p><?php esc_html_e('Configure YAML schemas for individual pages and posts. Data is stored per post/page and editable in the post editor.', 'yaml-custom-fields'); ?></p>
 
@@ -48,6 +69,8 @@ if (!defined('ABSPATH')) {
                 <th><?php esc_html_e('File', 'yaml-custom-fields'); ?></th>
                 <th><?php esc_html_e('Enable YAML', 'yaml-custom-fields'); ?></th>
                 <th><?php esc_html_e('Schema', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('Template Global Schema', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('Template Global Data', 'yaml-custom-fields'); ?></th>
             </tr>
         </thead>
         <tbody>
@@ -55,6 +78,7 @@ if (!defined('ABSPATH')) {
                 <?php
                 $yaml_cf_is_enabled = isset($template_settings[$yaml_cf_template['file']]) && $template_settings[$yaml_cf_template['file']];
                 $yaml_cf_has_schema = isset($schemas[$yaml_cf_template['file']]) && !empty($schemas[$yaml_cf_template['file']]);
+                $yaml_cf_has_template_global_schema = isset($template_global_schemas[$yaml_cf_template['file']]) && !empty($template_global_schemas[$yaml_cf_template['file']]);
                 ?>
                 <tr>
                     <td><strong><?php echo esc_html($yaml_cf_template['name']); ?></strong></td>
@@ -80,6 +104,29 @@ if (!defined('ABSPATH')) {
                             <?php endif; ?>
                         <?php else : ?>
                             <span class="description"><?php esc_html_e('Enable YAML first', 'yaml-custom-fields'); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if ($yaml_cf_is_enabled) : ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-template-global&template=' . urlencode($yaml_cf_template['file']))); ?>"
+                              class="button">
+                                <?php echo $yaml_cf_has_template_global_schema ? esc_html__('Edit Template Global', 'yaml-custom-fields') : esc_html__('Add Template Global', 'yaml-custom-fields'); ?>
+                            </a>
+                            <?php if ($yaml_cf_has_template_global_schema) : ?>
+                                <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
+                            <?php endif; ?>
+                        <?php else : ?>
+                            <span class="description"><?php esc_html_e('Enable YAML first', 'yaml-custom-fields'); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if ($yaml_cf_is_enabled && $yaml_cf_has_template_global_schema) : ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($yaml_cf_template['file']))); ?>"
+                              class="button">
+                                <?php esc_html_e('Manage Template Global Data', 'yaml-custom-fields'); ?>
+                            </a>
+                        <?php else : ?>
+                            <span class="description"><?php esc_html_e('Add template global schema first', 'yaml-custom-fields'); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>

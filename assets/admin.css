@@ -872,3 +872,230 @@
     margin-left: 0;
   }
 }
+
+/* Global Fields - Readonly Styles */
+.yaml-cf-readonly input[type="text"],
+.yaml-cf-readonly input[type="number"],
+.yaml-cf-readonly input[type="date"],
+.yaml-cf-readonly input[type="datetime-local"],
+.yaml-cf-readonly input[type="checkbox"],
+.yaml-cf-readonly textarea,
+.yaml-cf-readonly select,
+.yaml-cf-readonly .CodeMirror {
+  opacity: 0.7;
+  background-color: #f6f7f7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.yaml-cf-readonly .yaml-cf-media-upload,
+.yaml-cf-readonly .yaml-cf-upload-image,
+.yaml-cf-readonly .yaml-cf-upload-file,
+.yaml-cf-readonly .yaml-cf-clear-media,
+.yaml-cf-readonly .yaml-cf-add-block,
+.yaml-cf-readonly .yaml-cf-remove-block {
+  display: none;
+}
+
+/* Container-level blocking (replaces individual element disabling) */
+.yaml-cf-container-disabled {
+  opacity: 0.6;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.yaml-cf-container-disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.01);
+  z-index: 1;
+}
+
+.yaml-cf-global-fields {
+  position: relative;
+}
+
+.yaml-cf-global-fields::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.01);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Template Global Section */
+.yaml-cf-template-global-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #46b450;
+}
+
+.yaml-cf-template-global-field {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.yaml-cf-template-global-field .yaml-cf-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+/* Override Indicators */
+.yaml-cf-global-indicator {
+  margin-left: 10px;
+  padding: 2px 8px;
+  background: #46b450;
+  color: #fff;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.yaml-cf-override-indicator {
+  margin-left: 10px;
+  padding: 2px 8px;
+  background: #f0ad4e;
+  color: #fff;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* Template Global Checkbox */
+.yaml-cf-use-template-global-checkbox {
+  width: auto;
+  margin-right: 5px;
+}
+
+/* Template Global Fields Container */
+.yaml-cf-template-global-fields {
+  margin-top: 15px;
+}
+
+/* Override Field Display */
+.yaml-cf-field-display {
+  margin-top: 10px;
+}
+
+.yaml-cf-field-display .yaml-cf-field {
+  margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 782px) {
+  .yaml-cf-template-global-field .yaml-cf-field-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .yaml-cf-template-global-field .yaml-cf-field-actions {
+    width: 100%;
+  }
+
+  .yaml-cf-template-global-field .yaml-cf-field-actions button {
+    width: 100%;
+  }
+}
+
+/* Dual Field Layout (Template Global + Local) */
+.yaml-cf-dual-field {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.yaml-cf-dual-field h4 {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2327;
+}
+
+.yaml-cf-template-global-part {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #2271b1;
+  border-radius: 3px;
+}
+
+.yaml-cf-template-global-part strong {
+  font-size: 13px;
+  color: #2271b1;
+}
+
+.yaml-cf-local-part {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #046b99;
+  border-radius: 3px;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.yaml-cf-local-part strong {
+  font-size: 13px;
+  color: #046b99;
+}
+
+.yaml-cf-local-part.disabled {
+  opacity: 0.6;
+}
+
+.yaml-cf-field-toggle {
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #46b450;
+  border-radius: 3px;
+}
+
+.yaml-cf-field-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.yaml-cf-field-toggle label span {
+  font-weight: 500;
+  color: #1d2327;
+}
+
+.yaml-cf-field-toggle input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Responsive adjustments for dual fields */
+@media (max-width: 782px) {
+  .yaml-cf-dual-field {
+    padding: 12px;
+  }
+
+  .yaml-cf-template-global-part,
+  .yaml-cf-local-part {
+    padding: 10px;
+  }
+}

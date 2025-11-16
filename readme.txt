@@ -19,12 +19,16 @@ YAML Custom Fields allows you to define structured content schemas with an intui
 * Define YAML schemas for page templates and template partials
 * 15+ field types including string, rich-text, images, blocks, taxonomies, data objects, and more
 * Easy-to-use admin interface for managing schemas and data
-* Per-page data for templates (stored in post meta)
-* Global data for partials like headers and footers (stored in options)
+* **Three-level data hierarchy:**
+  * Per-page data for individual customization (stored in post meta)
+  * Per-template global data shared across all posts using the same template
+  * Site-wide global data for partials like headers and footers
+* **Per-field global/local toggle:** Each field can independently use template global data or page-specific data
+* **Visual dual-field interface:** See both template global and page-specific values side-by-side
 * Data Objects for managing structured, reusable data (universities, companies, etc.)
 * Data Validation page for reviewing imported content
 * Consolidated Export/Import page for all data types (settings, page data, data objects)
-* Simple template functions with ACF-like syntax
+* Simple template functions with ACF-like syntax and auto-merge behavior
 * Administrator-only access for security
 * Clean uninstall removes all database records
 * WordPress Coding Standards compliant
@@ -141,6 +145,18 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 8. Documentation page with comprehensive guides and examples
 
 == Changelog ==
+
+= 1.2.0 =
+* **NEW: Template Global Fields** - Define shared default values for all posts using the same template
+* **NEW: Per-field global/local toggle** - Each field can independently use template global or page-specific data
+* **NEW: Dual-field interface** - Visual side-by-side comparison of template global and page-specific values
+* **NEW: Auto-merge data hierarchy** - Intelligent data priority system (page > template global > site global)
+* Enhanced post editor UI with clear visual indicators for global vs local data
+* Improved field rendering system with unique IDs for dual fields
+* Added per-field preferences storage for granular control
+* Better reset functionality that preserves global data
+* Enhanced documentation with Template Global Fields guide
+* Improved admin interface organization for template management
 
 = 1.1.0 =
 * Improved code quality and WordPress Coding Standards compliance
@@ -337,9 +353,50 @@ For custom partials, add the @ycf marker in the file header:
 
 Then click "Refresh Template List" in the YAML Custom Fields admin page.
 
+= Template Global Fields =
+
+Template Global Fields allow you to define default values that are shared across all posts using the same template, while still allowing individual posts to override specific fields.
+
+**Setting up Template Global:**
+
+1. Go to **YAML Custom Fields** admin page
+2. Enable YAML for your template (e.g., page.php)
+3. Click **Add Template Global** to define the template global schema
+4. Define fields that should have shared default values
+5. Click **Manage Template Global Data** to set the default values
+
+**Using Template Global in Posts:**
+
+When editing a post that uses a template with Template Global fields, you'll see a dual-field interface for each field:
+
+* **Template Global (All Pages)** - Read-only display showing the default value (with Edit link)
+* **Page-Specific Value** - Editable field for this post only
+* **Checkbox** - "Use template global for this field" - Toggle per field
+
+**Benefits:**
+
+* **Consistency:** Set default values once, use across all posts
+* **Flexibility:** Override any field on any post individually
+* **Clarity:** See both global and local values side-by-side
+* **Efficiency:** Update template global to affect all posts at once
+
+**Data Priority (when using template functions):**
+
+When a field uses template global, `ycf_get_field()` returns data in this priority order:
+
+1. Page-specific value (if "use template global" is unchecked)
+2. Template global value (if "use template global" is checked)
+3. Site-wide global value (if template has site-wide global enabled)
+4. null (if no value exists)
+
 = Data Storage =
 
 * **Page/Post data:** Stored in post meta with key `_yaml_cf_data`
+* **Template Global preferences:** Stored in post meta with key `_yaml_cf_use_template_global_fields` (per-field array)
+* **Template Global schemas:** Stored in options table with key `yaml_cf_template_global_schemas`
+* **Template Global data:** Stored in options table with key `yaml_cf_template_global_data`
+* **Site-wide global schema:** Stored in options table with key `yaml_cf_global_schema`
+* **Site-wide global data:** Stored in options table with key `yaml_cf_global_data`
 * **Partial data:** Stored in options table with key `yaml_cf_partial_data`
 * **Schemas:** Stored in options table with key `yaml_cf_schemas`
 * **Data Object Types:** Stored in options table with key `yaml_cf_data_object_types`

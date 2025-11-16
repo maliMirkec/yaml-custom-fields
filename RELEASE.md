@@ -84,7 +84,7 @@ You have two options: **SVN** or **GitHub Actions**.
 
 2. Extract your ZIP into the `trunk` folder:
    ```bash
-   unzip ../yaml-custom-fields.1.1.0.zip
+   unzip ../yaml-custom-fields.1.2.0.zip
    rsync -av --delete yaml-custom-fields/ trunk/
    ```
 
@@ -106,13 +106,13 @@ You have two options: **SVN** or **GitHub Actions**.
 
 6. Commit to trunk:
    ```bash
-   svn ci -m "Updating to version 1.1.0"
+   svn ci -m "Updating to version 1.2.0"
    ```
 
 7. Create a release tag:
    ```bash
-   svn cp trunk tags/1.1.0
-   svn ci -m "Tagging version 1.1.0"
+   svn cp trunk tags/1.2.0
+   svn ci -m "Tagging version 1.2.0"
    ```
 
 8. The plugin will be live within 15 minutes!
@@ -128,8 +128,8 @@ If you have the WordPress.org deployment action configured:
 
 2. Create a release tag:
    ```bash
-   git tag 1.1.0
-   git push origin 1.1.0
+   git tag 1.2.0
+   git push origin 1.2.0
    ```
 
 3. GitHub Action automatically deploys to WordPress.org
@@ -182,9 +182,9 @@ Because we use PHP-Scoper:
 ### Version Numbering
 
 WordPress.org requires:
-- Version in `yaml-custom-fields.php`: `Version: 1.1.0`
-- Version in `readme.txt`: `Stable tag: 1.1.0`
-- Must match the SVN tag: `tags/1.1.0`
+- Version in `yaml-custom-fields.php`: `Version: 1.2.0`
+- Version in `readme.txt`: `Stable tag: 1.2.0`
+- Must match the SVN tag: `tags/1.2.0`
 
 ## Troubleshooting
 
@@ -208,7 +208,7 @@ WordPress.org requires:
 
 **Cause**: `readme.txt` stable tag doesn't match SVN tag
 
-**Solution**: Ensure `Stable tag: 1.1.0` in readme.txt matches your SVN tag
+**Solution**: Ensure `Stable tag: 1.2.0` in readme.txt matches your SVN tag
 
 ## Resources
 

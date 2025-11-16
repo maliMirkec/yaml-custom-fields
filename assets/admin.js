@@ -14,11 +14,18 @@
       this.bindEvents();
       this.initMediaUploader();
       this.initMetaBoxChangeTracking();
+      this.initFieldGlobalLocal();
     },
 
     bindEvents: function () {
       // Enable/Disable YAML for templates
       $(document).on('change', '.yaml-cf-enable-yaml', this.toggleYAML);
+
+      // Toggle Use Global for templates
+      $(document).on('change', '.yaml-cf-use-global', this.toggleUseGlobal);
+
+      // Toggle per-field global/local
+      $(document).on('change', '.yaml-cf-use-global-checkbox', this.toggleFieldGlobalLocal);
 
       // Block Controls
       $(document).on('click', '.yaml-cf-add-block', this.addBlock);
@@ -45,6 +52,11 @@
       $(document).on('click', '.yaml-cf-copy-snippet', this.copySnippet);
       $(document).on('mouseenter', '.yaml-cf-copy-snippet', this.showSnippetPopover);
       $(document).on('mouseleave', '.yaml-cf-copy-snippet', this.hideSnippetPopover);
+
+      // Template Global Controls
+      $(document).on('change', '.yaml-cf-use-template-global-checkbox', this.toggleTemplateGlobal);
+      $(document).on('click', '.yaml-cf-enable-override', this.enableOverride);
+      $(document).on('click', '.yaml-cf-reset-override', this.resetOverride);
     },
 
     toggleYAML: function () {
@@ -135,6 +147,123 @@
           YamlCF.showMessage('Error saving settings', 'error');
         },
       });
+    },
+
+    toggleUseGlobal: function () {
+      const $checkbox = $(this);
+      const template = $checkbox.data('template');
+      const useGlobal = $checkbox.is(':checked');
+
+      $.ajax({
+        url: yamlCF.ajax_url,
+        type: 'POST',
+        data: {
+          action: 'yaml_cf_toggle_use_global',
+          nonce: yamlCF.nonce,
+          template: template,
+          use_global: useGlobal,
+        },
+        success: function (response) {
+          if (response.success) {
+            YamlCF.showMessage('Global schema setting saved', 'success');
+          } else {
+            $checkbox.prop('checked', !useGlobal);
+            YamlCF.showMessage('Error saving setting', 'error');
+          }
+        },
+        error: function () {
+          $checkbox.prop('checked', !useGlobal);
+          YamlCF.showMessage('Error saving setting', 'error');
+        },
+      });
+    },
+
+    toggleTemplateGlobal: function () {
+      const $checkbox = $(this);
+      const $fieldsContainer = $checkbox.closest('.yaml-cf-template-global-section').find('.yaml-cf-template-global-fields');
+
+      if ($checkbox.is(':checked')) {
+        $fieldsContainer.slideDown(200);
+      } else {
+        $fieldsContainer.slideUp(200);
+      }
+    },
+
+    toggleFieldGlobalLocal: function () {
+      const $checkbox = $(this);
+      const $dualField = $checkbox.closest('.yaml-cf-dual-field');
+      const $localPart = $dualField.find('.yaml-cf-local-part');
+      const useGlobal = $checkbox.is(':checked');
+
+      if (useGlobal) {
+        // Block all interaction at the container level using CSS
+        $localPart.addClass('yaml-cf-container-disabled');
+      } else {
+        // Re-enable interaction
+        $localPart.removeClass('yaml-cf-container-disabled');
+      }
+    },
+
+    initFieldGlobalLocal: function () {
+      const self = this;
+      $('.yaml-cf-use-global-checkbox').each(function () {
+        self.toggleFieldGlobalLocal.call(this);
+      });
+    },
+
+    enableOverride: function () {
+      const $button = $(this);
+      const fieldName = $button.data('field');
+      const $fieldContainer = $button.closest('.yaml-cf-template-global-field');
+      const $fieldHeader = $fieldContainer.find('.yaml-cf-field-header');
+      const $fieldDisplay = $fieldContainer.find('.yaml-cf-field-display');
+
+      // Change indicator to override
+      $fieldHeader.find('.yaml-cf-global-indicator').replaceWith(
+        '<span class="yaml-cf-override-indicator" style="margin-left: 10px; padding: 2px 8px; background: #f0ad4e; color: #fff; border-radius: 3px; font-size: 11px; font-weight: bold;">⚠️ OVERRIDDEN</span>'
+      );
+
+      // Change button to reset
+      $button.replaceWith(
+        '<button type="button" class="button button-small yaml-cf-reset-override" data-field="' + fieldName + '">Reset to Global</button>'
+      );
+
+      // Enable editing - remove readonly class
+      $fieldDisplay.find('.yaml-cf-readonly').removeClass('yaml-cf-readonly');
+      $fieldDisplay.find('input, textarea, select').prop('disabled', false).css({
+        'opacity': '1',
+        'background-color': '#fff',
+        'cursor': 'text',
+        'pointer-events': 'auto'
+      });
+
+      // Add hidden field to mark as override
+      if ($fieldDisplay.find('input[name="yaml_cf_template_global_override[' + fieldName + ']"]').length === 0) {
+        $fieldDisplay.prepend('<input type="hidden" name="yaml_cf_template_global_override[' + fieldName + ']" value="1" />');
+      }
+
+      // Update field names to use override namespace
+      $fieldDisplay.find('input, textarea, select').each(function() {
+        const $field = $(this);
+        const name = $field.attr('name');
+        if (name && name.indexOf('yaml_cf[') === 0 && name.indexOf('_template_global_override') === -1) {
+          const newName = name.replace('yaml_cf[', 'yaml_cf[_template_global_override][' + fieldName + '][');
+          $field.attr('name', newName);
+        }
+      });
+    },
+
+    resetOverride: function () {
+      const $button = $(this);
+      const fieldName = $button.data('field');
+
+      if (!confirm('Are you sure you want to reset this field to the global value? Any custom changes will be lost.')) {
+        return;
+      }
+
+      // Reload the page to reset the field
+      // Note: A better implementation would use AJAX to reload just the field
+      location.reload();
     },
 
     addBlock: function () {
@@ -698,54 +827,66 @@
 
       if (
         !confirm(
-          '⚠️ WARNING: This will clear ALL custom field data for this page.\n\nThis action cannot be undone. You will need to save the page to make this permanent.\n\nAre you sure you want to continue?'
+          '⚠️ WARNING: This will clear all LOCAL custom field data for this page (not global or template global fields).\n\nThis action cannot be undone. You will need to save the page to make this permanent.\n\nAre you sure you want to continue?'
         )
       ) {
         return;
       }
 
-      // Reset all fields in the meta box
-      $('#yaml-cf-meta-box .yaml-cf-fields')
+      // Reset only local fields (not global or template global)
+      // First, get all inputs that are NOT in template global parts
+      const $localInputs = $('#yaml-cf-meta-box > .inside > .yaml-cf-fields')
         .find('input, textarea, select')
-        .each(function () {
-          const $input = $(this);
-          const type = $input.attr('type');
-
-          if (type === 'checkbox') {
-            $input.prop('checked', false);
-          } else if (
-            type === 'hidden' &&
-            ($input
-              .closest('.yaml-cf-field')
-              .find('.yaml-cf-upload-image').length ||
-              $input
-                .closest('.yaml-cf-field')
-                .find('.yaml-cf-upload-file').length)
-          ) {
-            // Clear image/file fields
-            $input.val('');
-          } else if ($input.is('select')) {
-            $input.prop('selectedIndex', 0);
-          } else if (
-            !type ||
-            type === 'text' ||
-            type === 'number' ||
-            type === 'date' ||
-            type === 'datetime-local' ||
-            $input.is('textarea')
-          ) {
-            $input.val('');
-          }
+        .filter(function() {
+          // Exclude inputs that are inside .yaml-cf-template-global-part
+          return $(this).closest('.yaml-cf-template-global-part').length === 0;
         });
 
-      // Clear image previews and file names
-      $('#yaml-cf-meta-box .yaml-cf-image-preview').remove();
-      $('#yaml-cf-meta-box .yaml-cf-file-name').remove();
-      $('#yaml-cf-meta-box .yaml-cf-clear-media').remove();
+      $localInputs.each(function () {
+        const $input = $(this);
+        const type = $input.attr('type');
+
+        if (type === 'checkbox') {
+          $input.prop('checked', false);
+        } else if (
+          type === 'hidden' &&
+          ($input
+            .closest('.yaml-cf-field')
+            .find('.yaml-cf-upload-image').length ||
+            $input
+              .closest('.yaml-cf-field')
+              .find('.yaml-cf-upload-file').length)
+        ) {
+          // Clear image/file fields
+          $input.val('');
+        } else if ($input.is('select')) {
+          $input.prop('selectedIndex', 0);
+        } else if (
+          !type ||
+          type === 'text' ||
+          type === 'number' ||
+          type === 'date' ||
+          type === 'datetime-local' ||
+          $input.is('textarea')
+        ) {
+          $input.val('');
+        }
+      });
+
+      // Clear image previews and file names (but exclude template global parts)
+      $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-image-preview')
+        .not('.yaml-cf-template-global-part .yaml-cf-image-preview')
+        .remove();
+      $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-file-name')
+        .not('.yaml-cf-template-global-part .yaml-cf-file-name')
+        .remove();
+      $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-clear-media')
+        .not('.yaml-cf-template-global-part .yaml-cf-clear-media')
+        .remove();
 
       // Clear WordPress editors (if any)
       if (typeof tinymce !== 'undefined') {
-        $('#yaml-cf-meta-box .yaml-cf-fields')
+        $('#yaml-cf-meta-box > .inside > .yaml-cf-fields')
           .find('textarea')
           .each(function () {
             const editorId = $(this).attr('id');
@@ -756,7 +897,7 @@
       }
 
       // Remove all blocks
-      $('#yaml-cf-meta-box .yaml-cf-block-item').remove();
+      $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-block-item').remove();
 
       alert(
         'All custom field data has been cleared. Remember to save the page to make this change permanent.'
