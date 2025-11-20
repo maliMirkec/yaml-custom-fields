@@ -30,7 +30,9 @@ if (file_exists(__DIR__ . '/build/vendor/scoper-autoload.php')) {
 use YamlCF\Vendor\Symfony\Component\Yaml\Yaml;
 use YamlCF\Vendor\Symfony\Component\Yaml\Exception\ParseException;
 
-define('YAML_CF_VERSION', '1.1.0');
+// Read version from plugin header (single source of truth)
+$yaml_cf_plugin_headers = get_file_data(__FILE__, ['Version' => 'Version']);
+define('YAML_CF_VERSION', $yaml_cf_plugin_headers['Version']);
 define('YAML_CF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('YAML_CF_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -252,6 +254,7 @@ class YAML_Custom_Fields {
     add_action('admin_menu', [$this, 'add_admin_menu']);
     add_action('admin_head', [$this, 'hide_submenu_items']);
     add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+    add_filter('admin_title', [$this, 'customize_admin_title'], 10, 2);
     // Only use edit_form_after_title to avoid duplicate rendering
     add_action('edit_form_after_title', [$this, 'render_schema_meta_box_after_title']);
     add_action('save_post', [$this, 'save_schema_data']);
@@ -328,7 +331,7 @@ class YAML_Custom_Fields {
 
     // Template Global pages (hidden from menu)
     add_submenu_page(
-      null,
+      'yaml-custom-fields',
       __('Edit Template Global Schema', 'yaml-custom-fields'),
       __('Edit Template Global Schema', 'yaml-custom-fields'),
       'manage_options',
@@ -337,7 +340,7 @@ class YAML_Custom_Fields {
     );
 
     add_submenu_page(
-      null,
+      'yaml-custom-fields',
       __('Manage Template Global Data', 'yaml-custom-fields'),
       __('Manage Template Global Data', 'yaml-custom-fields'),
       'manage_options',
@@ -443,12 +446,90 @@ class YAML_Custom_Fields {
           unset($submenu['yaml-custom-fields'][$key]);
         }
 
+        // Hide "Edit Template Global" if not on that page
+        if ($menu_slug === 'yaml-cf-edit-template-global' && $current_page !== 'yaml-cf-edit-template-global') {
+          unset($submenu['yaml-custom-fields'][$key]);
+        }
+
+        // Hide "Manage Template Global Data" if not on that page
+        if ($menu_slug === 'yaml-cf-manage-template-global' && $current_page !== 'yaml-cf-manage-template-global') {
+          unset($submenu['yaml-custom-fields'][$key]);
+        }
+
         // Hide "Manage Global Data" if no global schema or no fields defined
         if ($menu_slug === 'yaml-cf-manage-global-data' && !$has_global_schema) {
           unset($submenu['yaml-custom-fields'][$key]);
         }
       }
     }
+  }
+
+  /**
+   * Customize admin page title for dynamic pages
+   */
+  public function customize_admin_title($admin_title, $title) {
+    $page = $this->get_param('page');
+
+    // Handle template-based pages
+    $template = $this->get_param('template');
+    if ($template) {
+      $theme_files = $this->get_theme_templates();
+      $template_name = $template;
+      foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
+        if ($item['file'] === $template) {
+          $template_name = $item['name'];
+          break;
+        }
+      }
+
+      // Edit Schema page
+      if ($page === 'yaml-cf-edit-schema') {
+        /* translators: %s: Template name */
+        return sprintf(__('Edit Schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+      }
+
+      // Edit Partial page
+      if ($page === 'yaml-cf-edit-partial') {
+        /* translators: %s: Template name */
+        return sprintf(__('Edit Partial: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+      }
+
+      // Edit Template Global Schema page
+      if ($page === 'yaml-cf-edit-template-global') {
+        /* translators: %s: Template name */
+        return sprintf(__('Edit Template Global Schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+      }
+
+      // Manage Template Global Data page
+      if ($page === 'yaml-cf-manage-template-global') {
+        /* translators: %s: Template name */
+        return sprintf(__('Manage Template Global Data: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+      }
+    }
+
+    // Handle data-object-based pages
+    $type = $this->get_param('type');
+    if ($type) {
+      $data_object_types = get_option('yaml_cf_data_object_types', []);
+      $type_name = $type;
+      if (isset($data_object_types[$type]['name'])) {
+        $type_name = $data_object_types[$type]['name'];
+      }
+
+      // Edit Data Object Type page
+      if ($page === 'yaml-cf-edit-data-object-type') {
+        /* translators: %s: Data object type name */
+        return sprintf(__('Edit Data Object Type: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
+      }
+
+      // Manage Data Object Entries page
+      if ($page === 'yaml-cf-manage-data-object-entries') {
+        /* translators: %s: Data object type name */
+        return sprintf(__('Manage Data Object Entries: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
+      }
+    }
+
+    return $admin_title;
   }
 
   public function set_parent_file($parent_file) {
@@ -549,6 +630,42 @@ class YAML_Custom_Fields {
 
         $parent_file = 'yaml-custom-fields';
       }
+
+      // Handle template global schema pages
+      if ($template && ($page === 'yaml-cf-edit-template-global' || $page === 'yaml-cf-manage-template-global')) {
+        $theme_files = $this->get_theme_templates();
+        $template_name = $template;
+        foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
+          if ($item['file'] === $template) {
+            $template_name = $item['name'];
+            break;
+          }
+        }
+
+        // Update the submenu title and URL
+        if (isset($submenu['yaml-custom-fields'])) {
+          foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
+            if ($menu_item[2] === $page) {
+              if ($page === 'yaml-cf-edit-template-global') {
+                /* translators: %s: template name */
+                $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Edit Template Global: %s', 'yaml-custom-fields'), $template_name);
+                $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-edit-template-global&template=' . urlencode($template);
+                /* translators: %s: template name */
+                $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Edit Template Global: %s', 'yaml-custom-fields'), $template_name);
+              } else {
+                /* translators: %s: template name */
+                $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Manage Template Global: %s', 'yaml-custom-fields'), $template_name);
+                $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template);
+                /* translators: %s: template name */
+                $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Manage Template Global: %s', 'yaml-custom-fields'), $template_name);
+              }
+              break;
+            }
+          }
+        }
+
+        $parent_file = 'yaml-custom-fields';
+      }
     }
 
     return $parent_file;
@@ -567,6 +684,11 @@ class YAML_Custom_Fields {
       $type_slug = $this->get_param_key('type');
       if ($type_slug && ($page === 'yaml-cf-edit-data-object-type' || $page === 'yaml-cf-manage-data-object-entries')) {
         $submenu_file = 'admin.php?page=' . $page . '&type=' . urlencode($type_slug);
+      }
+
+      // Handle template global schema pages (hidden pages with parent = null)
+      if ($template && ($page === 'yaml-cf-edit-template-global' || $page === 'yaml-cf-manage-template-global')) {
+        $submenu_file = 'admin.php?page=' . $page . '&template=' . urlencode($template);
       }
     }
 
@@ -2055,6 +2177,46 @@ class YAML_Custom_Fields {
     }
 
     echo '</div>';
+
+    // Render template-global-only fields as readonly
+    if ($has_template_global && $template_global_schema && isset($template_global_schema['fields']) && isset($schema['fields'])) {
+      $manage_template_global_url = admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template));
+
+      $has_global_only_fields = false;
+
+      foreach ($template_global_schema['fields'] as $global_field) {
+        $global_field_name = $global_field['name'];
+
+        // Check if this field exists ONLY in template global (NOT in local schema)
+        if (!$this->field_exists_in_schema($global_field_name, $schema['fields'])) {
+          // First global-only field: render section header
+          if (!$has_global_only_fields) {
+            $has_global_only_fields = true;
+            echo '<div class="yaml-cf-template-global-only-fields" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #2271b1;">';
+            echo '<div style="margin-bottom: 15px; padding: 10px; background: #f0f6fc; border-left: 4px solid #2271b1;">';
+            echo '<h3 style="margin: 0 0 5px 0; font-size: 14px;">' . esc_html__('Template Global Fields', 'yaml-custom-fields') . '</h3>';
+            echo '<p style="margin: 0; font-size: 13px; color: #646970;">';
+            echo esc_html__('These fields are defined only in the template global schema and are shared across all posts/pages using this template.', 'yaml-custom-fields');
+            echo ' <a href="' . esc_url($manage_template_global_url) . '" target="_blank">' . esc_html__('Edit Template Global Data', 'yaml-custom-fields') . '</a>';
+            echo '</p>';
+            echo '</div>';
+          }
+
+          // Render the field as readonly with template global data
+          $readonly_context = [
+            'type' => 'template_global',
+            'readonly' => true,
+            'id_suffix' => '_global_only'
+          ];
+          $global_field_value = isset($template_global_data[$global_field_name]) ? $template_global_data[$global_field_name] : '';
+          $this->render_schema_fields([$global_field], [$global_field_name => $global_field_value], '', $readonly_context);
+        }
+      }
+
+      if ($has_global_only_fields) {
+        echo '</div>'; // Close yaml-cf-template-global-only-fields
+      }
+    }
 
     // Check if this template uses global schema
     $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
@@ -3673,6 +3835,17 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
   // Finally, check post-specific data
   if (isset($data[$field_name])) {
     return $data[$field_name];
+  }
+
+  // Fallback: check template global data for fields defined only in template global schema
+  if ($post) {
+    $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
+    $template = $template ?? $plugin->get_template_for_post($post);
+
+    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+    if (isset($template_global_data_array[$template][$field_name])) {
+      return $template_global_data_array[$template][$field_name];
+    }
   }
 
   return null;

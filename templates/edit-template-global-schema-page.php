@@ -39,7 +39,7 @@ if (!defined('ABSPATH')) {
       <p><?php esc_html_e('Users can choose to include these fields in individual posts via the "Include Template Global" checkbox in the post editor.', 'yaml-custom-fields'); ?></p>
     </div>
 
-    <form method="post" action="">
+    <form method="post" action="" autocomplete="off">
       <?php wp_nonce_field('yaml_cf_save_template_global_schema', 'yaml_cf_save_template_global_schema_nonce'); ?>
       <input type="hidden" name="template" value="<?php echo esc_attr($template); ?>" />
 

@@ -15,8 +15,13 @@ if (!defined('ABSPATH')) {
       <div class="yaml-cf-header-content">
         <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'icon-256x256.png'); ?>" alt="YAML Custom Fields" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
-          <h1><?php echo esc_html($template_name); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Manage template global data values', 'yaml-custom-fields'); ?></p>
+          <h1><?php esc_html_e('Manage Template Global Data', 'yaml-custom-fields'); ?></h1>
+          <p class="yaml-cf-tagline">
+            <?php
+            /* translators: %s: Template name */
+            printf(esc_html__('Template: %s', 'yaml-custom-fields'), '<strong>' . esc_html($template_name) . '</strong>');
+            ?>
+          </p>
         </div>
       </div>
     </div>
@@ -36,7 +41,7 @@ if (!defined('ABSPATH')) {
       <p><?php esc_html_e('This data is shared across all posts/pages using this template. Changes here will affect all content that has "Include Template Global" enabled.', 'yaml-custom-fields'); ?></p>
     </div>
 
-    <form id="yaml-cf-template-global-data-form" method="post">
+    <form id="yaml-cf-template-global-data-form" method="post" autocomplete="off">
       <?php wp_nonce_field('yaml_cf_save_template_global_data', 'yaml_cf_save_template_global_data_nonce'); ?>
       <input type="hidden" name="template" value="<?php echo esc_attr($template); ?>" />
 
@@ -44,7 +49,9 @@ if (!defined('ABSPATH')) {
         <?php
         if (!empty($template_global_schema['fields'])) {
           $plugin = YAML_Custom_Fields::get_instance();
-          $yaml_cf_context = ['type' => 'template_global', 'template' => $template];
+          // Add template-specific ID suffix to prevent browser autocomplete conflicts between templates
+          $template_id_suffix = '_' . sanitize_title($template);
+          $yaml_cf_context = ['type' => 'template_global', 'template' => $template, 'id_suffix' => $template_id_suffix];
           $plugin->render_schema_fields($template_global_schema['fields'], $template_global_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('No fields defined in template global schema.', 'yaml-custom-fields') . '</p>';
