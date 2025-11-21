@@ -43,7 +43,7 @@
         '.yaml-cf-import-settings-trigger',
         this.triggerImport
       );
-      $(document).on('change', '#yaml-cf-import-file', this.importSettings);
+      $(document).on('change', '#yaml-cf-import-settings-file', this.importSettings);
 
       // Import Post Data
       $(document).on('change', 'input[name="yaml_cf_import_file_hidden"]', this.importPostData);
@@ -906,7 +906,7 @@
 
     triggerImport: function (e) {
       e.preventDefault();
-      $('#yaml-cf-import-file').click();
+      $('#yaml-cf-import-settings-file').click();
     },
 
     importSettings: function (e) {
@@ -992,12 +992,12 @@
             },
             complete: function () {
               // Reset file input
-              $('#yaml-cf-import-file').val('');
+              $('#yaml-cf-import-settings-file').val('');
             },
           });
         } catch (err) {
           YamlCF.showMessage('Invalid JSON file: ' + err.message, 'error');
-          $('#yaml-cf-import-file').val('');
+          $('#yaml-cf-import-settings-file').val('');
         }
       };
 

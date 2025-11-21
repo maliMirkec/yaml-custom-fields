@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: A WordPress plugin for managing YAML frontmatter schemas in theme templates
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Silvestar Bistrović
  * Author URI: https://www.silvestar.codes
  * Author Email: me@silvestar.codes
@@ -251,6 +251,7 @@ class YAML_Custom_Fields {
     add_action('admin_init', [$this, 'handle_single_post_export']);
     add_action('admin_init', [$this, 'handle_settings_export']);
     add_action('admin_init', [$this, 'handle_page_data_export']);
+    add_action('admin_init', [$this, 'handle_data_objects_export']);
     add_action('admin_menu', [$this, 'add_admin_menu']);
     add_action('admin_head', [$this, 'hide_submenu_items']);
     add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
@@ -1046,17 +1047,27 @@ class YAML_Custom_Fields {
       wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
     }
 
-    // Handle data objects export form submission
-    if (isset($_POST['yaml_cf_export_data_objects_nonce'])) {
-      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_export_data_objects_nonce'])), 'yaml_cf_export_data_objects')) {
-        wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
-      }
+    include YAML_CF_PLUGIN_DIR . 'templates/export-data-page.php';
+  }
 
-      $this->export_data_objects();
-      exit;
+  /**
+   * Handle data objects export - runs on admin_init before any output
+   */
+  public function handle_data_objects_export() {
+    if (!isset($_POST['yaml_cf_export_data_objects_nonce'])) {
+      return;
     }
 
-    include YAML_CF_PLUGIN_DIR . 'templates/export-data-page.php';
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_export_data_objects_nonce'])), 'yaml_cf_export_data_objects')) {
+      wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+    }
+
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+    }
+
+    $this->export_data_objects();
+    exit;
   }
 
   public function render_data_validation_page() {
@@ -1181,7 +1192,11 @@ class YAML_Custom_Fields {
       'settings' => [
         'template_settings' => get_option('yaml_cf_template_settings', []),
         'schemas' => get_option('yaml_cf_schemas', []),
-        'partial_data' => get_option('yaml_cf_partial_data', [])
+        'partial_data' => get_option('yaml_cf_partial_data', []),
+        'template_global_schemas' => get_option('yaml_cf_template_global_schemas', []),
+        'template_global_data' => get_option('yaml_cf_template_global_data', []),
+        'global_schema' => get_option('yaml_cf_global_schema', ''),
+        'global_data' => get_option('yaml_cf_global_data', [])
       ]
     ];
 
@@ -1238,7 +1253,10 @@ class YAML_Custom_Fields {
         continue;
       }
 
-      $export_data['posts'][] = [
+      // Get schema if available
+      $schema = get_post_meta($post_id, '_yaml_cf_schema', true);
+
+      $post_data = [
         'id' => $post->ID,
         'title' => $post->post_title,
         'slug' => $post->post_name,
@@ -1246,6 +1264,13 @@ class YAML_Custom_Fields {
         'template' => $template,
         'data' => $data
       ];
+
+      // Include schema if available
+      if (!empty($schema)) {
+        $post_data['schema'] = $schema;
+      }
+
+      $export_data['posts'][] = $post_data;
     }
 
     // Set headers for file download
@@ -1333,7 +1358,33 @@ class YAML_Custom_Fields {
         exit;
       }
 
-      if (!isset($import_data['post']) || !isset($import_data['post']['data'])) {
+      // Handle both single-post and multi-post export formats
+      $post_data = null;
+
+      if (isset($import_data['type']) && $import_data['type'] === 'single-post' && isset($import_data['post'])) {
+        // Single-post export format
+        $post_data = $import_data['post'];
+      } elseif (isset($import_data['posts']) && is_array($import_data['posts']) && count($import_data['posts']) > 0) {
+        // Multi-post export format - find matching post by ID or slug
+        $current_post = get_post($post_id);
+
+        foreach ($import_data['posts'] as $candidate) {
+          if (isset($candidate['id']) && $candidate['id'] == $post_id) {
+            $post_data = $candidate;
+            break;
+          } elseif (isset($candidate['slug']) && $candidate['slug'] === $current_post->post_name) {
+            $post_data = $candidate;
+            break;
+          }
+        }
+
+        // If no match found, use the first post
+        if (!$post_data) {
+          $post_data = $import_data['posts'][0];
+        }
+      }
+
+      if (!$post_data || !isset($post_data['data'])) {
         wp_safe_redirect(add_query_arg([
           'post' => $post_id,
           'action' => 'edit',
@@ -1343,15 +1394,16 @@ class YAML_Custom_Fields {
       }
 
       // Validate and clean attachment data
-      $cleaned_data = $this->validate_and_clean_attachment_data($import_data['post']['data']);
+      $schema = isset($post_data['schema']) ? $post_data['schema'] : null;
+      $cleaned_data = $this->validate_and_clean_attachment_data($post_data['data'], $schema);
 
       // Update post meta
       update_post_meta($post_id, '_yaml_cf_data', $cleaned_data);
 
       // Mark as imported and store schema if available
       update_post_meta($post_id, '_yaml_cf_imported', true);
-      if (isset($import_data['post']['schema'])) {
-        update_post_meta($post_id, '_yaml_cf_schema', $import_data['post']['schema']);
+      if (isset($post_data['schema'])) {
+        update_post_meta($post_id, '_yaml_cf_schema', $post_data['schema']);
       }
 
       // Clear caches
@@ -3269,7 +3321,11 @@ class YAML_Custom_Fields {
       'settings' => [
         'template_settings' => get_option('yaml_cf_template_settings', []),
         'schemas' => get_option('yaml_cf_schemas', []),
-        'partial_data' => get_option('yaml_cf_partial_data', [])
+        'partial_data' => get_option('yaml_cf_partial_data', []),
+        'template_global_schemas' => get_option('yaml_cf_template_global_schemas', []),
+        'template_global_data' => get_option('yaml_cf_template_global_data', []),
+        'global_schema' => get_option('yaml_cf_global_schema', ''),
+        'global_data' => get_option('yaml_cf_global_data', [])
       ]
     ];
 
@@ -3287,7 +3343,14 @@ class YAML_Custom_Fields {
       wp_send_json_error('No data provided');
     }
 
-    $import_data = json_decode(sanitize_textarea_field(wp_unslash($_POST['data'])), true);
+    // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
+    $json_data = wp_unslash($_POST['data']);
+    $import_data = json_decode($json_data, true);
+
+    // Check for JSON decode errors
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      wp_send_json_error('Invalid JSON: ' . json_last_error_msg());
+    }
 
     // Validate import data
     if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
@@ -3326,6 +3389,38 @@ class YAML_Custom_Fields {
         $settings['partial_data'] = array_merge($existing, $settings['partial_data']);
       }
       update_option('yaml_cf_partial_data', $settings['partial_data']);
+    }
+
+    // Import template global schemas
+    if (isset($settings['template_global_schemas'])) {
+      if ($merge) {
+        $existing = get_option('yaml_cf_template_global_schemas', []);
+        $settings['template_global_schemas'] = array_merge($existing, $settings['template_global_schemas']);
+      }
+      update_option('yaml_cf_template_global_schemas', $settings['template_global_schemas']);
+    }
+
+    // Import template global data
+    if (isset($settings['template_global_data'])) {
+      if ($merge) {
+        $existing = get_option('yaml_cf_template_global_data', []);
+        $settings['template_global_data'] = array_merge($existing, $settings['template_global_data']);
+      }
+      update_option('yaml_cf_template_global_data', $settings['template_global_data']);
+    }
+
+    // Import global schema
+    if (isset($settings['global_schema'])) {
+      update_option('yaml_cf_global_schema', $settings['global_schema']);
+    }
+
+    // Import global data
+    if (isset($settings['global_data'])) {
+      if ($merge) {
+        $existing = get_option('yaml_cf_global_data', []);
+        $settings['global_data'] = array_merge($existing, $settings['global_data']);
+      }
+      update_option('yaml_cf_global_data', $settings['global_data']);
     }
 
     // Clear template cache
@@ -3453,33 +3548,54 @@ class YAML_Custom_Fields {
   }
 
   public function ajax_import_page_data() {
+    error_log('======= YAML CF Import START =======');
     check_ajax_referer('yaml_cf_nonce', 'nonce');
 
     if (!current_user_can('manage_options')) {
+      error_log('YAML CF Import - Permission denied');
       wp_send_json_error('Permission denied');
     }
 
     if (!isset($_POST['data'])) {
+      error_log('YAML CF Import - No data provided');
       wp_send_json_error('No data provided');
     }
 
-    $import_data = json_decode(sanitize_textarea_field(wp_unslash($_POST['data'])), true);
+    // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
+    $json_data = wp_unslash($_POST['data']);
+    error_log('YAML CF Import - JSON data length: ' . strlen($json_data));
+    $import_data = json_decode($json_data, true);
+
+    // Check for JSON decode errors
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      wp_send_json_error('Invalid JSON: ' . json_last_error_msg());
+    }
 
     // Validate import data
     if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
       wp_send_json_error('Invalid import file format');
     }
 
-    if (!isset($import_data['posts']) || !is_array($import_data['posts'])) {
+    // Handle both single-post and multi-post formats
+    $posts_to_import = [];
+    if (isset($import_data['type']) && $import_data['type'] === 'single-post' && isset($import_data['post'])) {
+      // Single post export format
+      $posts_to_import = [$import_data['post']];
+      $match_by = 'slug'; // Default for single post
+    } elseif (isset($import_data['posts']) && is_array($import_data['posts'])) {
+      // Multi-post export format
+      $posts_to_import = $import_data['posts'];
+      $match_by = isset($import_data['match_by']) ? $import_data['match_by'] : 'slug';
+    } else {
       wp_send_json_error('No posts found in import file');
     }
 
-    $match_by = isset($import_data['match_by']) ? $import_data['match_by'] : 'slug';
     $imported = 0;
     $skipped = 0;
     $errors = [];
+    $debug_info = [];
 
-    foreach ($import_data['posts'] as $post_data) {
+    foreach ($posts_to_import as $post_data) {
       $target_post = null;
 
       // Find the target post based on match_by preference
@@ -3502,20 +3618,67 @@ class YAML_Custom_Fields {
       if (!$target_post) {
         $skipped++;
         $errors[] = sprintf('Post not found: %s (slug: %s, id: %d)', $post_data['title'], $post_data['slug'], $post_data['id']);
+        $debug_info[] = [
+          'action' => 'skipped',
+          'reason' => 'post_not_found',
+          'search_by' => $match_by,
+          'search_value' => $match_by === 'id' ? $post_data['id'] : $post_data['slug']
+        ];
         continue;
       }
 
       // Validate attachments (images/files) and clean up missing ones
-      $cleaned_data = $this->validate_and_clean_attachment_data($post_data['data']);
+      $original_data_count = is_array($post_data['data']) ? count($post_data['data']) : 0;
+
+      // Debug: Log original data sample
+      error_log('YAML CF Import - Original data type: ' . gettype($post_data['data']));
+      if (is_array($post_data['data'])) {
+        error_log('YAML CF Import - Original data sample: ' . json_encode(array_slice($post_data['data'], 0, 3, true)));
+      }
+
+      // Pass schema to validation so we know which fields are actually attachments
+      $schema = isset($post_data['schema']) ? $post_data['schema'] : null;
+      $cleaned_data = $this->validate_and_clean_attachment_data($post_data['data'], $schema);
+
+      // Debug: Check if data is empty
+      $data_field_count = is_array($cleaned_data) ? count($cleaned_data) : 0;
+      $has_schema = isset($post_data['schema']);
+
+      // Debug: Log cleaned data sample
+      error_log('YAML CF Import - Cleaned data type: ' . gettype($cleaned_data));
+      if (is_array($cleaned_data)) {
+        error_log('YAML CF Import - Cleaned data sample: ' . json_encode(array_slice($cleaned_data, 0, 3, true)));
+      }
 
       // Update the post meta
-      update_post_meta($target_post->ID, '_yaml_cf_data', $cleaned_data);
+      $data_updated = update_post_meta($target_post->ID, '_yaml_cf_data', $cleaned_data);
+
+      // Debug: Verify what was saved
+      $saved_data = get_post_meta($target_post->ID, '_yaml_cf_data', true);
+      error_log('YAML CF Import - Data saved result: ' . ($data_updated ? 'true' : 'false'));
+      error_log('YAML CF Import - Retrieved data type: ' . gettype($saved_data));
+      if (is_array($saved_data)) {
+        error_log('YAML CF Import - Retrieved data sample: ' . json_encode(array_slice($saved_data, 0, 3, true)));
+      }
 
       // Mark as imported and store schema if available
       update_post_meta($target_post->ID, '_yaml_cf_imported', true);
+      $schema_updated = false;
       if (isset($post_data['schema'])) {
-        update_post_meta($target_post->ID, '_yaml_cf_schema', $post_data['schema']);
+        $schema_updated = update_post_meta($target_post->ID, '_yaml_cf_schema', $post_data['schema']);
       }
+
+      $debug_info[] = [
+        'action' => 'imported',
+        'post_id' => $target_post->ID,
+        'post_title' => $target_post->post_title,
+        'original_data_fields' => $original_data_count,
+        'cleaned_data_fields' => $data_field_count,
+        'data_updated' => $data_updated,
+        'schema_included' => $has_schema,
+        'schema_updated' => $schema_updated,
+        'sample_data' => is_array($cleaned_data) && !empty($cleaned_data) ? array_slice($cleaned_data, 0, 3, true) : 'empty'
+      ];
 
       $imported++;
     }
@@ -3528,37 +3691,94 @@ class YAML_Custom_Fields {
       'imported' => $imported,
       'skipped' => $skipped,
       'errors' => $errors,
+      'debug' => $debug_info,
       'imported_from' => isset($import_data['site_url']) ? $import_data['site_url'] : 'unknown',
       'exported_at' => isset($import_data['exported_at']) ? $import_data['exported_at'] : 'unknown'
     ]);
   }
 
-  private function validate_and_clean_attachment_data($data) {
+  private function validate_and_clean_attachment_data($data, $schema = null, $parent_key = '') {
     if (!is_array($data)) {
       return $data;
     }
 
+    // Build a map of attachment field names from schema
+    $attachment_fields = [];
+    if ($schema && isset($schema['fields']) && is_array($schema['fields'])) {
+      $this->build_attachment_field_map($schema['fields'], $attachment_fields);
+    }
+
     foreach ($data as $key => $value) {
+      // Build full field path for nested fields
+      $field_path = $parent_key ? $parent_key . '.' . $key : $key;
+
       if (is_array($value)) {
         // Recursively clean nested arrays
-        $data[$key] = $this->validate_and_clean_attachment_data($value);
+        $data[$key] = $this->validate_and_clean_attachment_data($value, $schema, $field_path);
       } elseif (is_numeric($value) && intval($value) > 0) {
-        // Check if this might be an attachment ID
-        $attachment = get_post(intval($value));
-        if ($attachment && $attachment->post_type === 'attachment') {
-          // Valid attachment, keep it
-          continue;
-        } elseif ($attachment) {
-          // It's a valid post ID but not an attachment, keep it
-          continue;
+        // Only validate if this field is an image/file field according to schema
+        $is_attachment_field = empty($attachment_fields) || in_array($key, $attachment_fields) || in_array($field_path, $attachment_fields);
+
+        if ($is_attachment_field) {
+          // Check if this might be an attachment ID
+          $attachment = get_post(intval($value));
+          if ($attachment && $attachment->post_type === 'attachment') {
+            // Valid attachment, keep it
+            error_log("YAML CF - Keeping valid attachment: $key = $value");
+            continue;
+          } elseif ($attachment) {
+            // It's a valid post ID but not an attachment, keep it
+            error_log("YAML CF - Keeping valid post ID: $key = $value");
+            continue;
+          } else {
+            // Attachment doesn't exist, set to empty
+            error_log("YAML CF - CLEARING missing attachment: $key = $value (was numeric, attachment not found)");
+            $data[$key] = '';
+          }
         } else {
-          // Attachment doesn't exist, set to empty
-          $data[$key] = '';
+          // Not an attachment field, keep numeric value as is
+          error_log("YAML CF - Keeping number field: $key = $value (not an attachment field)");
+        }
+      } else {
+        // Not numeric or not positive, keep as is
+        if (!is_array($value)) {
+          error_log("YAML CF - Keeping non-numeric value: $key = " . substr($value, 0, 50));
         }
       }
     }
 
     return $data;
+  }
+
+  /**
+   * Build a map of field names that are image or file type fields
+   */
+  private function build_attachment_field_map($fields, &$attachment_fields, $prefix = '') {
+    foreach ($fields as $field) {
+      if (!isset($field['name'])) continue;
+
+      $field_path = $prefix ? $prefix . '.' . $field['name'] : $field['name'];
+
+      // Check if this is an image or file field
+      if (isset($field['type']) && in_array($field['type'], ['image', 'file'])) {
+        $attachment_fields[] = $field['name'];
+        $attachment_fields[] = $field_path;
+      }
+
+      // Check nested fields in blocks
+      if (isset($field['blocks']) && is_array($field['blocks'])) {
+        foreach ($field['blocks'] as $block) {
+          if (isset($block['fields']) && is_array($block['fields'])) {
+            $this->build_attachment_field_map($block['fields'], $attachment_fields, $field_path);
+          }
+        }
+      }
+
+      // Check nested fields in field groups
+      if (isset($field['fields']) && is_array($field['fields'])) {
+        $this->build_attachment_field_map($field['fields'], $attachment_fields, $field_path);
+      }
+    }
   }
 
   /**
@@ -3635,8 +3855,9 @@ class YAML_Custom_Fields {
 
       // Clean attachment data in entries
       $cleaned_entries = [];
+      $schema = isset($type_data['schema']) ? $type_data['schema'] : null;
       foreach ($entries as $entry_id => $entry_data) {
-        $cleaned_entries[$entry_id] = $this->validate_and_clean_attachment_data($entry_data);
+        $cleaned_entries[$entry_id] = $this->validate_and_clean_attachment_data($entry_data, $schema);
       }
 
       $export_data['types'][$type_slug] = [
@@ -3669,7 +3890,14 @@ class YAML_Custom_Fields {
       wp_send_json_error('No data provided');
     }
 
-    $import_data = json_decode(sanitize_textarea_field(wp_unslash($_POST['data'])), true);
+    // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
+    $json_data = wp_unslash($_POST['data']);
+    $import_data = json_decode($json_data, true);
+
+    // Check for JSON decode errors
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      wp_send_json_error('Invalid JSON: ' . json_last_error_msg());
+    }
 
     // Validate import data
     if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {

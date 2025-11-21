@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, cms, page-builder
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,14 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 8. Documentation page with comprehensive guides and examples
 
 == Changelog ==
+
+= 1.2.1 =
+* **FIX: Export/Import** - Template global schemas and data now properly exported and imported
+* **FIX: Page Data Export** - Schema is now included in page data exports (form-based and AJAX)
+* **FIX: Page Data Import** - Now correctly handles both single-post and multi-post export formats
+* **NEW: Template Global Readonly Display** - Template-global-only fields now display as readonly in post editor
+* **NEW: Auto-fallback for Template Global Fields** - `ycf_get_field()` now automatically retrieves template global data
+* Fixed browser autocomplete issues with template global form fields
 
 = 1.2.0 =
 * **NEW: Template Global Fields** - Define shared default values for all posts using the same template

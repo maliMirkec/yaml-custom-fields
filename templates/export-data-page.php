@@ -36,7 +36,7 @@ if (!defined('ABSPATH')) {
           <span class="dashicons dashicons-upload"></span>
           <?php esc_html_e('Import Settings', 'yaml-custom-fields'); ?>
         </button>
-        <input type="file" id="yaml-cf-import-file" accept=".json" style="display: none;" />
+        <input type="file" id="yaml-cf-import-settings-file" accept=".json" style="display: none;" />
       </div>
 
       <div class="yaml-cf-info-box" style="background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px; margin-top: 20px;">
@@ -379,6 +379,27 @@ jQuery(document).ready(function($) {
                 resultsHtml += '<li>' + error + '</li>';
               });
               resultsHtml += '</ul>';
+            }
+
+            // Show debug info
+            if (response.data.debug && response.data.debug.length > 0) {
+              resultsHtml += '<details style="margin-top: 15px;"><summary style="cursor: pointer;"><strong>Debug Information</strong></summary>';
+              resultsHtml += '<table style="margin-top: 10px; border-collapse: collapse; width: 100%;">';
+              resultsHtml += '<tr><th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Post</th><th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Action</th><th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Details</th></tr>';
+              response.data.debug.forEach(function(item) {
+                let details = '';
+                if (item.action === 'imported') {
+                  details = 'Fields: ' + item.data_fields + ', Data Updated: ' + (item.data_updated ? 'Yes' : 'No') + ', Schema: ' + (item.schema_included ? 'Yes' : 'No');
+                } else {
+                  details = 'Reason: ' + item.reason;
+                }
+                resultsHtml += '<tr>';
+                resultsHtml += '<td style="border: 1px solid #ddd; padding: 8px;">' + (item.post_title || 'N/A') + ' (ID: ' + (item.post_id || item.search_value) + ')</td>';
+                resultsHtml += '<td style="border: 1px solid #ddd; padding: 8px;">' + item.action + '</td>';
+                resultsHtml += '<td style="border: 1px solid #ddd; padding: 8px;">' + details + '</td>';
+                resultsHtml += '</tr>';
+              });
+              resultsHtml += '</table></details>';
             }
 
             resultsHtml += '<p style="margin-top: 15px;"><a href="' + yamlCF.admin_url + 'admin.php?page=yaml-cf-data-validation" class="button">View Data Validation →</a></p>';
