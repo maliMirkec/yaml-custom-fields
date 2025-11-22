@@ -628,57 +628,46 @@
 
 /* Code Snippet Wrapper */
 .yaml-cf-snippet-wrapper {
-  display: inline-block;
+  display: block;
   position: relative;
-  margin-left: 8px;
+  margin-top: 6px;
 }
 
-/* Code Snippet Copy Button */
+/* Code Snippet Copy Link */
 .yaml-cf-copy-snippet {
-  background: #f0f0f1;
-  border: 1px solid #c3c4c7;
-  border-radius: 3px;
-  padding: 3px 8px;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.2s;
-  vertical-align: middle;
+  transition: color 0.2s;
   font-size: 12px;
-  font-weight: 500;
-  color: #2c3338;
+  color: #2271b1;
 }
 
 .yaml-cf-copy-snippet:hover {
-  background: #2271b1;
-  border-color: #2271b1;
-  color: #fff;
+  color: #135e96;
 }
 
 .yaml-cf-copy-snippet .dashicons {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
   line-height: 1;
-}
-
-.yaml-cf-copy-snippet:hover .dashicons {
-  color: #fff;
 }
 
 .yaml-cf-copy-snippet .snippet-text {
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .yaml-cf-copy-snippet.copied {
-  background: #46b450;
-  border-color: #46b450;
-  color: #fff;
+  color: #46b450;
 }
 
 .yaml-cf-copy-snippet.copied .dashicons {
-  color: #fff;
+  color: #46b450;
 }
 
 /* Code Snippet Hover Popover */
@@ -695,8 +684,7 @@
   min-width: 200px;
   max-width: 450px;
   top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s, visibility 0.2s;
@@ -714,8 +702,7 @@
   content: '';
   position: absolute;
   top: -6px;
-  left: 50%;
-  margin-left: -6px;
+  left: 16px;
   width: 0;
   height: 0;
   border-left: 6px solid transparent;
@@ -853,11 +840,6 @@
   .yaml-cf-block-type-select {
     max-width: 100%;
     width: 100%;
-  }
-
-  /* Code snippet adjustments for mobile */
-  .yaml-cf-copy-snippet .snippet-text {
-    display: none;
   }
 
   .yaml-cf-snippet-popover {

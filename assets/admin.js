@@ -790,14 +790,6 @@
       const targetId = $button.data('target');
       const $field = $('#' + targetId);
 
-      if (
-        !confirm(
-          'Are you sure you want to clear this file? Remember to update the page to save changes.'
-        )
-      ) {
-        return;
-      }
-
       // Clear the hidden input value
       $field.val('');
 
@@ -818,6 +810,12 @@
 
       // Remove the clear button itself
       $button.remove();
+
+      // Show notification to remind user to save
+      YamlCF.showMessage(
+        "Don't forget to save the changes.",
+        'warning'
+      );
     },
 
     resetAllData: function (e) {

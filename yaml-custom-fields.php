@@ -2502,35 +2502,9 @@ class YAML_Custom_Fields {
       // Skip label rendering for block fields as they handle their own label with snippet
       if ($field['type'] !== 'block') {
         if($field['type'] === 'image' || $field['type'] === 'file') {
-          echo '<p>' . esc_html($field_label);
-          if ($code_snippet) {
-            echo ' <span class="yaml-cf-snippet-wrapper">';
-            echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($code_snippet) . '" data-popover="' . esc_attr($popover_id) . '">';
-            echo '<span class="dashicons dashicons-editor-code"></span>';
-            echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
-            echo '</button>';
-            echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($popover_id) . '" role="tooltip">';
-            echo '<code>' . esc_html($code_snippet) . '</code>';
-            echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
-            echo '</span>';
-            echo '</span>';
-          }
-          echo '</p>';
+          echo '<p>' . esc_html($field_label) . '</p>';
         } else {
-          echo '<label for="' . esc_attr($field_id) . '">' . esc_html($field_label);
-          if ($code_snippet) {
-            echo ' <span class="yaml-cf-snippet-wrapper">';
-            echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($code_snippet) . '" data-popover="' . esc_attr($popover_id) . '">';
-            echo '<span class="dashicons dashicons-editor-code"></span>';
-            echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
-            echo '</button>';
-            echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($popover_id) . '" role="tooltip">';
-            echo '<code>' . esc_html($code_snippet) . '</code>';
-            echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
-            echo '</span>';
-            echo '</span>';
-          }
-          echo '</label>';
+          echo '<label for="' . esc_attr($field_id) . '">' . esc_html($field_label) . '</label>';
         }
       }
 
@@ -2832,21 +2806,12 @@ class YAML_Custom_Fields {
           $block_key = isset($field['blockKey']) ? $field['blockKey'] : 'type';
 
           // Generate code snippet for block fields
+          $block_snippet = '';
+          $block_popover_id = '';
           if ($is_list) {
-            $snippet = "<?php\n// Get all blocks\n\$blocks = ycf_get_field('" . esc_js($field['name']) . "', null);\n\nif (!empty(\$blocks)) {\n  foreach (\$blocks as \$block) {\n    // Access block fields using context parameter:\n    // \$value = ycf_get_field('field_name', null, \$block);\n    // \$image = ycf_get_image('image_field', null, 'thumbnail', \$block);\n    // \$file = ycf_get_file('file_field', null, \$block);\n    // \$term = ycf_get_term('taxonomy_field', null, \$block);\n    // \$post_type = ycf_get_post_type('post_type_field', null, \$block);\n    // \$data_object = ycf_get_data_object('data_object_field', null, \$block);\n  }\n}\n?>";
-            $popover_id = 'snippet-' . sanitize_html_class($field_id);
-            echo '<label style="display: block; margin-bottom: 5px;">' . esc_html($field_label);
-            echo ' <span class="yaml-cf-snippet-wrapper">';
-            echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($snippet) . '" data-popover="' . esc_attr($popover_id) . '">';
-            echo '<span class="dashicons dashicons-editor-code"></span>';
-            echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
-            echo '</button>';
-            echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($popover_id) . '" role="tooltip">';
-            echo '<code style="white-space: pre-wrap;">' . esc_html($snippet) . '</code>';
-            echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
-            echo '</span>';
-            echo '</span>';
-            echo '</label>';
+            $block_snippet = "<?php\n// Get all blocks\n\$blocks = ycf_get_field('" . esc_js($field['name']) . "', null);\n\nif (!empty(\$blocks)) {\n  foreach (\$blocks as \$block) {\n    // Access block fields using context parameter:\n    // \$value = ycf_get_field('field_name', null, \$block);\n    // \$image = ycf_get_image('image_field', null, 'thumbnail', \$block);\n    // \$file = ycf_get_file('file_field', null, \$block);\n    // \$term = ycf_get_term('taxonomy_field', null, \$block);\n    // \$post_type = ycf_get_post_type('post_type_field', null, \$block);\n    // \$data_object = ycf_get_data_object('data_object_field', null, \$block);\n  }\n}\n?>";
+            $block_popover_id = 'snippet-' . sanitize_html_class($field_id);
+            echo '<label style="display: block; margin-bottom: 5px;">' . esc_html($field_label) . '</label>';
           }
 
           echo '<div class="yaml-cf-block-container" data-field-name="' . esc_attr($field['name']) . '">';
@@ -2872,7 +2837,35 @@ class YAML_Custom_Fields {
           }
 
           echo '</div>';
+
+          // Render snippet below the block container
+          if ($is_list && $block_snippet) {
+            echo '<span class="yaml-cf-snippet-wrapper">';
+            echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($block_snippet) . '" data-popover="' . esc_attr($block_popover_id) . '">';
+            echo '<span class="dashicons dashicons-editor-code"></span>';
+            echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
+            echo '</button>';
+            echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($block_popover_id) . '" role="tooltip">';
+            echo '<code style="white-space: pre-wrap;">' . esc_html($block_snippet) . '</code>';
+            echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
+            echo '</span>';
+            echo '</span>';
+          }
           break;
+      }
+
+      // Render snippet below the input field (skip for block fields as they handle their own)
+      if ($field['type'] !== 'block' && $code_snippet) {
+        echo '<span class="yaml-cf-snippet-wrapper">';
+        echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($code_snippet) . '" data-popover="' . esc_attr($popover_id) . '">';
+        echo '<span class="dashicons dashicons-editor-code"></span>';
+        echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
+        echo '</button>';
+        echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($popover_id) . '" role="tooltip">';
+        echo '<code>' . esc_html($code_snippet) . '</code>';
+        echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
+        echo '</span>';
+        echo '</span>';
       }
 
       echo '</div>';
@@ -2935,18 +2928,7 @@ class YAML_Custom_Fields {
         $block_popover_id = 'snippet-' . sanitize_html_class($block_field_id);
 
         echo '<div class="yaml-cf-field">';
-        echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field['label']);
-        echo ' <span class="yaml-cf-snippet-wrapper">';
-        echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($block_snippet) . '" data-popover="' . esc_attr($block_popover_id) . '">';
-        echo '<span class="dashicons dashicons-editor-code"></span>';
-        echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
-        echo '</button>';
-        echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($block_popover_id) . '" role="tooltip">';
-        echo '<code>' . esc_html($block_snippet) . '</code>';
-        echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
-        echo '</span>';
-        echo '</span>';
-        echo '</label>';
+        echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field['label']) . '</label>';
 
         if ($block_field_type === 'boolean') {
           echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="1" ' . checked($block_field_value, 1, false) . ' />';
@@ -3181,6 +3163,18 @@ class YAML_Custom_Fields {
           $this->output_html_attrs($default_attrs);
           echo ' />';
         }
+
+        // Render snippet below the input field
+        echo '<span class="yaml-cf-snippet-wrapper">';
+        echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($block_snippet) . '" data-popover="' . esc_attr($block_popover_id) . '">';
+        echo '<span class="dashicons dashicons-editor-code"></span>';
+        echo '<span class="snippet-text">' . esc_html__('Copy snippet', 'yaml-custom-fields') . '</span>';
+        echo '</button>';
+        echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($block_popover_id) . '" role="tooltip">';
+        echo '<code>' . esc_html($block_snippet) . '</code>';
+        echo '<span class="snippet-hint">' . esc_html__('Click button to copy', 'yaml-custom-fields') . '</span>';
+        echo '</span>';
+        echo '</span>';
 
         echo '</div>';
       }
