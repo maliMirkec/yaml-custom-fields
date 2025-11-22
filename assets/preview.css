@@ -1,0 +1,340 @@
+/**
+ * YAML Custom Fields - Preview Mode Styles
+ *
+ * These styles are only loaded when preview mode is active.
+ * They highlight custom field locations in the page.
+ */
+
+/* Preview field highlighting */
+.ycf-preview-field {
+  position: relative;
+  display: inline;
+  outline: 2px dashed #6366f1;
+  outline-offset: 2px;
+  background-color: rgba(99, 102, 241, 0.1);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.ycf-preview-field:hover {
+  outline-color: #4f46e5;
+  background-color: rgba(99, 102, 241, 0.2);
+  outline-style: solid;
+}
+
+/* Field name badge */
+.ycf-preview-badge {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  background: #6366f1;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 2px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ycf-preview-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 10px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #6366f1;
+}
+
+.ycf-preview-field:hover .ycf-preview-badge {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Preview mode indicator bar */
+.ycf-preview-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  padding: 10px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.ycf-preview-bar__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.ycf-preview-bar__icon {
+  width: 20px;
+  height: 20px;
+}
+
+.ycf-preview-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.ycf-preview-bar__field-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.ycf-preview-bar__exit {
+  background: #fff;
+  color: #6366f1;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ycf-preview-bar__exit:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+/* Adjust body padding when preview bar is shown */
+body.ycf-preview-active {
+  padding-top: 50px !important;
+}
+
+/* WordPress admin bar adjustment */
+body.admin-bar.ycf-preview-active {
+  padding-top: 82px !important;
+}
+
+body.admin-bar.ycf-preview-active .ycf-preview-bar {
+  top: 32px;
+}
+
+@media screen and (max-width: 782px) {
+  body.admin-bar.ycf-preview-active {
+    padding-top: 96px !important;
+  }
+
+  body.admin-bar.ycf-preview-active .ycf-preview-bar {
+    top: 46px;
+  }
+}
+
+/* Field info tooltip (shown on click) */
+.ycf-preview-tooltip {
+  position: fixed;
+  background: #1e1e1e;
+  color: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  z-index: 100000;
+  min-width: 250px;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: ycfTooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes ycfTooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ycf-preview-tooltip__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #333;
+}
+
+.ycf-preview-tooltip__title {
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+.ycf-preview-tooltip__close {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+.ycf-preview-tooltip__close:hover {
+  color: #fff;
+}
+
+.ycf-preview-tooltip__row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.ycf-preview-tooltip__label {
+  color: #888;
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.ycf-preview-tooltip__value {
+  color: #fff;
+  word-break: break-all;
+}
+
+.ycf-preview-tooltip__value code {
+  background: #333;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+}
+
+.ycf-preview-tooltip__edit {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.ycf-preview-tooltip__edit:hover {
+  background: #4f46e5;
+  color: #fff;
+}
+
+/* Fields panel (sidebar) */
+.ycf-preview-panel {
+  position: fixed;
+  right: 0;
+  top: 50px;
+  bottom: 0;
+  width: 300px;
+  background: #fff;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 99998;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.ycf-preview-panel.is-open {
+  transform: translateX(0);
+}
+
+body.admin-bar .ycf-preview-panel {
+  top: 82px;
+}
+
+.ycf-preview-panel__header {
+  padding: 15px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  position: sticky;
+  top: 0;
+}
+
+.ycf-preview-panel__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ycf-preview-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ycf-preview-panel__item {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ycf-preview-panel__item:hover {
+  background: #f9f9f9;
+}
+
+.ycf-preview-panel__item-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.ycf-preview-panel__item-type {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Toggle panel button */
+.ycf-preview-bar__toggle {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ycf-preview-bar__toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Block highlighting for arrays */
+[data-ycf-block] {
+  outline: 2px dashed #f59e0b;
+  outline-offset: 4px;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+[data-ycf-block]:hover {
+  outline-color: #d97706;
+  background-color: rgba(245, 158, 11, 0.1);
+}

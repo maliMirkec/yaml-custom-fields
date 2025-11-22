@@ -2187,6 +2187,21 @@ class YAML_Custom_Fields {
     echo esc_html__('Reset All Data', 'yaml-custom-fields');
     echo '</a>';
 
+    // Preview Fields button (only for published or draft posts)
+    if ($post->post_status !== 'auto-draft' && get_permalink($post->ID)) {
+      $preview_url = yaml_cf_get_preview_url($post->ID);
+      echo ' | ';
+      echo '<span class="yaml-cf-preview-actions" style="display: inline-block;">';
+      echo '<a href="' . esc_url($preview_url) . '" target="_blank" class="yaml-cf-preview-link" style="color: #6366f1; font-weight: 500;">';
+      echo '<span class="dashicons dashicons-visibility" style="font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom;"></span> ';
+      echo esc_html__('Preview Fields', 'yaml-custom-fields');
+      echo '</a>';
+      echo '<button type="button" class="yaml-cf-preview-modal-btn" data-preview-url="' . esc_url($preview_url) . '" style="background: none; border: none; color: #6366f1; cursor: pointer; padding: 0; margin-left: 5px;" title="' . esc_attr__('Preview in Modal', 'yaml-custom-fields') . '">';
+      echo '<span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px;"></span>';
+      echo '</button>';
+      echo '</span>';
+    }
+
     echo '</p>';
     echo '</div>';
 
@@ -3988,6 +4003,111 @@ add_action('plugins_loaded', 'yaml_cf_init');
  *   }
  */
 function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
+  $value = null;
+
+  // If context data is provided, search within that array
+  if (is_array($context_data)) {
+    $value = isset($context_data[$field_name]) ? $context_data[$field_name] : null;
+    return yaml_cf_maybe_wrap_preview($value, $field_name, 'field', 'yaml_cf_get_field');
+  }
+
+  // Handle partials
+  if (is_string($post_id) && strpos($post_id, 'partial:') === 0) {
+    $partial_file = str_replace('partial:', '', $post_id);
+    $partial_data = get_option('yaml_cf_partial_data', []);
+
+    if (isset($partial_data[$partial_file][$field_name])) {
+      $value = $partial_data[$partial_file][$field_name];
+      return yaml_cf_maybe_wrap_preview($value, $field_name, 'field', 'yaml_cf_get_field');
+    }
+
+    return null;
+  }
+
+  // Handle post/page data
+  if ($post_id === null) {
+    $post_id = get_the_ID();
+  }
+
+  if (!$post_id) {
+    return null;
+  }
+
+  $data = get_post_meta($post_id, '_yaml_cf_data', true);
+  if (!is_array($data)) {
+    $data = [];
+  }
+
+  // Check if template global is enabled for this specific field
+  $use_template_global_fields = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
+  if (is_array($use_template_global_fields) && isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1') {
+    // Get the template for this post
+    $post = get_post($post_id);
+    if ($post) {
+      $plugin = YAML_Custom_Fields::get_instance();
+      $template = $plugin->get_template_for_post($post);
+
+      // Get template global data
+      $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+      if (isset($template_global_data_array[$template][$field_name])) {
+        $value = $template_global_data_array[$template][$field_name];
+        return yaml_cf_maybe_wrap_preview($value, $field_name, 'field', 'yaml_cf_get_field');
+      }
+    }
+  }
+
+  // Check for site-wide global data
+  // (Only if the template has site-wide global enabled)
+  $post = $post ?? get_post($post_id);
+  if ($post) {
+    $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
+    $template = $template ?? $plugin->get_template_for_post($post);
+
+    $template_settings = get_option('yaml_cf_template_settings', []);
+    $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
+
+    if ($use_global) {
+      $global_data = get_option('yaml_cf_global_data', []);
+      if (is_array($global_data) && isset($global_data[$field_name])) {
+        $value = $global_data[$field_name];
+        return yaml_cf_maybe_wrap_preview($value, $field_name, 'field', 'yaml_cf_get_field');
+      }
+    }
+  }
+
+  // Finally, check post-specific data
+  if (isset($data[$field_name])) {
+    $value = $data[$field_name];
+    return yaml_cf_maybe_wrap_preview($value, $field_name, 'field', 'yaml_cf_get_field');
+  }
+
+  // Fallback: check template global data for fields defined only in template global schema
+  if ($post) {
+    $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
+    $template = $template ?? $plugin->get_template_for_post($post);
+
+    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
+    if (isset($template_global_data_array[$template][$field_name])) {
+      $value = $template_global_data_array[$template][$field_name];
+      return yaml_cf_maybe_wrap_preview($value, $field_name, 'field', 'yaml_cf_get_field');
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get raw field value without preview wrapping (internal use)
+ *
+ * Used by specialized functions like yaml_cf_get_image() that need
+ * the raw value for further processing.
+ *
+ * @param string $field_name Field name
+ * @param int|string|null $post_id Post ID or partial identifier
+ * @param array|null $context_data Context data for nested fields
+ * @return mixed Raw field value
+ */
+function yaml_cf_get_field_raw($field_name, $post_id = null, $context_data = null) {
   // If context data is provided, search within that array
   if (is_array($context_data)) {
     return isset($context_data[$field_name]) ? $context_data[$field_name] : null;
@@ -4022,13 +4142,11 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
   // Check if template global is enabled for this specific field
   $use_template_global_fields = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
   if (is_array($use_template_global_fields) && isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1') {
-    // Get the template for this post
     $post = get_post($post_id);
     if ($post) {
       $plugin = YAML_Custom_Fields::get_instance();
       $template = $plugin->get_template_for_post($post);
 
-      // Get template global data
       $template_global_data_array = get_option('yaml_cf_template_global_data', []);
       if (isset($template_global_data_array[$template][$field_name])) {
         return $template_global_data_array[$template][$field_name];
@@ -4037,7 +4155,6 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
   }
 
   // Check for site-wide global data
-  // (Only if the template has site-wide global enabled)
   $post = $post ?? get_post($post_id);
   if ($post) {
     $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
@@ -4059,7 +4176,7 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
     return $data[$field_name];
   }
 
-  // Fallback: check template global data for fields defined only in template global schema
+  // Fallback: check template global data
   if ($post) {
     $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
     $template = $template ?? $plugin->get_template_for_post($post);
@@ -4278,7 +4395,8 @@ if (!function_exists('ycf_has_field')) {
  *   $logo = yaml_cf_get_image('site_logo', 'partial:header.php', 'medium');
  */
 function yaml_cf_get_image($field_name, $post_id = null, $size = 'full', $context_data = null) {
-  $attachment_id = yaml_cf_get_field($field_name, $post_id, $context_data);
+  // Temporarily disable preview wrapping to get raw attachment ID
+  $attachment_id = yaml_cf_get_field_raw($field_name, $post_id, $context_data);
 
   if (!$attachment_id || !is_numeric($attachment_id)) {
     return null;
@@ -4303,6 +4421,15 @@ function yaml_cf_get_image($field_name, $post_id = null, $size = 'full', $contex
   if ($size !== 'full' && isset($metadata['sizes'][$size])) {
     $image_data['width'] = $metadata['sizes'][$size]['width'];
     $image_data['height'] = $metadata['sizes'][$size]['height'];
+  }
+
+  // Add preview metadata when in preview mode
+  if (yaml_cf_is_preview_mode()) {
+    $image_data['_ycf_preview'] = [
+      'field' => $field_name,
+      'type' => 'image',
+      'function' => 'yaml_cf_get_image',
+    ];
   }
 
   return $image_data;
@@ -4354,7 +4481,8 @@ if (!function_exists('ycf_get_image')) {
  *   $terms = yaml_cf_get_file('terms_pdf', 'partial:footer.php');
  */
 function yaml_cf_get_file($field_name, $post_id = null, $context_data = null) {
-  $attachment_id = yaml_cf_get_field($field_name, $post_id, $context_data);
+  // Use raw function to get attachment ID without preview wrapping
+  $attachment_id = yaml_cf_get_field_raw($field_name, $post_id, $context_data);
 
   if (!$attachment_id || !is_numeric($attachment_id)) {
     return null;
@@ -4367,7 +4495,7 @@ function yaml_cf_get_file($field_name, $post_id = null, $context_data = null) {
     return null;
   }
 
-  return [
+  $file_data = [
     'id' => $attachment_id,
     'url' => $file_url,
     'path' => $file_path,
@@ -4376,6 +4504,17 @@ function yaml_cf_get_file($field_name, $post_id = null, $context_data = null) {
     'mime_type' => get_post_mime_type($attachment_id),
     'title' => get_the_title($attachment_id),
   ];
+
+  // Add preview metadata when in preview mode
+  if (yaml_cf_is_preview_mode()) {
+    $file_data['_ycf_preview'] = [
+      'field' => $field_name,
+      'type' => 'file',
+      'function' => 'yaml_cf_get_file',
+    ];
+  }
+
+  return $file_data;
 }
 
 if (!function_exists('ycf_get_file')) {
@@ -4625,6 +4764,200 @@ if (!function_exists('ycf_get_data_objects')) {
     return yaml_cf_get_data_objects($object_type);
   }
 }
+
+/**
+ * ============================================
+ * Preview Mode Functions
+ * ============================================
+ */
+
+/**
+ * Maybe wrap content with preview highlighting (internal helper)
+ *
+ * Only wraps scalar values that would be directly output in templates.
+ * Arrays and objects are returned as-is since they need special handling.
+ *
+ * @param mixed $value The value to potentially wrap
+ * @param string $field_name The field name
+ * @param string $field_type The field type
+ * @param string $function_name The function used
+ * @return mixed Wrapped or original value
+ */
+function yaml_cf_maybe_wrap_preview($value, $field_name, $field_type = 'field', $function_name = 'yaml_cf_get_field') {
+  // Don't wrap if not in preview mode
+  if (!yaml_cf_is_preview_mode()) {
+    return $value;
+  }
+
+  // Don't wrap null/empty values
+  if ($value === null || $value === '') {
+    return $value;
+  }
+
+  // Don't wrap arrays or objects - they need template-level handling
+  if (is_array($value) || is_object($value)) {
+    return $value;
+  }
+
+  // Don't wrap boolean values
+  if (is_bool($value)) {
+    return $value;
+  }
+
+  // Don't wrap numeric-only values that might be used in calculations
+  // But DO wrap if it looks like content (longer than 10 chars or contains spaces)
+  if (is_numeric($value) && strlen((string)$value) <= 10 && strpos((string)$value, ' ') === false) {
+    return $value;
+  }
+
+  // Wrap scalar string values
+  $escaped_field_name = esc_attr($field_name);
+  $escaped_field_type = esc_attr($field_type);
+  $escaped_function = esc_attr($function_name);
+
+  return '<span class="ycf-preview-field" data-ycf-field="' . $escaped_field_name . '" data-ycf-type="' . $escaped_field_type . '" data-ycf-function="' . $escaped_function . '">'
+    . '<span class="ycf-preview-badge">' . esc_html($field_name) . '</span>'
+    . $value
+    . '</span>';
+}
+
+/**
+ * Check if preview mode is active
+ *
+ * Preview mode is enabled when:
+ * 1. The ycf_preview query parameter is set to 1
+ * 2. The ycf_preview_nonce is valid
+ * 3. The current user has edit capabilities
+ *
+ * @return bool True if preview mode is active
+ */
+function yaml_cf_is_preview_mode() {
+  static $is_preview = null;
+
+  if ($is_preview !== null) {
+    return $is_preview;
+  }
+
+  $is_preview = false;
+
+  // Check if preview parameter is set
+  // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified below
+  if (!isset($_GET['ycf_preview']) || $_GET['ycf_preview'] !== '1') {
+    return $is_preview;
+  }
+
+  // Verify nonce
+  // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+  $nonce = isset($_GET['ycf_preview_nonce']) ? $_GET['ycf_preview_nonce'] : '';
+  if (!wp_verify_nonce($nonce, 'ycf_preview_mode')) {
+    return $is_preview;
+  }
+
+  // Check user capabilities
+  if (!current_user_can('edit_posts')) {
+    return $is_preview;
+  }
+
+  $is_preview = true;
+  return $is_preview;
+}
+
+/**
+ * Generate a preview URL for a post
+ *
+ * @param int $post_id Post ID
+ * @return string Preview URL with nonce
+ */
+function yaml_cf_get_preview_url($post_id) {
+  $permalink = get_permalink($post_id);
+  if (!$permalink) {
+    return '';
+  }
+
+  $nonce = wp_create_nonce('ycf_preview_mode');
+  return add_query_arg([
+    'ycf_preview' => '1',
+    'ycf_preview_nonce' => $nonce,
+  ], $permalink);
+}
+
+/**
+ * Wrap content with preview highlighting markup
+ *
+ * @param mixed $content The content to wrap
+ * @param string $field_name The field name
+ * @param string $field_type The field type (string, image, file, etc.)
+ * @param string $function_name The function used to retrieve the value
+ * @return mixed Wrapped content if in preview mode, original content otherwise
+ */
+function yaml_cf_preview_wrap($content, $field_name, $field_type = 'field', $function_name = 'yaml_cf_get_field') {
+  if (!yaml_cf_is_preview_mode()) {
+    return $content;
+  }
+
+  // Don't wrap null/empty values
+  if ($content === null || $content === '') {
+    return $content;
+  }
+
+  // Don't wrap arrays or objects directly (they need special handling in templates)
+  if (is_array($content) || is_object($content)) {
+    return $content;
+  }
+
+  // Escape the content for safe HTML output
+  $escaped_content = esc_html($content);
+  $escaped_field_name = esc_attr($field_name);
+  $escaped_field_type = esc_attr($field_type);
+  $escaped_function = esc_attr($function_name);
+
+  return '<span class="ycf-preview-field" data-ycf-field="' . $escaped_field_name . '" data-ycf-type="' . $escaped_field_type . '" data-ycf-function="' . $escaped_function . '">'
+    . '<span class="ycf-preview-badge">' . $escaped_field_name . '</span>'
+    . $escaped_content
+    . '</span>';
+}
+
+/**
+ * Enqueue preview mode assets on the frontend
+ */
+function yaml_cf_enqueue_preview_assets() {
+  if (!yaml_cf_is_preview_mode()) {
+    return;
+  }
+
+  // Enqueue preview CSS
+  wp_enqueue_style(
+    'yaml-cf-preview',
+    YAML_CF_PLUGIN_URL . 'assets/preview.css',
+    [],
+    YAML_CF_VERSION
+  );
+
+  // Enqueue preview JS
+  wp_enqueue_script(
+    'yaml-cf-preview',
+    YAML_CF_PLUGIN_URL . 'assets/preview.js',
+    ['jquery'],
+    YAML_CF_VERSION,
+    true
+  );
+
+  // Pass data to JS
+  wp_localize_script('yaml-cf-preview', 'ycfPreview', [
+    'isPreview' => true,
+    'postId' => get_the_ID(),
+    'adminUrl' => admin_url(),
+    'i18n' => [
+      'previewMode' => __('YCF Preview Mode', 'yaml-custom-fields'),
+      'clickToEdit' => __('Click to edit in admin', 'yaml-custom-fields'),
+      'fieldName' => __('Field:', 'yaml-custom-fields'),
+      'fieldType' => __('Type:', 'yaml-custom-fields'),
+      'function' => __('Function:', 'yaml-custom-fields'),
+      'closePreview' => __('Exit Preview', 'yaml-custom-fields'),
+    ],
+  ]);
+}
+add_action('wp_enqueue_scripts', 'yaml_cf_enqueue_preview_assets');
 
 register_uninstall_hook(__FILE__, 'yaml_cf_uninstall');
 

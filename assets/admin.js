@@ -57,6 +57,12 @@
       $(document).on('change', '.yaml-cf-use-template-global-checkbox', this.toggleTemplateGlobal);
       $(document).on('click', '.yaml-cf-enable-override', this.enableOverride);
       $(document).on('click', '.yaml-cf-reset-override', this.resetOverride);
+
+      // Preview Modal
+      $(document).on('click', '.yaml-cf-preview-modal-btn', this.openPreviewModal);
+      $(document).on('click', '.yaml-cf-preview-modal-close', this.closePreviewModal);
+      $(document).on('click', '.yaml-cf-preview-modal-overlay', this.closePreviewModal);
+      $(document).on('keydown', this.handlePreviewModalKeydown);
     },
 
     toggleYAML: function () {
@@ -1364,6 +1370,71 @@
           $input.val('');
         }
       });
+    },
+
+    /**
+     * Open preview modal with iframe
+     */
+    openPreviewModal: function (e) {
+      e.preventDefault();
+
+      const $button = $(this);
+      const previewUrl = $button.data('preview-url');
+
+      if (!previewUrl) {
+        return;
+      }
+
+      // Remove existing modal if any
+      $('.yaml-cf-preview-modal-overlay').remove();
+
+      // Create modal HTML
+      const modalHtml = `
+        <div class="yaml-cf-preview-modal-overlay">
+          <div class="yaml-cf-preview-modal">
+            <div class="yaml-cf-preview-modal-header">
+              <h2>Preview Custom Fields</h2>
+              <div class="yaml-cf-preview-modal-actions">
+                <a href="${previewUrl}" target="_blank" class="button">Open in New Tab</a>
+                <button type="button" class="yaml-cf-preview-modal-close">&times;</button>
+              </div>
+            </div>
+            <div class="yaml-cf-preview-modal-body">
+              <iframe src="${previewUrl}" frameborder="0"></iframe>
+            </div>
+          </div>
+        </div>
+      `;
+
+      $('body').append(modalHtml);
+
+      // Prevent body scroll
+      $('body').addClass('yaml-cf-modal-open');
+    },
+
+    /**
+     * Close preview modal
+     */
+    closePreviewModal: function (e) {
+      if (e) {
+        // If clicking overlay, only close if clicked directly on overlay
+        if ($(e.target).hasClass('yaml-cf-preview-modal-overlay') || $(e.target).hasClass('yaml-cf-preview-modal-close')) {
+          $('.yaml-cf-preview-modal-overlay').remove();
+          $('body').removeClass('yaml-cf-modal-open');
+        }
+      } else {
+        $('.yaml-cf-preview-modal-overlay').remove();
+        $('body').removeClass('yaml-cf-modal-open');
+      }
+    },
+
+    /**
+     * Handle keydown for preview modal (ESC to close)
+     */
+    handlePreviewModalKeydown: function (e) {
+      if (e.key === 'Escape' && $('.yaml-cf-preview-modal-overlay').length) {
+        YamlCF.closePreviewModal();
+      }
     },
   };
 

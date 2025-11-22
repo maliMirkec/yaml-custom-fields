@@ -1081,3 +1081,100 @@
     padding: 10px;
   }
 }
+
+/* Preview Modal */
+.yaml-cf-preview-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.yaml-cf-preview-modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 1200px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+}
+
+.yaml-cf-preview-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+  background: #f5f5f5;
+  border-radius: 8px 8px 0 0;
+}
+
+.yaml-cf-preview-modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d2327;
+}
+
+.yaml-cf-preview-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.yaml-cf-preview-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s;
+}
+
+.yaml-cf-preview-modal-close:hover {
+  color: #d63638;
+}
+
+.yaml-cf-preview-modal-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.yaml-cf-preview-modal-body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+body.yaml-cf-modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 782px) {
+  .yaml-cf-preview-modal-overlay {
+    padding: 10px;
+  }
+
+  .yaml-cf-preview-modal {
+    height: 95vh;
+  }
+
+  .yaml-cf-preview-modal-header {
+    padding: 12px 15px;
+  }
+
+  .yaml-cf-preview-modal-header h2 {
+    font-size: 14px;
+  }
+}
