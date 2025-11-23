@@ -724,38 +724,12 @@ class YAML_Custom_Fields {
 
     // Get current template and schema for post edit screens
     $schema_data = null;
-    $template_global_schema_data = null;
     $post_id = $this->get_param_int('post', 0);
-
     if ($is_post_edit && $post_id) {
-      // On post edit screen
       $post = get_post($post_id);
       if ($post) {
         $template = $this->get_template_for_post($post);
 
-        // Get regular schema
-        $schemas = get_option('yaml_cf_schemas', []);
-        if (isset($schemas[$template]) && !empty($schemas[$template])) {
-          $schema_data = $this->parse_yaml_schema($schemas[$template]);
-        }
-
-        // Get template global schema (for blocks defined there)
-        $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
-        if (isset($template_global_schemas[$template]) && !empty($template_global_schemas[$template])) {
-          $template_global_schema_data = $this->parse_yaml_schema($template_global_schemas[$template]);
-        }
-      }
-    } elseif ($is_plugin_page) {
-      // On plugin admin pages - check for template global data page
-      $template = $this->get_param('template');
-      if ($template) {
-        // Get template global schema for template global data management page
-        $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
-        if (isset($template_global_schemas[$template]) && !empty($template_global_schemas[$template])) {
-          $template_global_schema_data = $this->parse_yaml_schema($template_global_schemas[$template]);
-        }
-
-        // Also get regular schema in case it has blocks
         $schemas = get_option('yaml_cf_schemas', []);
         if (isset($schemas[$template]) && !empty($schemas[$template])) {
           $schema_data = $this->parse_yaml_schema($schemas[$template]);
@@ -767,8 +741,7 @@ class YAML_Custom_Fields {
       'ajax_url' => admin_url('admin-ajax.php'),
       'admin_url' => admin_url(),
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
-      'schema' => $schema_data,
-      'templateGlobalSchema' => $template_global_schema_data
+      'schema' => $schema_data
     ]);
   }
 

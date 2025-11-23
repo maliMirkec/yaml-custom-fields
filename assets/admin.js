@@ -284,31 +284,20 @@
       const uniqueId =
         Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-      // Get block definition from schema (check both regular and template global schemas)
+      // Get block definition from schema
       let blockDef = null;
-
-      // Helper function to find block in schema
-      const findBlockInSchema = function (schema) {
-        if (schema && schema.fields) {
-          for (let field of schema.fields) {
-            if (field.name === fieldName && field.blocks) {
-              for (let block of field.blocks) {
-                if (block.name === blockType) {
-                  return block;
-                }
+      if (yamlCF.schema && yamlCF.schema.fields) {
+        for (let field of yamlCF.schema.fields) {
+          if (field.name === fieldName && field.blocks) {
+            for (let block of field.blocks) {
+              if (block.name === blockType) {
+                blockDef = block;
+                break;
               }
             }
+            break;
           }
         }
-        return null;
-      };
-
-      // First check regular schema
-      blockDef = findBlockInSchema(yamlCF.schema);
-
-      // If not found, check template global schema
-      if (!blockDef) {
-        blockDef = findBlockInSchema(yamlCF.templateGlobalSchema);
       }
 
       if (!blockDef) {
@@ -612,6 +601,7 @@
       }
 
       $blockList.append($blockItem);
+      $select.val('');
     },
 
     removeBlock: function () {
@@ -1093,8 +1083,12 @@
         checkFormChanges();
       });
 
-      // Clear changes flag on form submit
+      // Clear changes flag on form submit and sync TinyMCE editors
       $(config.submitSelector).on('submit', function () {
+        // Sync all TinyMCE editors to their textareas before submit
+        if (typeof tinymce !== 'undefined') {
+          tinymce.triggerSave();
+        }
         self[hasChangesKey] = false;
         toggleIndicator(false);
       });
@@ -1115,6 +1109,12 @@
           let wasSaving = false;
           wp.data.subscribe(function () {
             const isSaving = wp.data.select('core/editor').isSavingPost();
+            if (!wasSaving && isSaving) {
+              // Save is starting - sync TinyMCE editors
+              if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+              }
+            }
             if (wasSaving && !isSaving) {
               // Save just completed
               self[hasChangesKey] = false;
