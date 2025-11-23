@@ -284,20 +284,31 @@
       const uniqueId =
         Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-      // Get block definition from schema
+      // Get block definition from schema (check both regular and template global schemas)
       let blockDef = null;
-      if (yamlCF.schema && yamlCF.schema.fields) {
-        for (let field of yamlCF.schema.fields) {
-          if (field.name === fieldName && field.blocks) {
-            for (let block of field.blocks) {
-              if (block.name === blockType) {
-                blockDef = block;
-                break;
+
+      // Helper function to find block in schema
+      const findBlockInSchema = function (schema) {
+        if (schema && schema.fields) {
+          for (let field of schema.fields) {
+            if (field.name === fieldName && field.blocks) {
+              for (let block of field.blocks) {
+                if (block.name === blockType) {
+                  return block;
+                }
               }
             }
-            break;
           }
         }
+        return null;
+      };
+
+      // First check regular schema
+      blockDef = findBlockInSchema(yamlCF.schema);
+
+      // If not found, check template global schema
+      if (!blockDef) {
+        blockDef = findBlockInSchema(yamlCF.templateGlobalSchema);
       }
 
       if (!blockDef) {
@@ -601,7 +612,6 @@
       }
 
       $blockList.append($blockItem);
-      $select.val('');
     },
 
     removeBlock: function () {
