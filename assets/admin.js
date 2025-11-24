@@ -18,45 +18,44 @@
     },
 
     bindEvents: function () {
+      // Use namespaced events and unbind first to prevent duplicates
+      const ns = '.yamlcf';
+
       // Enable/Disable YAML for templates
-      $(document).on('change', '.yaml-cf-enable-yaml', this.toggleYAML);
+      $(document).off('change' + ns, '.yaml-cf-enable-yaml').on('change' + ns, '.yaml-cf-enable-yaml', this.toggleYAML);
 
       // Toggle Use Global for templates
-      $(document).on('change', '.yaml-cf-use-global', this.toggleUseGlobal);
+      $(document).off('change' + ns, '.yaml-cf-use-global').on('change' + ns, '.yaml-cf-use-global', this.toggleUseGlobal);
 
       // Toggle per-field global/local
-      $(document).on('change', '.yaml-cf-use-global-checkbox', this.toggleFieldGlobalLocal);
+      $(document).off('change' + ns, '.yaml-cf-use-global-checkbox').on('change' + ns, '.yaml-cf-use-global-checkbox', this.toggleFieldGlobalLocal);
 
       // Block Controls
-      $(document).on('click', '.yaml-cf-add-block', this.addBlock);
-      $(document).on('click', '.yaml-cf-remove-block', this.removeBlock);
+      $(document).off('click' + ns, '.yaml-cf-add-block').on('click' + ns, '.yaml-cf-add-block', this.addBlock);
+      $(document).off('click' + ns, '.yaml-cf-remove-block').on('click' + ns, '.yaml-cf-remove-block', this.removeBlock);
 
       // Clear Media
-      $(document).on('click', '.yaml-cf-clear-media', this.clearMedia);
+      $(document).off('click' + ns, '.yaml-cf-clear-media').on('click' + ns, '.yaml-cf-clear-media', this.clearMedia);
 
       // Reset All Data
-      $(document).on('click', '.yaml-cf-reset-data', this.resetAllData);
+      $(document).off('click' + ns, '.yaml-cf-reset-data').on('click' + ns, '.yaml-cf-reset-data', this.resetAllData);
 
       // Import Settings
-      $(document).on(
-        'click',
-        '.yaml-cf-import-settings-trigger',
-        this.triggerImport
-      );
-      $(document).on('change', '#yaml-cf-import-settings-file', this.importSettings);
+      $(document).off('click' + ns, '.yaml-cf-import-settings-trigger').on('click' + ns, '.yaml-cf-import-settings-trigger', this.triggerImport);
+      $(document).off('change' + ns, '#yaml-cf-import-settings-file').on('change' + ns, '#yaml-cf-import-settings-file', this.importSettings);
 
       // Import Post Data
-      $(document).on('change', 'input[name="yaml_cf_import_file_hidden"]', this.importPostData);
+      $(document).off('change' + ns, 'input[name="yaml_cf_import_file_hidden"]').on('change' + ns, 'input[name="yaml_cf_import_file_hidden"]', this.importPostData);
 
       // Code Snippet Copy
-      $(document).on('click', '.yaml-cf-copy-snippet', this.copySnippet);
-      $(document).on('mouseenter', '.yaml-cf-copy-snippet', this.showSnippetPopover);
-      $(document).on('mouseleave', '.yaml-cf-copy-snippet', this.hideSnippetPopover);
+      $(document).off('click' + ns, '.yaml-cf-copy-snippet').on('click' + ns, '.yaml-cf-copy-snippet', this.copySnippet);
+      $(document).off('mouseenter' + ns, '.yaml-cf-copy-snippet').on('mouseenter' + ns, '.yaml-cf-copy-snippet', this.showSnippetPopover);
+      $(document).off('mouseleave' + ns, '.yaml-cf-copy-snippet').on('mouseleave' + ns, '.yaml-cf-copy-snippet', this.hideSnippetPopover);
 
       // Template Global Controls
-      $(document).on('change', '.yaml-cf-use-template-global-checkbox', this.toggleTemplateGlobal);
-      $(document).on('click', '.yaml-cf-enable-override', this.enableOverride);
-      $(document).on('click', '.yaml-cf-reset-override', this.resetOverride);
+      $(document).off('change' + ns, '.yaml-cf-use-template-global-checkbox').on('change' + ns, '.yaml-cf-use-template-global-checkbox', this.toggleTemplateGlobal);
+      $(document).off('click' + ns, '.yaml-cf-enable-override').on('click' + ns, '.yaml-cf-enable-override', this.enableOverride);
+      $(document).off('click' + ns, '.yaml-cf-reset-override').on('click' + ns, '.yaml-cf-reset-override', this.resetOverride);
     },
 
     toggleYAML: function () {
@@ -601,23 +600,26 @@
       }
 
       $blockList.append($blockItem);
-      $select.val('');
+      // Keep the select value for easier adding of multiple blocks of same type
     },
 
-    removeBlock: function () {
-      if (
-        confirm(
-          'Are you sure you want to remove this block? Remember to update the page to save changes.'
-        )
-      ) {
-        $(this)
-          .closest('.yaml-cf-block-item')
-          .fadeOut(300, function () {
-            $(this).remove();
-            // Re-index remaining blocks
-            YamlCF.reindexBlocks();
-          });
-      }
+    removeBlock: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      $(this)
+        .closest('.yaml-cf-block-item')
+        .fadeOut(300, function () {
+          $(this).remove();
+          // Re-index remaining blocks
+          YamlCF.reindexBlocks();
+        });
+
+      // Show notification to remind user to save
+      YamlCF.showMessage(
+        "Block removed. Don't forget to save the changes.",
+        'warning'
+      );
     },
 
     reindexBlocks: function () {
@@ -785,6 +787,7 @@
 
     clearMedia: function (e) {
       e.preventDefault();
+      e.stopPropagation();
 
       const $button = $(this);
       const targetId = $button.data('target');

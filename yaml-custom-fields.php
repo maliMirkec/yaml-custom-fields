@@ -2855,19 +2855,21 @@ class YAML_Custom_Fields {
             echo '<div class="yaml-cf-block-list">';
 
             foreach ($block_values as $index => $block_data) {
-              $this->render_block_item($field, $blocks, $block_data, $index, $block_key);
+              $this->render_block_item($field, $blocks, $block_data, $index, $block_key, $context);
             }
 
             echo '</div>';
-            echo '<div class="yaml-cf-block-controls">';
-            echo '<select class="yaml-cf-block-type-select">';
-            echo '<option value="">-- Add Block --</option>';
-            foreach ($blocks as $block) {
-              echo '<option value="' . esc_attr($block['name']) . '">' . esc_html($block['label']) . '</option>';
+            if (!$readonly) {
+              echo '<div class="yaml-cf-block-controls">';
+              echo '<select class="yaml-cf-block-type-select">';
+              echo '<option value="">-- Add Block --</option>';
+              foreach ($blocks as $block) {
+                echo '<option value="' . esc_attr($block['name']) . '">' . esc_html($block['label']) . '</option>';
+              }
+              echo '</select>';
+              echo '<button type="button" class="button yaml-cf-add-block">Add Block</button>';
+              echo '</div>';
             }
-            echo '</select>';
-            echo '<button type="button" class="button yaml-cf-add-block">Add Block</button>';
-            echo '</div>';
           }
 
           echo '</div>';
@@ -2906,9 +2908,16 @@ class YAML_Custom_Fields {
     }
   }
 
-  private function render_block_item($field, $blocks, $block_data, $index, $block_key) {
+  private function render_block_item($field, $blocks, $block_data, $index, $block_key, $context = null) {
     $block_type = isset($block_data[$block_key]) ? $block_data[$block_key] : '';
     $block_def = null;
+
+    // Check if block should be readonly (for template global display)
+    $readonly = ($context && is_array($context) && isset($context['readonly']) && $context['readonly']);
+    $disabled_attr = $readonly ? ' disabled="disabled"' : '';
+
+    // Get ID suffix from context to make IDs unique in dual field rendering
+    $id_suffix = ($context && is_array($context) && isset($context['id_suffix'])) ? $context['id_suffix'] : '';
 
     foreach ($blocks as $block) {
       if ($block['name'] === $block_type) {
@@ -2924,13 +2933,18 @@ class YAML_Custom_Fields {
     echo '<div class="yaml-cf-block-item" data-block-type="' . esc_attr($block_type) . '">';
     echo '<div class="yaml-cf-block-header">';
     echo '<strong>' . esc_html($block_def['label']) . '</strong>';
-    echo '<button type="button" class="button yaml-cf-remove-block">Remove</button>';
+    if (!$readonly) {
+      echo '<button type="button" class="button yaml-cf-remove-block">Remove</button>';
+    }
     echo '</div>';
     $hidden_attrs = [
       'type' => 'hidden',
       'name' => 'yaml_cf[' . $field['name'] . '][' . $index . '][' . $block_key . ']',
       'value' => $block_type,
     ];
+    if ($readonly) {
+      $hidden_attrs['disabled'] = 'disabled';
+    }
     echo '<input';
           $this->output_html_attrs($hidden_attrs);
           echo ' />';
@@ -2939,7 +2953,7 @@ class YAML_Custom_Fields {
       echo '<div class="yaml-cf-block-fields">';
 
       foreach ($block_def['fields'] as $block_field) {
-        $block_field_id = 'ycf_' . $field['name'] . '_' . $index . '_' . $block_field['name'];
+        $block_field_id = 'ycf_' . $field['name'] . '_' . $index . '_' . $block_field['name'] . $id_suffix;
         $block_field_value = isset($block_data[$block_field['name']]) ? $block_data[$block_field['name']] : '';
         $block_field_type = isset($block_field['type']) ? $block_field['type'] : 'string';
 
@@ -2962,20 +2976,30 @@ class YAML_Custom_Fields {
         $block_popover_id = 'snippet-' . sanitize_html_class($block_field_id);
 
         echo '<div class="yaml-cf-field">';
-        echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field['label']) . '</label>';
+        // For image/file fields with hidden inputs, don't use 'for' attribute as it's invalid
+        if ($block_field_type === 'image' || $block_field_type === 'file') {
+          echo '<p>' . esc_html($block_field['label']) . '</p>';
+        } else {
+          echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field['label']) . '</label>';
+        }
 
         if ($block_field_type === 'boolean') {
-          echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="1" ' . checked($block_field_value, 1, false) . ' />';
+          echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="1" ' . checked($block_field_value, 1, false) . $disabled_attr . ' />';
         } elseif ($block_field_type === 'rich-text') {
-          wp_editor($block_field_value, $block_field_id, [
+          $editor_settings = [
             'textarea_name' => 'yaml_cf[' . $field['name'] . '][' . $index . '][' . $block_field['name'] . ']',
             'textarea_rows' => 5,
-            'media_buttons' => true,
+            'media_buttons' => !$readonly,
             'tinymce' => [
               'toolbar1' => 'formatselect,bold,italic,bullist,numlist,link,unlink',
+              'readonly' => $readonly ? 1 : 0,
             ],
             '_content_editor_dfw' => false
-          ]);
+          ];
+          if ($readonly) {
+            $editor_settings['quicktags'] = false;
+          }
+          wp_editor($block_field_value, $block_field_id, $editor_settings);
         } elseif ($block_field_type === 'text') {
           $textarea_attrs = [
             'name' => 'yaml_cf[' . $field['name'] . '][' . $index . '][' . $block_field['name'] . ']',
@@ -2983,13 +3007,16 @@ class YAML_Custom_Fields {
             'rows' => 5,
             'class' => 'large-text',
           ];
+          if ($readonly) {
+            $textarea_attrs['disabled'] = 'disabled';
+          }
           echo '<textarea';
           $this->output_html_attrs($textarea_attrs);
           echo '>' . esc_textarea($block_field_value) . '</textarea>';
         } elseif ($block_field_type === 'code') {
           $block_field_options = isset($block_field['options']) ? $block_field['options'] : [];
           $language = isset($block_field_options['language']) ? $block_field_options['language'] : 'html';
-          echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($block_field_value) . '</textarea>';
+          echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '"' . $disabled_attr . '>' . esc_textarea($block_field_value) . '</textarea>';
         } elseif ($block_field_type === 'number') {
           $block_field_options = isset($block_field['options']) ? $block_field['options'] : [];
           $number_attrs = [
@@ -3005,6 +3032,9 @@ class YAML_Custom_Fields {
           if (isset($block_field_options['max'])) {
             $number_attrs['max'] = intval($block_field_options['max']);
           }
+          if ($readonly) {
+            $number_attrs['disabled'] = 'disabled';
+          }
           echo '<input';
           $this->output_html_attrs($number_attrs);
           echo ' />';
@@ -3017,6 +3047,9 @@ class YAML_Custom_Fields {
             'id' => $block_field_id,
             'value' => $block_field_value,
           ];
+          if ($readonly) {
+            $date_attrs['disabled'] = 'disabled';
+          }
           echo '<input';
           $this->output_html_attrs($date_attrs);
           echo ' />';
@@ -3025,7 +3058,7 @@ class YAML_Custom_Fields {
           $multiple = isset($block_field['multiple']) && $block_field['multiple'];
           $values = isset($block_field['values']) ? $block_field['values'] : [];
 
-          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($block_field_id) . '" ' . ($multiple ? 'multiple' : '') . '>';
+          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($block_field_id) . '" ' . ($multiple ? 'multiple' : '') . $disabled_attr . '>';
           echo '<option value="">-- Select --</option>';
 
           if (is_array($values)) {
@@ -3071,9 +3104,9 @@ class YAML_Custom_Fields {
 
           if ($multiple) {
             $block_field_value = is_array($block_field_value) ? $block_field_value : ($block_field_value ? [$block_field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . '][]" id="' . esc_attr($block_field_id) . '" multiple style="height: 150px;" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . '][]" id="' . esc_attr($block_field_id) . '" multiple style="height: 150px;" class="regular-text"' . $disabled_attr . '>';
           } else {
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . $disabled_attr . '>';
             echo '<option value="">-- Select ' . esc_html($block_field['label']) . ' --</option>';
           }
 
@@ -3093,7 +3126,7 @@ class YAML_Custom_Fields {
           // Get all public post types
           $post_types = get_post_types(['public' => true], 'objects');
 
-          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text">';
+          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . $disabled_attr . '>';
           echo '<option value="">-- Select ' . esc_html($block_field['label']) . ' --</option>';
 
           foreach ($post_types as $post_type) {
@@ -3120,7 +3153,7 @@ class YAML_Custom_Fields {
               $label_field = $parsed_schema['fields'][0]['name'];
             }
 
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . $disabled_attr . '>';
             echo '<option value="">-- Select ' . esc_html($type_name) . ' --</option>';
 
             if (!empty($data_object_entries) && is_array($data_object_entries)) {
@@ -3139,13 +3172,15 @@ class YAML_Custom_Fields {
             echo '<p class="description" style="color: #d63638;">' . esc_html__('Error: object_type not specified in schema', 'yaml-custom-fields') . '</p>';
           }
         } elseif ($block_field_type === 'image') {
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '" />';
-          echo '<div class="yaml-cf-media-buttons">';
-          echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($block_field_id) . '">Upload Image</button>';
-          if ($block_field_value) {
-            echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . $disabled_attr . ' />';
+          if (!$readonly) {
+            echo '<div class="yaml-cf-media-buttons">';
+            echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($block_field_id) . '">Upload Image</button>';
+            if ($block_field_value) {
+              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+            }
+            echo '</div>';
           }
-          echo '</div>';
           if ($block_field_value) {
             $image_url = wp_get_attachment_image_url($block_field_value, 'medium');
             if ($image_url) {
@@ -3153,13 +3188,15 @@ class YAML_Custom_Fields {
             }
           }
         } elseif ($block_field_type === 'file') {
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '" />';
-          echo '<div class="yaml-cf-media-buttons">';
-          echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">Upload File</button>';
-          if ($block_field_value) {
-            echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . $disabled_attr . ' />';
+          if (!$readonly) {
+            echo '<div class="yaml-cf-media-buttons">';
+            echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">Upload File</button>';
+            if ($block_field_value) {
+              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+            }
+            echo '</div>';
           }
-          echo '</div>';
           if ($block_field_value) {
             $file_path = get_attached_file($block_field_value);
             if ($file_path) {
@@ -3181,6 +3218,9 @@ class YAML_Custom_Fields {
           if (isset($block_field_options['maxlength'])) {
             $string_attrs['maxlength'] = intval($block_field_options['maxlength']);
           }
+          if ($readonly) {
+            $string_attrs['disabled'] = 'disabled';
+          }
           echo '<input';
           $this->output_html_attrs($string_attrs);
           echo ' />';
@@ -3193,6 +3233,9 @@ class YAML_Custom_Fields {
             'value' => $block_field_value,
             'class' => 'regular-text',
           ];
+          if ($readonly) {
+            $default_attrs['disabled'] = 'disabled';
+          }
           echo '<input';
           $this->output_html_attrs($default_attrs);
           echo ' />';
