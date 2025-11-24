@@ -2934,7 +2934,11 @@ class YAML_Custom_Fields {
     echo '<div class="yaml-cf-block-header">';
     echo '<strong>' . esc_html($block_def['label']) . '</strong>';
     if (!$readonly) {
-      echo '<button type="button" class="button yaml-cf-remove-block">Remove</button>';
+      echo '<span class="yaml-cf-block-actions">';
+      echo '<button type="button" class="button button-small yaml-cf-move-up" title="' . esc_attr__('Move up', 'yaml-custom-fields') . '"><span class="dashicons dashicons-arrow-up-alt"></span></button>';
+      echo '<button type="button" class="button button-small yaml-cf-move-down" title="' . esc_attr__('Move down', 'yaml-custom-fields') . '"><span class="dashicons dashicons-arrow-down-alt"></span></button>';
+      echo '<button type="button" class="button button-small yaml-cf-remove-block">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+      echo '</span>';
     }
     echo '</div>';
     $hidden_attrs = [

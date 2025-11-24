@@ -382,6 +382,38 @@
   color: #1d2327;
 }
 
+.yaml-cf-block-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.yaml-cf-block-actions .button-small {
+  padding: 0 6px;
+  min-height: 28px;
+  line-height: 26px;
+}
+
+.yaml-cf-block-actions .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.yaml-cf-move-up,
+.yaml-cf-move-down {
+  color: #2271b1;
+  border-color: #2271b1;
+}
+
+.yaml-cf-move-up:hover,
+.yaml-cf-move-down:hover {
+  background: #2271b1;
+  color: #fff;
+  border-color: #2271b1;
+}
+
 .yaml-cf-remove-block {
   color: #b32d2e;
   border-color: #b32d2e;

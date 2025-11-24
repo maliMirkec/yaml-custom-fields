@@ -33,6 +33,8 @@
       // Block Controls
       $(document).off('click' + ns, '.yaml-cf-add-block').on('click' + ns, '.yaml-cf-add-block', this.addBlock);
       $(document).off('click' + ns, '.yaml-cf-remove-block').on('click' + ns, '.yaml-cf-remove-block', this.removeBlock);
+      $(document).off('click' + ns, '.yaml-cf-move-up').on('click' + ns, '.yaml-cf-move-up', this.moveBlockUp);
+      $(document).off('click' + ns, '.yaml-cf-move-down').on('click' + ns, '.yaml-cf-move-down', this.moveBlockDown);
 
       // Clear Media
       $(document).off('click' + ns, '.yaml-cf-clear-media').on('click' + ns, '.yaml-cf-clear-media', this.clearMedia);
@@ -314,13 +316,32 @@
 
       const $header = $('<div>', { class: 'yaml-cf-block-header' });
       $header.append($('<strong>').text(blockLabel));
-      $header.append(
+
+      const $actions = $('<span>', { class: 'yaml-cf-block-actions' });
+      $actions.append(
         $('<button>', {
           type: 'button',
-          class: 'button yaml-cf-remove-block',
+          class: 'button button-small yaml-cf-move-up',
+          title: 'Move up',
+          html: '<span class="dashicons dashicons-arrow-up-alt"></span>',
+        })
+      );
+      $actions.append(
+        $('<button>', {
+          type: 'button',
+          class: 'button button-small yaml-cf-move-down',
+          title: 'Move down',
+          html: '<span class="dashicons dashicons-arrow-down-alt"></span>',
+        })
+      );
+      $actions.append(
+        $('<button>', {
+          type: 'button',
+          class: 'button button-small yaml-cf-remove-block',
           text: 'Remove',
         })
       );
+      $header.append($actions);
 
       $blockItem.append($header);
       $blockItem.append(
@@ -641,6 +662,32 @@
               });
           });
       });
+    },
+
+    moveBlockUp: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const $block = $(this).closest('.yaml-cf-block-item');
+      const $prev = $block.prev('.yaml-cf-block-item');
+
+      if ($prev.length) {
+        $block.insertBefore($prev);
+        YamlCF.reindexBlocks();
+      }
+    },
+
+    moveBlockDown: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const $block = $(this).closest('.yaml-cf-block-item');
+      const $next = $block.next('.yaml-cf-block-item');
+
+      if ($next.length) {
+        $block.insertAfter($next);
+        YamlCF.reindexBlocks();
+      }
     },
 
     initMediaUploader: function () {
