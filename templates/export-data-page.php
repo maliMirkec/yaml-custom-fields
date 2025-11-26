@@ -121,7 +121,7 @@ if (!defined('ABSPATH')) {
 
         <div style="margin-top: 20px;">
           <button type="submit" class="button button-primary" id="yaml-cf-export-selected" disabled>
-            <?php esc_html_e('Export Selected Posts', 'yaml-custom-fields'); ?>
+            <?php esc_html_e('Export Selected', 'yaml-custom-fields'); ?>
           </button>
         </div>
       </div>
