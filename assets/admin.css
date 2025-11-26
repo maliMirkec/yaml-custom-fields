@@ -1113,3 +1113,77 @@
     padding: 10px;
   }
 }
+
+/* Info Field Styles */
+.yaml-cf-info-box {
+  background: #e5f5fa;
+  border-left: 4px solid #72aee6;
+  padding: 12px 16px;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 2px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.yaml-cf-info-box .dashicons {
+  color: #72aee6;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.yaml-cf-info-content {
+  flex: 1;
+  color: #2c3338;
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.yaml-cf-info-content strong {
+  font-weight: 600;
+  color: #1d2327;
+}
+
+.yaml-cf-info-content em {
+  font-style: italic;
+}
+
+.yaml-cf-info-content a {
+  color: #2271b1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.yaml-cf-info-content a:hover {
+  text-decoration: underline;
+  color: #135e96;
+}
+
+.yaml-cf-info-content a:focus {
+  outline: 2px solid #2271b1;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Responsive adjustments for info box */
+@media (max-width: 782px) {
+  .yaml-cf-info-box {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .yaml-cf-info-box .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .yaml-cf-info-content {
+    font-size: 14px;
+  }
+}
