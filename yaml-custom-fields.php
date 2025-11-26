@@ -1674,8 +1674,31 @@ class YAML_Custom_Fields {
   private function sanitize_field_data($data, $schema = null, $field_name = '') {
     if (is_array($data)) {
       $sanitized = [];
+
+      // Check if this field is a block type in the schema
+      $block_field = $this->get_field_definition($schema, $field_name);
+      $is_block_list = $block_field && isset($block_field['type']) && $block_field['type'] === 'block';
+
       foreach ($data as $key => $value) {
-        $sanitized[sanitize_text_field($key)] = $this->sanitize_field_data($value, $schema, $key);
+        $child_schema = $schema;
+
+        // If this is a block list, find the appropriate block schema
+        if ($is_block_list && is_array($value)) {
+          $block_key = isset($block_field['blockKey']) ? $block_field['blockKey'] : 'type';
+          $block_type = isset($value[$block_key]) ? $value[$block_key] : '';
+
+          if ($block_type && isset($block_field['blocks']) && is_array($block_field['blocks'])) {
+            foreach ($block_field['blocks'] as $block) {
+              if (isset($block['name']) && $block['name'] === $block_type) {
+                // Use the block's field definitions as the schema for child elements
+                $child_schema = ['fields' => isset($block['fields']) ? $block['fields'] : []];
+                break;
+              }
+            }
+          }
+        }
+
+        $sanitized[sanitize_text_field($key)] = $this->sanitize_field_data($value, $child_schema, $key);
       }
       return $sanitized;
     } elseif (is_string($data)) {
@@ -1691,6 +1714,20 @@ class YAML_Custom_Fields {
       return sanitize_textarea_field($data);
     }
     return $data;
+  }
+
+  private function get_field_definition($schema, $field_name) {
+    if (!$schema || !$field_name || !isset($schema['fields']) || !is_array($schema['fields'])) {
+      return null;
+    }
+
+    foreach ($schema['fields'] as $field) {
+      if (isset($field['name']) && $field['name'] === $field_name) {
+        return $field;
+      }
+    }
+
+    return null;
   }
 
   private function is_code_field($schema, $field_name) {
