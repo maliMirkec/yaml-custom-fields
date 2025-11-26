@@ -27,8 +27,13 @@ if (isset($_POST['yaml_cf_delete_type_nonce'])) {
       // Delete all entries for this type
       delete_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug_to_delete);
 
-      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Data object type and all its entries deleted successfully!', 'yaml-custom-fields') . '</p></div>';
+      // Set success message transient
+      set_transient('yaml_cf_data_objects_success_' . get_current_user_id(), 'type_deleted', 60);
     }
+
+    // Redirect to prevent form resubmission
+    wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
+    exit;
   }
 }
 
@@ -47,6 +52,20 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
         </div>
       </div>
     </div>
+
+    <?php
+    // Display success messages (using transients - shown only once)
+    $success_key = 'yaml_cf_data_objects_success_' . get_current_user_id();
+    $success_msg = get_transient($success_key);
+    if ($success_msg) {
+      $success_messages = [
+        'type_deleted' => __('Data object type and all its entries deleted successfully!', 'yaml-custom-fields'),
+      ];
+      $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+      delete_transient($success_key);
+    }
+    ?>
 
     <div class="yaml-cf-intro">
       <p>

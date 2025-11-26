@@ -1302,10 +1302,10 @@ class YAML_Custom_Fields {
 
       // Validate that file was uploaded
       if (!isset($_FILES['yaml_cf_import_file']) || empty($_FILES['yaml_cf_import_file']['name'])) {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'no_file', 60);
         wp_safe_redirect(add_query_arg([
           'post' => $post_id,
-          'action' => 'edit',
-          'yaml_cf_import_error' => 'no_file'
+          'action' => 'edit'
         ], admin_url('post.php')));
         exit;
       }
@@ -1321,10 +1321,10 @@ class YAML_Custom_Fields {
 
       // Check for upload errors (wp_handle_upload validates all upload conditions)
       if (!$uploaded_file || isset($uploaded_file['error'])) {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'upload_failed', 60);
         wp_safe_redirect(add_query_arg([
           'post' => $post_id,
-          'action' => 'edit',
-          'yaml_cf_import_error' => 'upload_failed'
+          'action' => 'edit'
         ], admin_url('post.php')));
         exit;
       }
@@ -1333,10 +1333,10 @@ class YAML_Custom_Fields {
       $file_type = wp_check_filetype($uploaded_file['file']);
       if ($file_type['ext'] !== 'json') {
         wp_delete_file($uploaded_file['file']);
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'invalid_file', 60);
         wp_safe_redirect(add_query_arg([
           'post' => $post_id,
-          'action' => 'edit',
-          'yaml_cf_import_error' => 'invalid_file'
+          'action' => 'edit'
         ], admin_url('post.php')));
         exit;
       }
@@ -1350,10 +1350,10 @@ class YAML_Custom_Fields {
       $import_data = json_decode($json_data, true);
 
       if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'invalid_format', 60);
         wp_safe_redirect(add_query_arg([
           'post' => $post_id,
-          'action' => 'edit',
-          'yaml_cf_import_error' => 'invalid_format'
+          'action' => 'edit'
         ], admin_url('post.php')));
         exit;
       }
@@ -1385,10 +1385,10 @@ class YAML_Custom_Fields {
       }
 
       if (!$post_data || !isset($post_data['data'])) {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'no_data', 60);
         wp_safe_redirect(add_query_arg([
           'post' => $post_id,
-          'action' => 'edit',
-          'yaml_cf_import_error' => 'no_data'
+          'action' => 'edit'
         ], admin_url('post.php')));
         exit;
       }
@@ -1409,11 +1409,13 @@ class YAML_Custom_Fields {
       // Clear caches
       $this->clear_data_caches($post_id);
 
-      // Redirect with success message
+      // Set transient for success message (shows only once)
+      set_transient('yaml_cf_import_success_' . get_current_user_id() . '_' . $post_id, true, 60);
+
+      // Redirect without message in URL
       wp_safe_redirect(add_query_arg([
         'post' => $post_id,
-        'action' => 'edit',
-        'yaml_cf_imported' => '1'
+        'action' => 'edit'
       ], admin_url('post.php')));
       exit;
     }
@@ -2215,13 +2217,18 @@ class YAML_Custom_Fields {
     echo '<div class="postbox-header"><h2 class="hndle">' . esc_html__('YAML Custom Fields Schema', 'yaml-custom-fields') . '</h2></div>';
     echo '<div class="inside">';
 
-    // Display import/export messages
-    if ($this->get_param('yaml_cf_imported') === '1') {
+    // Display import/export messages (using transients - shown only once)
+    $success_key = 'yaml_cf_import_success_' . get_current_user_id() . '_' . $post->ID;
+    if (get_transient($success_key)) {
       echo '<div class="notice notice-success inline" style="margin: 10px 0;"><p>' . esc_html__('Data imported successfully!', 'yaml-custom-fields') . '</p></div>';
+      delete_transient($success_key);
     }
-    $error_msg = $this->get_param('yaml_cf_import_error');
+
+    $error_key = 'yaml_cf_import_error_' . get_current_user_id() . '_' . $post->ID;
+    $error_msg = get_transient($error_key);
     if ($error_msg) {
       $error_messages = [
+        'no_file' => __('No file selected. Please choose a file to import.', 'yaml-custom-fields'),
         'upload_failed' => __('File upload failed. Please try again.', 'yaml-custom-fields'),
         'invalid_file' => __('Invalid file type. Please upload a JSON file.', 'yaml-custom-fields'),
         'invalid_format' => __('Invalid file format. Please upload a valid YAML CF export file.', 'yaml-custom-fields'),
@@ -2229,6 +2236,7 @@ class YAML_Custom_Fields {
       ];
       $message = isset($error_messages[$error_msg]) ? $error_messages[$error_msg] : __('Import failed.', 'yaml-custom-fields');
       echo '<div class="notice notice-error inline" style="margin: 10px 0;"><p>' . esc_html($message) . '</p></div>';
+      delete_transient($error_key);
     }
 
     $export_url = wp_nonce_url(

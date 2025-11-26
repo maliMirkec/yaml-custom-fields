@@ -25,7 +25,9 @@ if (isset($_POST['yaml_cf_save_data_object_type_nonce'])) {
   $yaml_cf_schema_yaml = YAML_Custom_Fields::post_raw('schema', '');
 
   if (empty($yaml_cf_type_name) || empty($yaml_cf_new_type_slug)) {
-    echo '<div class="notice notice-error"><p>' . esc_html__('Type name and slug are required.', 'yaml-custom-fields') . '</p></div>';
+    set_transient('yaml_cf_data_object_type_error_' . get_current_user_id(), 'required_fields', 60);
+    wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-data-object-type' . ($yaml_cf_type_slug ? '&type=' . urlencode($yaml_cf_type_slug) : '')));
+    exit;
   } else {
     $yaml_cf_data_object_types[$yaml_cf_new_type_slug] = [
       'name' => $yaml_cf_type_name,
@@ -34,11 +36,11 @@ if (isset($_POST['yaml_cf_save_data_object_type_nonce'])) {
 
     update_option('yaml_cf_data_object_types', $yaml_cf_data_object_types);
 
-    echo '<div class="notice notice-success"><p>' . esc_html__('Data object type saved successfully!', 'yaml-custom-fields') . '</p></div>';
+    set_transient('yaml_cf_data_object_type_success_' . get_current_user_id(), 'type_saved', 60);
 
-    // Update vars for display
-    $yaml_cf_type_slug = $yaml_cf_new_type_slug;
-    $yaml_cf_is_editing = true;
+    // Redirect to prevent form resubmission
+    wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type=' . urlencode($yaml_cf_new_type_slug)));
+    exit;
   }
 }
 
@@ -58,6 +60,32 @@ $yaml_cf_schema_yaml = $yaml_cf_is_editing ? $yaml_cf_data_object_types[$yaml_cf
         </div>
       </div>
     </div>
+
+    <?php
+    // Display success messages (using transients - shown only once)
+    $success_key = 'yaml_cf_data_object_type_success_' . get_current_user_id();
+    $success_msg = get_transient($success_key);
+    if ($success_msg) {
+      $success_messages = [
+        'type_saved' => __('Data object type saved successfully!', 'yaml-custom-fields'),
+      ];
+      $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+      delete_transient($success_key);
+    }
+
+    // Display error messages (using transients - shown only once)
+    $error_key = 'yaml_cf_data_object_type_error_' . get_current_user_id();
+    $error_msg = get_transient($error_key);
+    if ($error_msg) {
+      $error_messages = [
+        'required_fields' => __('Type name and slug are required.', 'yaml-custom-fields'),
+      ];
+      $message = isset($error_messages[$error_msg]) ? $error_messages[$error_msg] : __('An error occurred.', 'yaml-custom-fields');
+      echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($message) . '</p></div>';
+      delete_transient($error_key);
+    }
+    ?>
 
     <div class="yaml-cf-intro">
       <p>
