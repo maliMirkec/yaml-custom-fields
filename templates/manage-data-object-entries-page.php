@@ -59,9 +59,12 @@ if (isset($_POST['yaml_cf_save_entry_nonce'])) {
   $yaml_cf_entries[$yaml_cf_entry_id_to_save] = $yaml_cf_entry_data;
   update_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug, $yaml_cf_entries);
 
-  echo '<div class="notice notice-success"><p>' . esc_html__('Entry saved successfully!', 'yaml-custom-fields') . '</p></div>';
+  // Set success message transient
+  set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_saved', 60);
 
-  $yaml_cf_action = 'list';
+  // Redirect to prevent form resubmission
+  wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-entries&type=' . urlencode($yaml_cf_type_slug)));
+  exit;
 }
 
 // Handle delete
@@ -75,10 +78,14 @@ if (isset($_POST['yaml_cf_delete_entry_nonce'])) {
   if (isset($yaml_cf_entries[$yaml_cf_entry_id_to_delete])) {
     unset($yaml_cf_entries[$yaml_cf_entry_id_to_delete]);
     update_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug, $yaml_cf_entries);
-    echo '<div class="notice notice-success"><p>' . esc_html__('Entry deleted successfully!', 'yaml-custom-fields') . '</p></div>';
+
+    // Set success message transient
+    set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_deleted', 60);
   }
 
-  $yaml_cf_action = 'list';
+  // Redirect to prevent form resubmission
+  wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-entries&type=' . urlencode($yaml_cf_type_slug)));
+  exit;
 }
 
 // Get entry data for editing
@@ -114,6 +121,21 @@ if ($yaml_cf_action === 'edit') {
         </div>
       </div>
     </div>
+
+    <?php
+    // Display success messages (using transients - shown only once)
+    $success_key = 'yaml_cf_data_object_success_' . get_current_user_id();
+    $success_msg = get_transient($success_key);
+    if ($success_msg) {
+      $success_messages = [
+        'entry_saved' => __('Entry saved successfully!', 'yaml-custom-fields'),
+        'entry_deleted' => __('Entry deleted successfully!', 'yaml-custom-fields'),
+      ];
+      $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+      delete_transient($success_key);
+    }
+    ?>
 
     <div class="yaml-cf-intro">
       <p>

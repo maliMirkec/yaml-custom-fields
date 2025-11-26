@@ -266,7 +266,7 @@
 }
 
 .yaml-cf-field input[type='checkbox'] {
-  width: auto;
+  /* width: auto; */
   margin-right: 5px;
 }
 
@@ -656,6 +656,13 @@
     white-space: nowrap;
     width: fit-content;
   }
+}
+
+/* Postbox Wrapper */
+.postbox[id*=""] {
+  display: block;
+  position: relative;
+  margin-top: 6px;
 }
 
 /* Code Snippet Wrapper */
