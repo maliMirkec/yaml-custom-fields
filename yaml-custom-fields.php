@@ -1431,7 +1431,7 @@ class YAML_Custom_Fields {
 
       // Validate YAML syntax before saving
       if (!empty($schema)) {
-        $validation_result = $this->validate_yaml_schema($schema);
+        $validation_result = $this->validate_yaml_schema($schema, $template);
         if (!$validation_result['valid']) {
           // Store the invalid schema in a transient so we can display it back
           set_transient('yaml_cf_invalid_schema_' . get_current_user_id(), $schema, 60);
@@ -1596,7 +1596,7 @@ class YAML_Custom_Fields {
 
       // Validate YAML syntax before saving
       if (!empty($template_global_schema)) {
-        $validation_result = $this->validate_yaml_schema($template_global_schema);
+        $validation_result = $this->validate_yaml_schema($template_global_schema, $template);
         if (!$validation_result['valid']) {
           // Store the invalid schema in a transient so we can display it back
           set_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id(), $template_global_schema, 60);
@@ -2168,10 +2168,13 @@ class YAML_Custom_Fields {
       return;
     }
 
+    // Normalize shorthand info field syntax
+    $schema['fields'] = $this->normalize_info_field_shorthand($schema['fields']);
+
     // Add link to edit schema
     $edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template));
 
-    echo '<div id="yaml-cf-meta-box" class="postbox" style="margin-bottom: 20px;">';
+    echo '<div id="yaml-cf-meta-box" class="postbox" style="margin-top: 20px; margin-bottom: 20px;">';
     echo '<div class="postbox-header"><h2 class="hndle">' . esc_html__('YAML Custom Fields Schema', 'yaml-custom-fields') . '</h2></div>';
     echo '<div class="inside">';
 
@@ -2392,6 +2395,35 @@ class YAML_Custom_Fields {
     echo '</div>'; // yaml-cf-dual-field
   }
 
+  /**
+   * Normalize shorthand info field syntax to standard field structure
+   * Transforms: - info: "text" → - type: info, name: info_0, text: "text"
+   *
+   * @param array $fields The fields array from parsed YAML
+   * @return array Normalized fields array
+   */
+  private function normalize_info_field_shorthand($fields) {
+    $normalized = [];
+    $info_counter = 0;
+
+    foreach ($fields as $field) {
+      // Check if this is shorthand info syntax (single key 'info')
+      if (isset($field['info']) && !isset($field['type']) && !isset($field['name'])) {
+        // This is shorthand: - info: "text"
+        $normalized[] = [
+          'type' => 'info',
+          'name' => 'info_' . $info_counter++,
+          'text' => $field['info']
+        ];
+      } else {
+        // Standard field structure, keep as-is
+        $normalized[] = $field;
+      }
+    }
+
+    return $normalized;
+  }
+
   private function parse_yaml_schema($yaml) {
     try {
       return Yaml::parse($yaml);
@@ -2402,7 +2434,74 @@ class YAML_Custom_Fields {
     }
   }
 
-  private function validate_yaml_schema($yaml) {
+  /**
+   * Parse basic markdown syntax for info fields
+   * Supports: **bold**, _italic_, and [text](url)
+   *
+   * @param string $text The markdown text to parse
+   * @return string HTML output with security filtering
+   */
+  private function parse_basic_markdown($text) {
+    if (empty($text)) {
+      return '';
+    }
+
+    // Step 1: Escape all HTML first to prevent XSS
+    $text = esc_html($text);
+
+    // Step 2: Parse **bold** syntax to <strong>
+    $text = preg_replace_callback(
+      '/\*\*([^\*]+)\*\*/',
+      function($matches) {
+        return '<strong>' . $matches[1] . '</strong>';
+      },
+      $text
+    );
+
+    // Step 3: Parse _italic_ syntax to <em>
+    $text = preg_replace_callback(
+      '/_([^_]+)_/',
+      function($matches) {
+        return '<em>' . $matches[1] . '</em>';
+      },
+      $text
+    );
+
+    // Step 4: Parse [text](url) syntax to <a href="url">text</a>
+    $text = preg_replace_callback(
+      '/\[([^\]]+)\]\(([^\)]+)\)/',
+      function($matches) {
+        $link_text = $matches[1];
+        $url = $matches[2];
+
+        // Sanitize URL - this strips javascript:, data:, and other dangerous protocols
+        $safe_url = esc_url($url, ['http', 'https', 'mailto']);
+
+        // If URL was deemed unsafe, esc_url returns empty string
+        if (empty($safe_url)) {
+          return $link_text; // Just return the text without a link
+        }
+
+        return '<a href="' . $safe_url . '" target="_blank" rel="noopener noreferrer">' . $link_text . '</a>';
+      },
+      $text
+    );
+
+    // Step 5: Apply final security filter to only allow specific tags
+    $allowed_tags = [
+      'strong' => [],
+      'em' => [],
+      'a' => [
+        'href' => [],
+        'target' => [],
+        'rel' => []
+      ]
+    ];
+
+    return wp_kses($text, $allowed_tags);
+  }
+
+  private function validate_yaml_schema($yaml, $template = null) {
     try {
       $parsed = Yaml::parse($yaml);
 
@@ -2422,8 +2521,11 @@ class YAML_Custom_Fields {
         ];
       }
 
+      // Normalize info field shorthand for validation
+      $fields = $this->normalize_info_field_shorthand($parsed['fields']);
+
       // Basic validation of field structure
-      foreach ($parsed['fields'] as $index => $field) {
+      foreach ($fields as $index => $field) {
         if (!is_array($field)) {
           return [
             'valid' => false,
@@ -2444,6 +2546,16 @@ class YAML_Custom_Fields {
             'message' => 'Field "' . $field['name'] . '" is missing required "type" property'
           ];
         }
+
+        // Validate info field template restrictions
+        if ($field['type'] === 'info' && $template !== null) {
+          if (!$this->is_template_allowed_for_info_field($template)) {
+            return [
+              'valid' => false,
+              'message' => 'Info fields are not allowed for template partials and archives. Current template: ' . $template
+            ];
+          }
+        }
       }
 
       return [
@@ -2456,6 +2568,61 @@ class YAML_Custom_Fields {
         'message' => 'YAML syntax error: ' . $e->getMessage()
       ];
     }
+  }
+
+  /**
+   * Check if a template is allowed to use info fields
+   * Info fields are NOT allowed for partials and archives (global data templates)
+   *
+   * @param string $template The template name
+   * @return bool True if allowed, false otherwise
+   */
+  private function is_template_allowed_for_info_field($template) {
+    // Get just the basename if path is provided
+    $basename = basename($template);
+
+    // Partial/Archive patterns that should NOT have info fields
+    // These match the partial_patterns from get_theme_templates()
+    $disallowed_patterns = [
+      // Traditional partials
+      'header.php',
+      'footer.php',
+      'sidebar.php',
+      'header-*.php',
+      'footer-*.php',
+      'sidebar-*.php',
+      'content.php',
+      'content-*.php',
+      'comments.php',
+      'searchform.php',
+      // Archive/listing templates (global data)
+      'index.php',
+      'front-page.php',
+      'home.php',
+      'archive.php',
+      'archive-*.php',
+      'category.php',
+      'category-*.php',
+      'tag.php',
+      'tag-*.php',
+      'taxonomy.php',
+      'taxonomy-*.php',
+      'author.php',
+      'author-*.php',
+      'date.php',
+      'search.php',
+      '404.php',
+    ];
+
+    // Check if template matches any disallowed pattern
+    foreach ($disallowed_patterns as $pattern) {
+      if ($pattern === $basename || fnmatch($pattern, $basename)) {
+        return false; // This is a partial/archive, not allowed
+      }
+    }
+
+    // All other templates are allowed (page.php, single.php, custom page templates, etc.)
+    return true;
   }
 
   public function render_schema_fields($fields, $saved_data, $prefix = '', $context = null) {
@@ -2533,8 +2700,8 @@ class YAML_Custom_Fields {
         $popover_id = 'snippet-' . sanitize_html_class($field_id);
       }
 
-      // Skip label rendering for block fields as they handle their own label with snippet
-      if ($field['type'] !== 'block') {
+      // Skip label rendering for block and info fields as they handle their own display
+      if ($field['type'] !== 'block' && $field['type'] !== 'info') {
         if($field['type'] === 'image' || $field['type'] === 'file') {
           echo '<p>' . esc_html($field_label) . '</p>';
         } else {
@@ -2599,6 +2766,19 @@ class YAML_Custom_Fields {
           $options = isset($field['options']) ? $field['options'] : [];
           $language = isset($options['language']) ? $options['language'] : 'html';
           echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($field_value) . '</textarea>';
+          break;
+
+        case 'info':
+          // Render read-only info banner with markdown support
+          $info_text = isset($field['text']) ? $field['text'] : '';
+          if (!empty($info_text)) {
+            echo '<div class="yaml-cf-info-box">';
+            echo '<span class="dashicons dashicons-info"></span>';
+            echo '<div class="yaml-cf-info-content">';
+            echo $this->parse_basic_markdown($info_text);
+            echo '</div>';
+            echo '</div>';
+          }
           break;
 
         case 'number':
