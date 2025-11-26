@@ -1316,6 +1316,21 @@ class YAML_Custom_Fields {
         'mimes' => ['json' => 'application/json'],
       ];
 
+      // Add filter to allow JSON mime type
+      add_filter('upload_mimes', function($mimes) {
+        $mimes['json'] = 'application/json';
+        return $mimes;
+      });
+
+      // Also bypass the file type check entirely for this specific upload
+      add_filter('wp_check_filetype_and_ext', function($data, $file, $filename, $mimes) {
+        if (substr($filename, -5) === '.json') {
+          $data['ext'] = 'json';
+          $data['type'] = 'application/json';
+        }
+        return $data;
+      }, 10, 4);
+
       // Use WordPress native upload handler - validates and sanitizes automatically
       $uploaded_file = wp_handle_upload($_FILES['yaml_cf_import_file'], $upload_overrides);
 
@@ -1397,8 +1412,44 @@ class YAML_Custom_Fields {
       $schema = isset($post_data['schema']) ? $post_data['schema'] : null;
       $cleaned_data = $this->validate_and_clean_attachment_data($post_data['data'], $schema);
 
-      // Update post meta
-      update_post_meta($post_id, '_yaml_cf_data', $cleaned_data);
+      // Use direct database update to bypass all WordPress sanitization filters
+      // This is necessary during import to preserve HTML in rich-text fields
+      global $wpdb;
+
+      // Serialize the data (WordPress does this normally in update_post_meta)
+      $meta_value = maybe_serialize($cleaned_data);
+
+      // Check if meta already exists
+      $meta_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
+        $post_id,
+        '_yaml_cf_data'
+      ));
+
+      if ($meta_id) {
+        // Update existing meta
+        $wpdb->update(
+          $wpdb->postmeta,
+          ['meta_value' => $meta_value],
+          ['meta_id' => $meta_id],
+          ['%s'],
+          ['%d']
+        );
+      } else {
+        // Insert new meta
+        $wpdb->insert(
+          $wpdb->postmeta,
+          [
+            'post_id' => $post_id,
+            'meta_key' => '_yaml_cf_data',
+            'meta_value' => $meta_value
+          ],
+          ['%d', '%s', '%s']
+        );
+      }
+
+      // Clear the meta cache for this post
+      wp_cache_delete($post_id, 'post_meta');
 
       // Mark as imported and store schema if available
       update_post_meta($post_id, '_yaml_cf_imported', true);
@@ -3840,22 +3891,18 @@ class YAML_Custom_Fields {
   }
 
   public function ajax_import_page_data() {
-    error_log('======= YAML CF Import START =======');
     check_ajax_referer('yaml_cf_nonce', 'nonce');
 
     if (!current_user_can('manage_options')) {
-      error_log('YAML CF Import - Permission denied');
       wp_send_json_error('Permission denied');
     }
 
     if (!isset($_POST['data'])) {
-      error_log('YAML CF Import - No data provided');
       wp_send_json_error('No data provided');
     }
 
     // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
     $json_data = wp_unslash($_POST['data']);
-    error_log('YAML CF Import - JSON data length: ' . strlen($json_data));
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
@@ -3936,22 +3983,44 @@ class YAML_Custom_Fields {
       $data_field_count = is_array($cleaned_data) ? count($cleaned_data) : 0;
       $has_schema = isset($post_data['schema']);
 
-      // Debug: Log cleaned data sample
-      error_log('YAML CF Import - Cleaned data type: ' . gettype($cleaned_data));
-      if (is_array($cleaned_data)) {
-        error_log('YAML CF Import - Cleaned data sample: ' . json_encode(array_slice($cleaned_data, 0, 3, true)));
+      // Use direct database update to bypass all WordPress sanitization filters
+      // This is necessary during import to preserve HTML in rich-text fields
+      global $wpdb;
+
+      // Serialize the data (WordPress does this normally in update_post_meta)
+      $meta_value = maybe_serialize($cleaned_data);
+
+      // Check if meta already exists
+      $meta_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
+        $target_post->ID,
+        '_yaml_cf_data'
+      ));
+
+      if ($meta_id) {
+        // Update existing meta
+        $data_updated = $wpdb->update(
+          $wpdb->postmeta,
+          ['meta_value' => $meta_value],
+          ['meta_id' => $meta_id],
+          ['%s'],
+          ['%d']
+        );
+      } else {
+        // Insert new meta
+        $data_updated = $wpdb->insert(
+          $wpdb->postmeta,
+          [
+            'post_id' => $target_post->ID,
+            'meta_key' => '_yaml_cf_data',
+            'meta_value' => $meta_value
+          ],
+          ['%d', '%s', '%s']
+        );
       }
 
-      // Update the post meta
-      $data_updated = update_post_meta($target_post->ID, '_yaml_cf_data', $cleaned_data);
-
-      // Debug: Verify what was saved
-      $saved_data = get_post_meta($target_post->ID, '_yaml_cf_data', true);
-      error_log('YAML CF Import - Data saved result: ' . ($data_updated ? 'true' : 'false'));
-      error_log('YAML CF Import - Retrieved data type: ' . gettype($saved_data));
-      if (is_array($saved_data)) {
-        error_log('YAML CF Import - Retrieved data sample: ' . json_encode(array_slice($saved_data, 0, 3, true)));
-      }
+      // Clear the meta cache for this post
+      wp_cache_delete($target_post->ID, 'post_meta');
 
       // Mark as imported and store schema if available
       update_post_meta($target_post->ID, '_yaml_cf_imported', true);
