@@ -1889,9 +1889,8 @@ class YAML_Custom_Fields {
         case 'js':
         case 'html':
         default:
-          // Allow raw HTML/JS for administrators
-          // Just preserve newlines and basic textarea sanitization
-          return wp_unslash($code);
+          // For administrators, preserve code exactly as entered
+          return $code;
       }
     }
 
@@ -3576,11 +3575,68 @@ class YAML_Custom_Fields {
 
       $sanitized_data = $this->sanitize_field_data($posted_data, $schema);
 
-      update_post_meta($post_id, '_yaml_cf_data', $sanitized_data);
+      // Use direct database queries to bypass WordPress sanitization
+      // This preserves HTML in code fields for administrators
+      global $wpdb;
+
+      // Save _yaml_cf_data
+      $meta_value = maybe_serialize($sanitized_data);
+      $meta_id = $wpdb->get_var($wpdb->prepare(
+        "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
+        $post_id,
+        '_yaml_cf_data'
+      ));
+
+      if ($meta_id) {
+        $wpdb->update(
+          $wpdb->postmeta,
+          ['meta_value' => $meta_value],
+          ['meta_id' => $meta_id],
+          ['%s'],
+          ['%d']
+        );
+      } else {
+        $wpdb->insert(
+          $wpdb->postmeta,
+          [
+            'post_id' => $post_id,
+            'meta_key' => '_yaml_cf_data',
+            'meta_value' => $meta_value
+          ],
+          ['%d', '%s', '%s']
+        );
+      }
+
+      wp_cache_delete($post_id, 'post_meta');
 
       // Store schema for validation purposes
       if ($schema) {
-        update_post_meta($post_id, '_yaml_cf_schema', $schema);
+        $schema_value = maybe_serialize($schema);
+        $schema_meta_id = $wpdb->get_var($wpdb->prepare(
+          "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
+          $post_id,
+          '_yaml_cf_schema'
+        ));
+
+        if ($schema_meta_id) {
+          $wpdb->update(
+            $wpdb->postmeta,
+            ['meta_value' => $schema_value],
+            ['meta_id' => $schema_meta_id],
+            ['%s'],
+            ['%d']
+          );
+        } else {
+          $wpdb->insert(
+            $wpdb->postmeta,
+            [
+              'post_id' => $post_id,
+              'meta_key' => '_yaml_cf_schema',
+              'meta_value' => $schema_value
+            ],
+            ['%d', '%s', '%s']
+          );
+        }
       }
 
       // Track this post for efficient cache clearing (avoids slow meta_query)
