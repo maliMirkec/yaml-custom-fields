@@ -15,6 +15,7 @@
       this.initMediaUploader();
       this.initMetaBoxChangeTracking();
       this.initFieldGlobalLocal();
+      this.initPostboxes();
     },
 
     bindEvents: function () {
@@ -209,6 +210,27 @@
       const self = this;
       $('.yaml-cf-use-global-checkbox').each(function () {
         self.toggleFieldGlobalLocal.call(this);
+      });
+    },
+
+    initPostboxes: function () {
+      const $metaBox = $('#yaml-cf-meta-box');
+
+      if (!$metaBox.length) {
+        return;
+      }
+
+      // Restore collapsed state from localStorage
+      const isCollapsed = localStorage.getItem('yaml_cf_metabox_collapsed') === 'true';
+      if (isCollapsed) {
+        $metaBox.addClass('closed');
+      }
+
+      // Toggle on header click
+      $metaBox.find('.hndle').on('click', function() {
+        // Save state to localStorage
+        const isClosed = $metaBox.hasClass('closed');
+        localStorage.setItem('yaml_cf_metabox_collapsed', isClosed);
       });
     },
 
