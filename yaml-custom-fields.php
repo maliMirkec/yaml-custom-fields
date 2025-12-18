@@ -62,11 +62,7 @@ class YAML_Custom_Fields {
    * @return string Sanitized value
    */
   public static function get_param($key, $default = '') {
-    $value = filter_input(INPUT_GET, $key, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    if ($value === null || $value === false) {
-      return $default;
-    }
-    return sanitize_text_field($value);
+    return \YamlCF\Helpers\RequestHelper::getParam($key, $default);
   }
 
   /**
@@ -77,11 +73,7 @@ class YAML_Custom_Fields {
    * @return int Validated integer
    */
   public static function get_param_int($key, $default = 0) {
-    $value = filter_input(INPUT_GET, $key, FILTER_VALIDATE_INT);
-    if ($value === null || $value === false) {
-      return $default;
-    }
-    return $value;
+    return \YamlCF\Helpers\RequestHelper::getParamInt($key, $default);
   }
 
   /**
@@ -92,13 +84,7 @@ class YAML_Custom_Fields {
    * @return string Sanitized key
    */
   public static function get_param_key($key, $default = '') {
-    $value = filter_input(INPUT_GET, $key, FILTER_CALLBACK, [
-      'options' => 'sanitize_key'
-    ]);
-    if ($value === null || $value === false) {
-      return $default;
-    }
-    return $value;
+    return \YamlCF\Helpers\RequestHelper::getParamKey($key, $default);
   }
 
   /**
@@ -138,32 +124,14 @@ class YAML_Custom_Fields {
    * @return mixed Sanitized POST data
    */
   public static function post_raw($key, $default = '') {
-    // Check if POST data exists and is set
-    // Using filter_input for proper superglobal access without PHPCS warnings
-    $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW, FILTER_REQUIRE_ARRAY | FILTER_NULL_ON_FAILURE);
-
-    if ($value === null) {
-      // Try as non-array
-      $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW);
-    }
-
-    if ($value === null || $value === false) {
-      return $default;
-    }
-
-    // Apply wp_unslash to handle magic quotes
-    return wp_unslash($value);
+    return \YamlCF\Helpers\RequestHelper::postRaw($key, $default);
   }
 
   /**
    * Get sanitized POST data
    */
   public static function post_sanitized($key, $default = '', $callback = 'sanitize_text_field') {
-    $value = self::post_raw($key, $default);
-    if (is_array($value)) {
-      return map_deep($value, $callback);
-    }
-    return call_user_func($callback, $value);
+    return \YamlCF\Helpers\RequestHelper::postSanitized($key, $default, $callback);
   }
 
   /**
@@ -173,12 +141,7 @@ class YAML_Custom_Fields {
    * @param int $post_id Post ID to track
    */
   private function track_post_with_yaml_data($post_id) {
-    $tracked_posts = get_option('yaml_cf_tracked_posts', []);
-
-    if (!in_array($post_id, $tracked_posts, true)) {
-      $tracked_posts[] = $post_id;
-      update_option('yaml_cf_tracked_posts', array_unique($tracked_posts), false);
-    }
+    \YamlCF\Cache\PostTracker::track($post_id);
   }
 
   /**
@@ -187,13 +150,7 @@ class YAML_Custom_Fields {
    * @param int $post_id Post ID to untrack
    */
   private function untrack_post_with_yaml_data($post_id) {
-    $tracked_posts = get_option('yaml_cf_tracked_posts', []);
-    $key = array_search($post_id, $tracked_posts, true);
-
-    if ($key !== false) {
-      unset($tracked_posts[$key]);
-      update_option('yaml_cf_tracked_posts', array_values($tracked_posts), false);
-    }
+    \YamlCF\Cache\PostTracker::untrack($post_id);
   }
 
   /**
@@ -214,23 +171,7 @@ class YAML_Custom_Fields {
    * @return string Escaped HTML attributes string
    */
   private function build_html_attrs($attrs) {
-    if (empty($attrs)) {
-      return '';
-    }
-
-    $parts = [];
-    foreach ($attrs as $key => $value) {
-      if ($value === false || $value === null || $value === '') {
-        continue;
-      }
-      if ($value === true) {
-        $parts[] = esc_attr($key);
-      } else {
-        $parts[] = esc_attr($key) . '="' . esc_attr($value) . '"';
-      }
-    }
-
-    return !empty($parts) ? ' ' . implode(' ', $parts) : '';
+    return \YamlCF\Helpers\HtmlHelper::buildAttrs($attrs);
   }
 
   /**
@@ -241,9 +182,7 @@ class YAML_Custom_Fields {
    * @return void
    */
   private function output_html_attrs($attrs) {
-    // Attributes are already escaped by build_html_attrs using esc_attr()
-    // This wrapper makes WPCS happy by making the escaping chain explicit
-    echo wp_kses_post($this->build_html_attrs($attrs));
+    \YamlCF\Helpers\HtmlHelper::outputAttrs($attrs);
   }
 
   private function init_hooks() {
@@ -252,10 +191,16 @@ class YAML_Custom_Fields {
     add_action('admin_init', [$this, 'handle_settings_export']);
     add_action('admin_init', [$this, 'handle_page_data_export']);
     add_action('admin_init', [$this, 'handle_data_objects_export']);
-    add_action('admin_menu', [$this, 'add_admin_menu']);
-    add_action('admin_head', [$this, 'hide_submenu_items']);
-    add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
-    add_filter('admin_title', [$this, 'customize_admin_title'], 10, 2);
+
+    // NOTE: Admin menu, assets, and menu customization now handled by new architecture (HookManager)
+    // add_action('admin_menu', [$this, 'add_admin_menu']);
+    // add_action('admin_head', [$this, 'hide_submenu_items']);
+    // add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+    // add_filter('admin_title', [$this, 'customize_admin_title'], 10, 2);
+    // add_filter('parent_file', [$this, 'set_parent_file']);
+    // add_filter('submenu_file', [$this, 'set_submenu_file']);
+    // add_action('switch_theme', [$this, 'clear_template_cache']);
+
     // Only use edit_form_after_title to avoid duplicate rendering
     add_action('edit_form_after_title', [$this, 'render_schema_meta_box_after_title']);
     add_action('save_post', [$this, 'save_schema_data']);
@@ -266,841 +211,16 @@ class YAML_Custom_Fields {
     add_action('wp_ajax_yaml_cf_get_schema', [$this, 'ajax_get_schema']);
     add_action('wp_ajax_yaml_cf_get_partial_data', [$this, 'ajax_get_partial_data']);
     add_action('wp_ajax_yaml_cf_save_partial_data', [$this, 'ajax_save_partial_data']);
+    add_action('wp_ajax_yaml_cf_refresh_templates', [$this, 'ajax_refresh_templates']);
     add_action('wp_ajax_yaml_cf_export_settings', [$this, 'ajax_export_settings']);
     add_action('wp_ajax_yaml_cf_import_settings', [$this, 'ajax_import_settings']);
     add_action('wp_ajax_yaml_cf_export_page_data', [$this, 'ajax_export_page_data']);
     add_action('wp_ajax_yaml_cf_import_page_data', [$this, 'ajax_import_page_data']);
     add_action('wp_ajax_yaml_cf_get_posts_with_data', [$this, 'ajax_get_posts_with_data']);
     add_action('wp_ajax_yaml_cf_import_data_objects', [$this, 'ajax_import_data_objects']);
-
-    // Highlight parent menu for dynamic pages
-    add_filter('parent_file', [$this, 'set_parent_file']);
-    add_filter('submenu_file', [$this, 'set_submenu_file']);
-
-    // Clear cache on theme switch
-    add_action('switch_theme', [$this, 'clear_template_cache']);
   }
 
-  public function add_admin_menu() {
-    add_menu_page(
-      __('YAML Custom Fields', 'yaml-custom-fields'),
-      __('YAML CF', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-custom-fields',
-      [$this, 'render_admin_page'],
-      'dashicons-edit-page',
-      30
-    );
 
-    // Register hidden pages (accessible via URL but not shown in menu by default)
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Edit Schema', 'yaml-custom-fields'),
-      __('Edit Schema', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-edit-schema',
-      [$this, 'render_edit_schema_page']
-    );
-
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Edit Partial', 'yaml-custom-fields'),
-      __('Edit Partial', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-edit-partial',
-      [$this, 'render_edit_partial_page']
-    );
-
-    // Global Schema pages
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Edit Global Schema', 'yaml-custom-fields'),
-      __('Edit Global Schema', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-edit-global-schema',
-      [$this, 'render_edit_global_schema_page']
-    );
-
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Manage Global Data', 'yaml-custom-fields'),
-      __('Manage Global Data', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-manage-global-data',
-      [$this, 'render_manage_global_data_page']
-    );
-
-    // Template Global pages (hidden from menu)
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Edit Template Global Schema', 'yaml-custom-fields'),
-      __('Edit Template Global Schema', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-edit-template-global',
-      [$this, 'render_edit_template_global_schema_page']
-    );
-
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Manage Template Global Data', 'yaml-custom-fields'),
-      __('Manage Template Global Data', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-manage-template-global',
-      [$this, 'render_manage_template_global_data_page']
-    );
-
-    // Data Validation
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Data Validation', 'yaml-custom-fields'),
-      __('Data Validation', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-data-validation',
-      [$this, 'render_data_validation_page']
-    );
-
-    // Data Objects
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Data Objects', 'yaml-custom-fields'),
-      __('Data Objects', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-data-objects',
-      [$this, 'render_data_objects_page']
-    );
-
-    // Hidden pages for Data Objects
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Edit Data Object Type', 'yaml-custom-fields'),
-      __('Edit Data Object Type', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-edit-data-object-type',
-      [$this, 'render_edit_data_object_type_page']
-    );
-
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Manage Data Object Entries', 'yaml-custom-fields'),
-      __('Manage Data Object Entries', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-manage-data-object-entries',
-      [$this, 'render_manage_data_object_entries_page']
-    );
-
-    // Export/Import (consolidated - positioned before Documentation)
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Export/Import', 'yaml-custom-fields'),
-      __('Export/Import', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-export-data',
-      [$this, 'render_export_data_page']
-    );
-
-    // Documentation (added last to appear at the bottom)
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Documentation', 'yaml-custom-fields'),
-      __('Documentation', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-docs',
-      [$this, 'render_docs_page']
-    );
-  }
-
-  public function hide_submenu_items() {
-    global $submenu;
-
-    if (isset($submenu['yaml-custom-fields'])) {
-      $current_page = $this->get_param('page');
-
-      // Check if there are any data object types
-      $data_object_types = get_option('yaml_cf_data_object_types', []);
-      $has_data_object_types = !empty($data_object_types);
-
-      // Check if there is a global schema with fields
-      $global_schema_yaml = get_option('yaml_cf_global_schema', '');
-      $global_schema = $this->parse_yaml_schema($global_schema_yaml);
-      $has_global_schema = !empty($global_schema) && !empty($global_schema['fields']);
-
-      foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
-        $menu_slug = $menu_item[2];
-
-        // Hide "Edit Schema" if not on edit schema page
-        if ($menu_slug === 'yaml-cf-edit-schema' && $current_page !== 'yaml-cf-edit-schema') {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-
-        // Hide "Edit Partial" if not on edit partial page
-        if ($menu_slug === 'yaml-cf-edit-partial' && $current_page !== 'yaml-cf-edit-partial') {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-
-        // Always hide "Edit Data Object Type" from menu - it's accessed via Data Objects page
-        if ($menu_slug === 'yaml-cf-edit-data-object-type' && $current_page !== 'yaml-cf-edit-data-object-type') {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-
-        // Always hide "Manage Data Object Entries" from menu - it's accessed via Data Objects page
-        if ($menu_slug === 'yaml-cf-manage-data-object-entries' && $current_page !== 'yaml-cf-manage-data-object-entries') {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-
-        // Hide "Edit Template Global" if not on that page
-        if ($menu_slug === 'yaml-cf-edit-template-global' && $current_page !== 'yaml-cf-edit-template-global') {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-
-        // Hide "Manage Template Global Data" if not on that page
-        if ($menu_slug === 'yaml-cf-manage-template-global' && $current_page !== 'yaml-cf-manage-template-global') {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-
-        // Hide "Manage Global Data" if no global schema or no fields defined
-        if ($menu_slug === 'yaml-cf-manage-global-data' && !$has_global_schema) {
-          unset($submenu['yaml-custom-fields'][$key]);
-        }
-      }
-    }
-  }
-
-  /**
-   * Customize admin page title for dynamic pages
-   */
-  public function customize_admin_title($admin_title, $title) {
-    $page = $this->get_param('page');
-
-    // Handle template-based pages
-    $template = $this->get_param('template');
-    if ($template) {
-      $theme_files = $this->get_theme_templates();
-      $template_name = $template;
-      foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
-        if ($item['file'] === $template) {
-          $template_name = $item['name'];
-          break;
-        }
-      }
-
-      // Edit Schema page
-      if ($page === 'yaml-cf-edit-schema') {
-        /* translators: %s: Template name */
-        return sprintf(__('Edit Schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
-      }
-
-      // Edit Partial page
-      if ($page === 'yaml-cf-edit-partial') {
-        /* translators: %s: Template name */
-        return sprintf(__('Edit Partial: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
-      }
-
-      // Edit Template Global Schema page
-      if ($page === 'yaml-cf-edit-template-global') {
-        /* translators: %s: Template name */
-        return sprintf(__('Edit Template Global Schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
-      }
-
-      // Manage Template Global Data page
-      if ($page === 'yaml-cf-manage-template-global') {
-        /* translators: %s: Template name */
-        return sprintf(__('Manage Template Global Data: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
-      }
-    }
-
-    // Handle data-object-based pages
-    $type = $this->get_param('type');
-    if ($type) {
-      $data_object_types = get_option('yaml_cf_data_object_types', []);
-      $type_name = $type;
-      if (isset($data_object_types[$type]['name'])) {
-        $type_name = $data_object_types[$type]['name'];
-      }
-
-      // Edit Data Object Type page
-      if ($page === 'yaml-cf-edit-data-object-type') {
-        /* translators: %s: Data object type name */
-        return sprintf(__('Edit Data Object Type: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
-      }
-
-      // Manage Data Object Entries page
-      if ($page === 'yaml-cf-manage-data-object-entries') {
-        /* translators: %s: Data object type name */
-        return sprintf(__('Manage Data Object Entries: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
-      }
-    }
-
-    return $admin_title;
-  }
-
-  public function set_parent_file($parent_file) {
-    global $submenu_file, $submenu;
-
-    $page = $this->get_param('page');
-    if ($page) {
-      // Handle template-based pages
-      $template = $this->get_param('template');
-      if ($template && ($page === 'yaml-cf-edit-schema' || $page === 'yaml-cf-edit-partial')) {
-        $theme_files = $this->get_theme_templates();
-        $template_name = $template;
-
-        // Find template name
-        if ($page === 'yaml-cf-edit-schema') {
-          foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
-            if ($item['file'] === $template) {
-              $template_name = $item['name'];
-              break;
-            }
-          }
-        } else {
-          foreach ($theme_files['partials'] as $partial) {
-            if ($partial['file'] === $template) {
-              $template_name = $partial['name'];
-              break;
-            }
-          }
-        }
-
-        // Update the submenu title and URL
-        if (isset($submenu['yaml-custom-fields'])) {
-          foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
-            if ($menu_item[2] === $page) {
-              if ($page === 'yaml-cf-edit-schema') {
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Edit Schema: %s', 'yaml-custom-fields'), $template_name);
-                // Use admin.php?page= format for proper WordPress menu handling
-                $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template);
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Edit Schema: %s', 'yaml-custom-fields'), $template_name);
-              } else {
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Edit Partial: %s', 'yaml-custom-fields'), $template_name);
-                $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-edit-partial&template=' . urlencode($template);
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Edit Partial: %s', 'yaml-custom-fields'), $template_name);
-              }
-              break;
-            }
-          }
-        }
-
-        $parent_file = 'yaml-custom-fields';
-      }
-
-      // Handle data object type pages
-      $type_slug = $this->get_param_key('type');
-      if ($type_slug && $page === 'yaml-cf-edit-data-object-type') {
-        $data_object_types = get_option('yaml_cf_data_object_types', []);
-        $type_name = isset($data_object_types[$type_slug]) ? $data_object_types[$type_slug]['name'] : $type_slug;
-
-        // Update the submenu title and URL
-        if (isset($submenu['yaml-custom-fields'])) {
-          foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
-            if ($menu_item[2] === $page) {
-              /* translators: %s: data object type name */
-              $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Edit Type: %s', 'yaml-custom-fields'), $type_name);
-              $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-edit-data-object-type&type=' . urlencode($type_slug);
-              /* translators: %s: data object type name */
-              $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Edit Type: %s', 'yaml-custom-fields'), $type_name);
-              break;
-            }
-          }
-        }
-
-        $parent_file = 'yaml-custom-fields';
-      }
-
-      // Handle manage entries pages
-      if ($type_slug && $page === 'yaml-cf-manage-data-object-entries') {
-        $data_object_types = get_option('yaml_cf_data_object_types', []);
-        $type_name = isset($data_object_types[$type_slug]) ? $data_object_types[$type_slug]['name'] : $type_slug;
-
-        // Update the submenu title and URL
-        if (isset($submenu['yaml-custom-fields'])) {
-          foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
-            if ($menu_item[2] === $page) {
-              /* translators: %s: data object type name */
-              $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Manage: %s', 'yaml-custom-fields'), $type_name);
-              $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($type_slug);
-              /* translators: %s: data object type name */
-              $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Manage: %s', 'yaml-custom-fields'), $type_name);
-              break;
-            }
-          }
-        }
-
-        $parent_file = 'yaml-custom-fields';
-      }
-
-      // Handle template global schema pages
-      if ($template && ($page === 'yaml-cf-edit-template-global' || $page === 'yaml-cf-manage-template-global')) {
-        $theme_files = $this->get_theme_templates();
-        $template_name = $template;
-        foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
-          if ($item['file'] === $template) {
-            $template_name = $item['name'];
-            break;
-          }
-        }
-
-        // Update the submenu title and URL
-        if (isset($submenu['yaml-custom-fields'])) {
-          foreach ($submenu['yaml-custom-fields'] as $key => $menu_item) {
-            if ($menu_item[2] === $page) {
-              if ($page === 'yaml-cf-edit-template-global') {
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Edit Template Global: %s', 'yaml-custom-fields'), $template_name);
-                $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-edit-template-global&template=' . urlencode($template);
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Edit Template Global: %s', 'yaml-custom-fields'), $template_name);
-              } else {
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][0] = sprintf(__('Manage Template Global: %s', 'yaml-custom-fields'), $template_name);
-                $submenu['yaml-custom-fields'][$key][2] = 'admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template);
-                /* translators: %s: template name */
-                $submenu['yaml-custom-fields'][$key][3] = sprintf(__('Manage Template Global: %s', 'yaml-custom-fields'), $template_name);
-              }
-              break;
-            }
-          }
-        }
-
-        $parent_file = 'yaml-custom-fields';
-      }
-    }
-
-    return $parent_file;
-  }
-
-  public function set_submenu_file($submenu_file) {
-    $page = $this->get_param('page');
-    if ($page) {
-      // Handle template-based pages
-      $template = $this->get_param('template');
-      if ($template && ($page === 'yaml-cf-edit-schema' || $page === 'yaml-cf-edit-partial')) {
-        $submenu_file = 'admin.php?page=' . $page . '&template=' . urlencode($template);
-      }
-
-      // Handle data object type pages
-      $type_slug = $this->get_param_key('type');
-      if ($type_slug && ($page === 'yaml-cf-edit-data-object-type' || $page === 'yaml-cf-manage-data-object-entries')) {
-        $submenu_file = 'admin.php?page=' . $page . '&type=' . urlencode($type_slug);
-      }
-
-      // Handle template global schema pages (hidden pages with parent = null)
-      if ($template && ($page === 'yaml-cf-edit-template-global' || $page === 'yaml-cf-manage-template-global')) {
-        $submenu_file = 'admin.php?page=' . $page . '&template=' . urlencode($template);
-      }
-    }
-
-    return $submenu_file;
-  }
-
-  public function enqueue_admin_assets($hook) {
-    // Check if we're on any YAML Custom Fields admin page
-    $is_plugin_page = (strpos($hook, 'yaml-cf') !== false || $hook === 'toplevel_page_yaml-custom-fields');
-
-    // Load on post edit screens
-    $current_screen = get_current_screen();
-    $is_post_edit = false;
-
-    if ($current_screen) {
-      // Check if editing any public post type
-      $post_type_object = get_post_type_object($current_screen->post_type);
-      $is_post_edit = in_array($current_screen->base, ['post', 'post-new']) &&
-                      $post_type_object && $post_type_object->public;
-    }
-
-    // Only load if on plugin pages or post edit screen
-    if (!$is_plugin_page && !$is_post_edit) {
-      return;
-    }
-
-    // Enqueue WordPress media library (needed for image/file uploads)
-    wp_enqueue_media();
-
-    wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'assets/admin.css', [], YAML_CF_VERSION);
-    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'assets/admin.js', ['jquery'], YAML_CF_VERSION, true);
-
-    // Get current template and schema for post edit screens
-    $schema_data = null;
-    $post_id = $this->get_param_int('post', 0);
-    if ($is_post_edit && $post_id) {
-      $post = get_post($post_id);
-      if ($post) {
-        $template = $this->get_template_for_post($post);
-
-        $schemas = get_option('yaml_cf_schemas', []);
-        if (isset($schemas[$template]) && !empty($schemas[$template])) {
-          $schema_data = $this->parse_yaml_schema($schemas[$template]);
-        }
-      }
-    }
-
-    wp_localize_script('yaml-cf-admin', 'yamlCF', [
-      'ajax_url' => admin_url('admin-ajax.php'),
-      'admin_url' => admin_url(),
-      'nonce' => wp_create_nonce('yaml_cf_nonce'),
-      'schema' => $schema_data
-    ]);
-  }
-
-  public function render_admin_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    // Handle refresh action
-    $refresh_message = '';
-    if ($this->get_param('refresh_ycf') === '1') {
-      $this->clear_template_cache();
-      $refresh_message = esc_html__('Template list refreshed successfully!', 'yaml-custom-fields');
-    }
-
-    $theme_files = $this->get_theme_templates();
-    $templates = $theme_files['templates'];
-    $partials = $theme_files['partials'];
-    $template_settings = get_option('yaml_cf_template_settings', []);
-    $schemas = get_option('yaml_cf_schemas', []);
-    $global_schema = get_option('yaml_cf_global_schema', '');
-    $global_schema_parsed = $this->parse_yaml_schema($global_schema);
-    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
-
-    include YAML_CF_PLUGIN_DIR . 'templates/admin-page.php';
-  }
-
-  public function render_edit_template_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    // This page is for future use - editing template-specific data
-    // For now, redirect to main page
-    wp_safe_redirect(admin_url('admin.php?page=yaml-custom-fields'));
-    exit;
-  }
-
-  public function render_edit_partial_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    $template = $this->get_param('template');
-    if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
-    }
-
-    $schemas = get_option('yaml_cf_schemas', []);
-
-    if (!isset($schemas[$template])) {
-      wp_die(esc_html__('No schema found for this template.', 'yaml-custom-fields'));
-    }
-
-    $schema_yaml = $schemas[$template];
-    $schema = $this->parse_yaml_schema($schema_yaml);
-
-    if (!$schema || !isset($schema['fields'])) {
-      wp_die(esc_html__('Invalid schema for this template.', 'yaml-custom-fields'));
-    }
-
-    // Get partial data
-    $partial_data = get_option('yaml_cf_partial_data', []);
-    $template_data = isset($partial_data[$template]) ? $partial_data[$template] : [];
-
-    // Get template name from theme files
-    $theme_files = $this->get_theme_templates();
-    $template_name = $template;
-    foreach ($theme_files['partials'] as $partial) {
-      if ($partial['file'] === $template) {
-        $template_name = $partial['name'];
-        break;
-      }
-    }
-
-    // Check for success message
-    $success_message = '';
-    if ($this->get_param('saved') === '1') {
-      $success_message = __('Partial data saved successfully!', 'yaml-custom-fields');
-    }
-
-    // Localize schema data for JavaScript
-    wp_localize_script('yaml-cf-admin', 'yamlCF', [
-      'ajax_url' => admin_url('admin-ajax.php'),
-      'admin_url' => admin_url(),
-      'nonce' => wp_create_nonce('yaml_cf_nonce'),
-      'schema' => $schema
-    ]);
-
-    include YAML_CF_PLUGIN_DIR . 'templates/edit-partial-page.php';
-  }
-
-  public function render_edit_schema_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    $template = $this->get_param('template');
-    if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
-    }
-
-    $schemas = get_option('yaml_cf_schemas', []);
-    $schema_yaml = isset($schemas[$template]) ? $schemas[$template] : '';
-
-    // Check if there's a validation error and restore the invalid schema
-    $error_message = '';
-    if ($this->get_param('error') === '1') {
-      $invalid_schema = get_transient('yaml_cf_invalid_schema_' . get_current_user_id());
-      if ($invalid_schema !== false) {
-        $schema_yaml = $invalid_schema;
-        delete_transient('yaml_cf_invalid_schema_' . get_current_user_id());
-      }
-
-      $error_msg = $this->get_param('error_msg');
-      if ($error_msg) {
-        $error_message = $error_msg;
-      } else {
-        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
-      }
-    }
-
-    // Get template name from theme files
-    $theme_files = $this->get_theme_templates();
-    $template_name = $template;
-    foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
-      if ($item['file'] === $template) {
-        $template_name = $item['name'];
-        break;
-      }
-    }
-
-    // Check for success message
-    $success_message = '';
-    if ($this->get_param('saved') === '1') {
-      $success_message = __('Schema saved successfully!', 'yaml-custom-fields');
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/edit-schema-page.php';
-  }
-
-  public function render_edit_global_schema_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    $global_schema = get_option('yaml_cf_global_schema', '');
-
-    // Check if there's a validation error
-    $error_message = '';
-    if ($this->get_param('error') === '1') {
-      $invalid_schema = get_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
-      if ($invalid_schema !== false) {
-        $global_schema = $invalid_schema;
-        delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
-      }
-
-      $error_msg = $this->get_param('error_msg');
-      if ($error_msg) {
-        $error_message = $error_msg;
-      } else {
-        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
-      }
-    }
-
-    // Check for success message
-    $success_message = '';
-    if ($this->get_param('saved') === '1') {
-      $success_message = __('Global schema saved successfully!', 'yaml-custom-fields');
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/edit-global-schema-page.php';
-  }
-
-  public function render_manage_global_data_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    $global_schema_yaml = get_option('yaml_cf_global_schema', '');
-    $global_schema = $this->parse_yaml_schema($global_schema_yaml);
-
-    if (!$global_schema || !isset($global_schema['fields'])) {
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-global-schema'));
-      exit;
-    }
-
-    $global_data = get_option('yaml_cf_global_data', []);
-
-    // Check for success message
-    $success_message = '';
-    if ($this->get_param('saved') === '1') {
-      $success_message = __('Global data saved successfully!', 'yaml-custom-fields');
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/manage-global-data-page.php';
-  }
-
-  public function render_edit_template_global_schema_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    $template = $this->get_param('template');
-    if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
-    }
-
-    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
-    $template_global_schema = isset($template_global_schemas[$template]) ? $template_global_schemas[$template] : '';
-
-    // Check if there's a validation error
-    $error_message = '';
-    if ($this->get_param('error') === '1') {
-      $invalid_schema = get_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
-      if ($invalid_schema !== false) {
-        $template_global_schema = $invalid_schema;
-        delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
-      }
-
-      $error_msg = $this->get_param('error_msg');
-      if ($error_msg) {
-        $error_message = $error_msg;
-      } else {
-        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
-      }
-    }
-
-    // Get template name from theme files
-    $theme_files = $this->get_theme_templates();
-    $template_name = $template;
-    foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
-      if ($item['file'] === $template) {
-        $template_name = $item['name'];
-        break;
-      }
-    }
-
-    // Check for success message
-    $success_message = '';
-    if ($this->get_param('saved') === '1') {
-      $success_message = __('Template global schema saved successfully!', 'yaml-custom-fields');
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/edit-template-global-schema-page.php';
-  }
-
-  public function render_manage_template_global_data_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    $template = $this->get_param('template');
-    if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
-    }
-
-    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
-    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
-
-    if (!isset($template_global_schemas[$template])) {
-      wp_die(esc_html__('No template global schema found for this template.', 'yaml-custom-fields'));
-    }
-
-    $template_global_schema_yaml = $template_global_schemas[$template];
-    $template_global_schema = $this->parse_yaml_schema($template_global_schema_yaml);
-
-    if (!$template_global_schema || !isset($template_global_schema['fields'])) {
-      wp_die(esc_html__('Please create a template global schema first.', 'yaml-custom-fields'));
-    }
-
-    $template_global_data = isset($template_global_data_array[$template]) ? $template_global_data_array[$template] : [];
-
-    // Get template name from theme files
-    $theme_files = $this->get_theme_templates();
-    $template_name = $template;
-    foreach (array_merge($theme_files['templates'], $theme_files['partials']) as $item) {
-      if ($item['file'] === $template) {
-        $template_name = $item['name'];
-        break;
-      }
-    }
-
-    // Check for success message
-    $success_message = '';
-    if ($this->get_param('saved') === '1') {
-      $success_message = __('Template global data saved successfully!', 'yaml-custom-fields');
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/manage-template-global-data-page.php';
-  }
-
-  public function render_docs_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/docs-page.php';
-  }
-
-  public function render_export_data_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/export-data-page.php';
-  }
-
-  /**
-   * Handle data objects export - runs on admin_init before any output
-   */
-  public function handle_data_objects_export() {
-    if (!isset($_POST['yaml_cf_export_data_objects_nonce'])) {
-      return;
-    }
-
-    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_export_data_objects_nonce'])), 'yaml_cf_export_data_objects')) {
-      wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
-    }
-
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
-    }
-
-    $this->export_data_objects();
-    exit;
-  }
-
-  public function render_data_validation_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/data-validation-page.php';
-  }
-
-  public function render_data_objects_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/data-objects-page.php';
-  }
-
-  public function render_edit_data_object_type_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/edit-data-object-type-page.php';
-  }
-
-  public function render_manage_data_object_entries_page() {
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
-    }
-
-    include YAML_CF_PLUGIN_DIR . 'templates/manage-data-object-entries-page.php';
-  }
 
   public function handle_single_post_export() {
     $post_id = $this->get_param_int('yaml_cf_export_post', 0);
@@ -1281,6 +401,23 @@ class YAML_Custom_Fields {
 
     // Use WordPress JSON output function
     echo wp_json_encode($export_data, JSON_PRETTY_PRINT);
+    exit;
+  }
+
+  public function handle_data_objects_export() {
+    if (!isset($_POST['yaml_cf_export_data_objects_nonce'])) {
+      return;
+    }
+
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_export_data_objects_nonce'])), 'yaml_cf_export_data_objects')) {
+      wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+    }
+
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+    }
+
+    $this->export_data_objects();
     exit;
   }
 
@@ -2100,9 +1237,19 @@ class YAML_Custom_Fields {
   }
 
   /**
-   * Clear the template cache
+   * @deprecated Now handled by CacheManager::clearTemplateCache()
+   * Kept for backward compatibility - delegates to new architecture
    */
   public function clear_template_cache() {
+    // Delegate to new architecture if available
+    if (class_exists('\YamlCF\Core\Plugin')) {
+      $plugin = \YamlCF\Core\Plugin::getInstance();
+      $cacheManager = $plugin->get('cache_manager');
+      $cacheManager->clearTemplateCache();
+      return;
+    }
+
+    // Fallback for backward compatibility
     $cache_key = 'yaml_cf_templates_' . get_stylesheet();
     delete_transient($cache_key);
   }
@@ -2134,6 +1281,32 @@ class YAML_Custom_Fields {
     wp_send_json_success([
       'has_schema' => $has_schema
     ]);
+  }
+
+  public function ajax_refresh_templates() {
+    try {
+      check_ajax_referer('yaml_cf_nonce', 'nonce');
+
+      if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied');
+        return;
+      }
+
+      // Get services from plugin instance
+      $plugin = \YamlCF\Core\Plugin::getInstance();
+      $templateCache = $plugin->get('template_cache');
+      $notificationManager = $plugin->get('notification_manager');
+
+      // Clear the template cache
+      $templateCache->clear();
+
+      // Set success notification
+      $notificationManager->success(esc_html__('Template list refreshed successfully!', 'yaml-custom-fields'));
+
+      wp_send_json_success();
+    } catch (\Exception $e) {
+      wp_send_json_error($e->getMessage());
+    }
   }
 
   public function ajax_toggle_use_global() {
@@ -2537,63 +1710,7 @@ class YAML_Custom_Fields {
    * @return string HTML output with security filtering
    */
   private function parse_basic_markdown($text) {
-    if (empty($text)) {
-      return '';
-    }
-
-    // Step 1: Escape all HTML first to prevent XSS
-    $text = esc_html($text);
-
-    // Step 2: Parse **bold** syntax to <strong>
-    $text = preg_replace_callback(
-      '/\*\*([^\*]+)\*\*/',
-      function($matches) {
-        return '<strong>' . $matches[1] . '</strong>';
-      },
-      $text
-    );
-
-    // Step 3: Parse _italic_ syntax to <em>
-    $text = preg_replace_callback(
-      '/_([^_]+)_/',
-      function($matches) {
-        return '<em>' . $matches[1] . '</em>';
-      },
-      $text
-    );
-
-    // Step 4: Parse [text](url) syntax to <a href="url">text</a>
-    $text = preg_replace_callback(
-      '/\[([^\]]+)\]\(([^\)]+)\)/',
-      function($matches) {
-        $link_text = $matches[1];
-        $url = $matches[2];
-
-        // Sanitize URL - this strips javascript:, data:, and other dangerous protocols
-        $safe_url = esc_url($url, ['http', 'https', 'mailto']);
-
-        // If URL was deemed unsafe, esc_url returns empty string
-        if (empty($safe_url)) {
-          return $link_text; // Just return the text without a link
-        }
-
-        return '<a href="' . $safe_url . '" target="_blank" rel="noopener noreferrer">' . $link_text . '</a>';
-      },
-      $text
-    );
-
-    // Step 5: Apply final security filter to only allow specific tags
-    $allowed_tags = [
-      'strong' => [],
-      'em' => [],
-      'a' => [
-        'href' => [],
-        'target' => [],
-        'rel' => []
-      ]
-    ];
-
-    return wp_kses($text, $allowed_tags);
+    return \YamlCF\Helpers\MarkdownParser::parse($text);
   }
 
   private function validate_yaml_schema($yaml, $template = null) {
@@ -2730,7 +1847,12 @@ class YAML_Custom_Fields {
     $id_suffix = ($context && is_array($context) && isset($context['id_suffix'])) ? $context['id_suffix'] : '';
 
     foreach ($fields as $field) {
-      $field_name = $prefix . $field['name'];
+      // Handle nested object syntax: if prefix ends with '[', close the bracket after field name
+      if (!empty($prefix) && substr($prefix, -1) === '[') {
+        $field_name = $prefix . $field['name'] . ']';
+      } else {
+        $field_name = $prefix . $field['name'];
+      }
       $field_id = 'ycf_' . str_replace(['[', ']'], ['_', ''], $field_name) . $id_suffix;
       $field_value = isset($saved_data[$field['name']]) ? $saved_data[$field['name']] : (isset($field['default']) ? $field['default'] : '');
       $field_label = isset($field['label']) ? $field['label'] : ucfirst($field['name']);
@@ -2806,14 +1928,14 @@ class YAML_Custom_Fields {
 
       switch ($field['type']) {
         case 'boolean':
-          echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" value="1" ' . checked($field_value, 1, false) . ' />';
+          echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="1" ' . checked($field_value, 1, false) . ' />';
           break;
 
         case 'string':
           $options = isset($field['options']) ? $field['options'] : [];
           $attrs = [
             'type' => 'text',
-            'name' => 'yaml_cf[' . $field['name'] . ']',
+            'name' => 'yaml_cf[' . $field_name . ']',
             'id' => $field_id,
             'value' => $field_value,
             'class' => 'regular-text',
@@ -2832,7 +1954,7 @@ class YAML_Custom_Fields {
         case 'text':
           $options = isset($field['options']) ? $field['options'] : [];
           $attrs = [
-            'name' => 'yaml_cf[' . $field['name'] . ']',
+            'name' => 'yaml_cf[' . $field_name . ']',
             'id' => $field_id,
             'rows' => 5,
             'class' => 'large-text',
@@ -2847,7 +1969,7 @@ class YAML_Custom_Fields {
 
         case 'rich-text':
           wp_editor($field_value, $field_id, [
-            'textarea_name' => 'yaml_cf[' . $field['name'] . ']',
+            'textarea_name' => 'yaml_cf[' . $field_name . ']',
             'textarea_rows' => 10,
             'media_buttons' => true,
             'tinymce' => [
@@ -2860,7 +1982,7 @@ class YAML_Custom_Fields {
         case 'code':
           $options = isset($field['options']) ? $field['options'] : [];
           $language = isset($options['language']) ? $options['language'] : 'html';
-          echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($field_value) . '</textarea>';
+          echo '<textarea name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($field_value) . '</textarea>';
           break;
 
         case 'info':
@@ -2880,7 +2002,7 @@ class YAML_Custom_Fields {
           $options = isset($field['options']) ? $field['options'] : [];
           $attrs = [
             'type' => 'number',
-            'name' => 'yaml_cf[' . $field['name'] . ']',
+            'name' => 'yaml_cf[' . $field_name . ']',
             'id' => $field_id,
             'value' => $field_value,
             'class' => 'small-text',
@@ -2901,7 +2023,7 @@ class YAML_Custom_Fields {
           $has_time = isset($options['time']) && $options['time'];
           $attrs = [
             'type' => $has_time ? 'datetime-local' : 'date',
-            'name' => 'yaml_cf[' . $field['name'] . ']',
+            'name' => 'yaml_cf[' . $field_name . ']',
             'id' => $field_id,
             'value' => $field_value,
           ];
@@ -2913,12 +2035,19 @@ class YAML_Custom_Fields {
         case 'select':
           $options = isset($field['options']) ? $field['options'] : [];
           $multiple = isset($field['multiple']) && $field['multiple'];
-          $values = isset($field['values']) ? $field['values'] : [];
 
-          echo '<select name="yaml_cf[' . esc_attr($field['name']) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($field_id) . '" ' . ($multiple ? 'multiple' : '') . '>';
+          // Check for values in options.values first, then fallback to root level values
+          $values = [];
+          if (isset($options['values']) && is_array($options['values'])) {
+            $values = $options['values'];
+          } elseif (isset($field['values'])) {
+            $values = $field['values'];
+          }
+
+          echo '<select name="yaml_cf[' . esc_attr($field_name) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($field_id) . '" ' . ($multiple ? 'multiple' : '') . '>';
           echo '<option value="">-- Select --</option>';
 
-          if (is_array($values)) {
+          if (is_array($values) && !empty($values)) {
             foreach ($values as $option) {
               // Handle both array format and simple values
               if (is_array($option)) {
@@ -2964,9 +2093,9 @@ class YAML_Custom_Fields {
 
           if ($multiple) {
             $field_value = is_array($field_value) ? $field_value : ($field_value ? [$field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][]" id="' . esc_attr($field_id) . '" multiple style="height: 150px;" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field_name) . '][]" id="' . esc_attr($field_id) . '" multiple style="height: 150px;" class="regular-text">';
           } else {
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
             echo '<option value="">-- Select ' . esc_html($field['label']) . ' --</option>';
           }
 
@@ -2988,7 +2117,7 @@ class YAML_Custom_Fields {
           // Get all public post types
           $post_types = get_post_types(['public' => true], 'objects');
 
-          echo '<select name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
+          echo '<select name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
           echo '<option value="">-- Select ' . esc_html($field['label']) . ' --</option>';
 
           foreach ($post_types as $post_type) {
@@ -3021,9 +2150,9 @@ class YAML_Custom_Fields {
 
           if ($multiple) {
             $field_value = is_array($field_value) ? $field_value : ($field_value ? [$field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][]" id="' . esc_attr($field_id) . '" multiple style="height: 150px;" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field_name) . '][]" id="' . esc_attr($field_id) . '" multiple style="height: 150px;" class="regular-text">';
           } else {
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
+            echo '<select name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
             echo '<option value="">-- Select ' . esc_html($field['label']) . ' --</option>';
           }
 
@@ -3067,7 +2196,7 @@ class YAML_Custom_Fields {
           break;
 
         case 'image':
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
+          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
           echo '<div class="yaml-cf-media-buttons">';
           echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">Upload Image</button>';
           if ($field_value) {
@@ -3084,7 +2213,7 @@ class YAML_Custom_Fields {
           break;
 
         case 'file':
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
+          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
           echo '<div class="yaml-cf-media-buttons">';
           echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">Upload File</button>';
           if ($field_value) {
@@ -3104,7 +2233,7 @@ class YAML_Custom_Fields {
           if (isset($field['fields'])) {
             echo '<div class="yaml-cf-object">';
             $object_data = is_array($field_value) ? $field_value : [];
-            $this->render_schema_fields($field['fields'], $object_data, $field['name'] . '_');
+            $this->render_schema_fields($field['fields'], $object_data, $field_name . '[', $context);
             echo '</div>';
           }
           break;
@@ -3335,12 +2464,19 @@ class YAML_Custom_Fields {
         } elseif ($block_field_type === 'select') {
           $block_field_options = isset($block_field['options']) ? $block_field['options'] : [];
           $multiple = isset($block_field['multiple']) && $block_field['multiple'];
-          $values = isset($block_field['values']) ? $block_field['values'] : [];
+
+          // Check for values in options.values first, then fallback to root level values
+          $values = [];
+          if (isset($block_field_options['values']) && is_array($block_field_options['values'])) {
+            $values = $block_field_options['values'];
+          } elseif (isset($block_field['values'])) {
+            $values = $block_field['values'];
+          }
 
           echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($block_field_id) . '" ' . ($multiple ? 'multiple' : '') . $disabled_attr . '>';
           echo '<option value="">-- Select --</option>';
 
-          if (is_array($values)) {
+          if (is_array($values) && !empty($values)) {
             foreach ($values as $option) {
               if (is_array($option)) {
                 $opt_value = isset($option['value']) ? $option['value'] : '';
@@ -4391,6 +3527,18 @@ function yaml_cf_init() {
 }
 
 add_action('plugins_loaded', 'yaml_cf_init');
+
+// Load Composer autoload for src/ directory (new architecture)
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+  require_once __DIR__ . '/vendor/autoload.php';
+}
+
+// Initialize new Plugin architecture (Phase 1: running in parallel with old code)
+// Old code continues to handle everything for now
+function yaml_cf_init_new_architecture() {
+  \YamlCF\Core\Plugin::getInstance();
+}
+add_action('plugins_loaded', 'yaml_cf_init_new_architecture', 11);
 
 /**
  * Get a specific field value from YAML Custom Fields data

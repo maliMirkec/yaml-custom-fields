@@ -1,0 +1,3 @@
+Features:
+- Refresh template list ✅
+-

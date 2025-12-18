@@ -24,10 +24,10 @@ if (!defined('ABSPATH')) {
     <div class="yaml-cf-intro">
     <p><?php esc_html_e('YAML Custom Fields allows you to define YAML frontmatter schemas for your theme templates. Enable YAML for templates, define schemas, and manage structured content directly in the WordPress editor.', 'yaml-custom-fields'); ?></p>
     <p>
-      <a href="<?php echo esc_url(add_query_arg('refresh_ycf', '1')); ?>" class="button">
+      <button type="button" id="yaml-cf-refresh-templates" class="button">
         <span class="dashicons dashicons-update"></span>
         <?php esc_html_e('Refresh Template List', 'yaml-custom-fields'); ?>
-      </a>
+      </button>
     </p>
     <p class="description">
       <?php esc_html_e('Scan theme files for new templates and partials with @ycf markers', 'yaml-custom-fields'); ?>
@@ -39,16 +39,18 @@ if (!defined('ABSPATH')) {
     <p><?php esc_html_e('Define a global schema with fields that can be reused across templates. Global data is shared everywhere (not per-post).', 'yaml-custom-fields'); ?></p>
     <p>
       <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-global-schema')); ?>" class="button button-primary">
-        <span class="dashicons dashicons-admin-generic" style="margin-top: 3px;"></span>
+        <span class="dashicons dashicons-admin-generic"></span>
         <?php esc_html_e('Edit Global Schema', 'yaml-custom-fields'); ?>
       </a>
       <?php if (!empty($global_schema_parsed) && !empty($global_schema_parsed['fields'])) : ?>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-global-data')); ?>" class="button">
-          <span class="dashicons dashicons-edit" style="margin-top: 3px;"></span>
+          <span class="dashicons dashicons-edit"></span>
           <?php esc_html_e('Manage Global Data', 'yaml-custom-fields'); ?>
         </a>
-        <span class="dashicons dashicons-yes-alt" style="color: #46b450; margin-left: 10px;"></span>
-        <span class="description"><?php esc_html_e('Global schema configured', 'yaml-custom-fields'); ?></span>
+        <span>
+          <span class="dashicons dashicons-yes-alt" style="color: #46b450; margin-top: 3px; margin-left: 10px;"></span>
+          <span class="description"><?php esc_html_e('Global schema configured', 'yaml-custom-fields'); ?></span>
+        </span>
       <?php else : ?>
         <span class="description" style="margin-left: 10px;"><?php esc_html_e('No global schema defined yet', 'yaml-custom-fields'); ?></span>
       <?php endif; ?>
@@ -285,13 +287,49 @@ if (!defined('ABSPATH')) {
 </div>
 
 
-<?php if (!empty($refresh_message)) : ?>
 <script>
 jQuery(document).ready(function($) {
-  // Trigger refresh notification
-  if (typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-    YamlCF.showMessage('<?php echo esc_js($refresh_message); ?>', 'success');
+  <?php if (!empty($notification)) : ?>
+  // Display notification
+  if (typeof yamlCF !== 'undefined' && yamlCF.showMessage) {
+    yamlCF.showMessage('<?php echo esc_js($notification['message']); ?>', '<?php echo esc_js($notification['type']); ?>');
   }
+  <?php endif; ?>
+
+  // Handle refresh button click
+  $('#yaml-cf-refresh-templates').on('click', function(e) {
+    e.preventDefault();
+    var $btn = $(this);
+    var originalHtml = $btn.html();
+
+    // Disable button and show loading state
+    $btn.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> <?php esc_html_e('Refreshing...', 'yaml-custom-fields'); ?>');
+
+    $.ajax({
+      url: ajaxurl,
+      type: 'POST',
+      data: {
+        action: 'yaml_cf_refresh_templates',
+        nonce: yamlCF.nonce
+      },
+      success: function(response) {
+        if (response.success) {
+          // Reload the page to show updated template list
+          window.location.reload();
+        } else {
+          $btn.prop('disabled', false).html(originalHtml);
+          if (typeof yamlCF !== 'undefined' && yamlCF.showMessage) {
+            yamlCF.showMessage(response.data || '<?php esc_html_e('Failed to refresh template list', 'yaml-custom-fields'); ?>', 'error');
+          }
+        }
+      },
+      error: function() {
+        $btn.prop('disabled', false).html(originalHtml);
+        if (typeof yamlCF !== 'undefined' && yamlCF.showMessage) {
+          yamlCF.showMessage('<?php esc_html_e('Failed to refresh template list', 'yaml-custom-fields'); ?>', 'error');
+        }
+      }
+    });
+  });
 });
 </script>
-<?php endif; ?>

@@ -509,7 +509,8 @@
           } else if (blockField.type === 'select') {
             const options = blockField.options || {};
             const multiple = blockField.multiple || false;
-            const values = blockField.values || [];
+            // Check for values in options.values first, then fallback to root level values
+            const values = (options.values && Array.isArray(options.values)) ? options.values : (blockField.values || []);
 
             const $select = $('<select>', {
               name:
