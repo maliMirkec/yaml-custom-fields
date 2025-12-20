@@ -92,8 +92,8 @@ class TemplateGlobalController extends AdminController {
       exit;
     }
 
-    $template_global_data = get_option('yaml_cf_template_global_data', []);
-    $data = isset($template_global_data[$template]) ? $template_global_data[$template] : [];
+    $template_global_data_all = get_option('yaml_cf_template_global_data', []);
+    $template_global_data = isset($template_global_data_all[$template]) ? $template_global_data_all[$template] : [];
 
     // Get template name from theme files
     $theme_files = $this->templateCache->getThemeTemplates();
@@ -111,12 +111,15 @@ class TemplateGlobalController extends AdminController {
       $success_message = __('Template global data saved successfully!', 'yaml-custom-fields');
     }
 
+    // Localize schema data for JavaScript
+    $this->localizeScript(['schema' => $template_global_schema]);
+
     // Load template
     $this->loadTemplate('manage-template-global-data-page.php', compact(
       'template',
       'template_name',
       'template_global_schema',
-      'data',
+      'template_global_data',
       'success_message'
     ));
   }

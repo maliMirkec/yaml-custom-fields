@@ -242,7 +242,7 @@ function yaml_cf_find_field_in_schema($yaml_cf_schema, $yaml_cf_field_name) {
       <?php if (empty($yaml_cf_validation_results)): ?>
         <p><?php esc_html_e('No pages or posts with custom field data found.', 'yaml-custom-fields'); ?></p>
       <?php else: ?>
-        <table class="wp-list-table widefat fixed striped">
+        <table class="wp-list-table widefat striped">
           <thead>
             <tr>
               <th><?php esc_html_e('Title', 'yaml-custom-fields'); ?></th>

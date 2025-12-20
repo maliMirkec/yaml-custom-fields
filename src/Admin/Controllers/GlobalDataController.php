@@ -32,6 +32,9 @@ class GlobalDataController extends AdminController {
       $success_message = __('Global data saved successfully!', 'yaml-custom-fields');
     }
 
+    // Localize schema data for JavaScript
+    $this->localizeScript(['schema' => $global_schema]);
+
     // Load template
     $this->loadTemplate('manage-global-data-page.php', compact(
       'global_schema',

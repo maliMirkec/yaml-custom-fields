@@ -191,6 +191,7 @@ class YAML_Custom_Fields {
     add_action('admin_init', [$this, 'handle_settings_export']);
     add_action('admin_init', [$this, 'handle_page_data_export']);
     add_action('admin_init', [$this, 'handle_data_objects_export']);
+    add_action('admin_init', [$this, 'handle_data_object_type_submissions']);
 
     // NOTE: Admin menu, assets, and menu customization now handled by new architecture (HookManager)
     // add_action('admin_menu', [$this, 'add_admin_menu']);
@@ -419,6 +420,12 @@ class YAML_Custom_Fields {
 
     $this->export_data_objects();
     exit;
+  }
+
+  public function handle_data_object_type_submissions() {
+    $plugin = \YamlCF\Core\Plugin::getInstance();
+    $controller = $plugin->get('data_object_controller');
+    $controller->handleFormSubmissions();
   }
 
   public function handle_form_submissions() {
@@ -756,11 +763,14 @@ class YAML_Custom_Fields {
       // Use post_raw() to get unslashed data safely without PHPCS warnings
       // Data will be sanitized by schema-aware sanitize_field_data()
       $posted_data = self::post_raw('yaml_cf', []);
+      error_log('Posted data: ' . print_r($posted_data, true));
       if (!empty($posted_data) && is_array($posted_data)) {
         $field_data = $this->sanitize_field_data($posted_data, $global_schema);
+        error_log('Sanitized data: ' . print_r($field_data, true));
       }
 
       update_option('yaml_cf_global_data', $field_data);
+      error_log('Saved data: ' . print_r(get_option('yaml_cf_global_data'), true));
 
       // Clear caches
       $this->clear_data_caches();
@@ -861,24 +871,36 @@ class YAML_Custom_Fields {
     }
   }
 
-  private function sanitize_field_data($data, $schema = null, $field_name = '') {
+  public function sanitize_field_data($data, $schema = null, $field_name = '') {
     if (is_array($data)) {
       $sanitized = [];
 
-      // Check if this field is a block type in the schema
-      $block_field = $this->get_field_definition($schema, $field_name);
-      $is_block_list = $block_field && isset($block_field['type']) && $block_field['type'] === 'block';
+      // Check if this field is a block or object type in the schema
+      $field_def = $this->get_field_definition($schema, $field_name);
+      $is_block_list = $field_def && isset($field_def['type']) && $field_def['type'] === 'block';
+      $is_object = $field_def && isset($field_def['type']) && $field_def['type'] === 'object';
+      $is_taxonomy = $field_def && isset($field_def['type']) && $field_def['type'] === 'taxonomy';
+      $is_multiple = $field_def && isset($field_def['multiple']) && $field_def['multiple'];
+
+      if ($field_name) {
+        error_log("Processing field: $field_name, is_object: " . ($is_object ? 'yes' : 'no'));
+      }
 
       foreach ($data as $key => $value) {
         $child_schema = $schema;
 
+        // If this is an object field, use its nested fields as the schema
+        if ($is_object && isset($field_def['fields']) && is_array($field_def['fields'])) {
+          $child_schema = ['fields' => $field_def['fields']];
+          error_log("Using nested schema for object field: $field_name");
+        }
         // If this is a block list, find the appropriate block schema
-        if ($is_block_list && is_array($value)) {
-          $block_key = isset($block_field['blockKey']) ? $block_field['blockKey'] : 'type';
+        elseif ($is_block_list && is_array($value)) {
+          $block_key = isset($field_def['blockKey']) ? $field_def['blockKey'] : 'type';
           $block_type = isset($value[$block_key]) ? $value[$block_key] : '';
 
-          if ($block_type && isset($block_field['blocks']) && is_array($block_field['blocks'])) {
-            foreach ($block_field['blocks'] as $block) {
+          if ($block_type && isset($field_def['blocks']) && is_array($field_def['blocks'])) {
+            foreach ($field_def['blocks'] as $block) {
               if (isset($block['name']) && $block['name'] === $block_type) {
                 // Use the block's field definitions as the schema for child elements
                 $child_schema = ['fields' => isset($block['fields']) ? $block['fields'] : []];
@@ -890,6 +912,18 @@ class YAML_Custom_Fields {
 
         $sanitized[sanitize_text_field($key)] = $this->sanitize_field_data($value, $child_schema, $key);
       }
+
+      // For taxonomy and data_object fields with multiple=true, filter out empty strings
+      // (These come from the hidden field used to ensure the field is always submitted)
+      $is_data_object = $field_def && isset($field_def['type']) && $field_def['type'] === 'data_object';
+      if (($is_taxonomy || $is_data_object) && $is_multiple) {
+        $sanitized = array_filter($sanitized, function($value) {
+          return $value !== '';
+        });
+        // Re-index array to avoid gaps in numeric keys
+        $sanitized = array_values($sanitized);
+      }
+
       return $sanitized;
     } elseif (is_string($data)) {
       // Check if this is a code field
@@ -1278,8 +1312,13 @@ class YAML_Custom_Fields {
     $schemas = get_option('yaml_cf_schemas', []);
     $has_schema = isset($schemas[$template]) && !empty($schemas[$template]);
 
+    // Check if template global schema exists for this template
+    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+    $has_template_global_schema = isset($template_global_schemas[$template]) && !empty($template_global_schemas[$template]);
+
     wp_send_json_success([
-      'has_schema' => $has_schema
+      'has_schema' => $has_schema,
+      'has_template_global_schema' => $has_template_global_schema
     ]);
   }
 
@@ -1847,9 +1886,9 @@ class YAML_Custom_Fields {
     $id_suffix = ($context && is_array($context) && isset($context['id_suffix'])) ? $context['id_suffix'] : '';
 
     foreach ($fields as $field) {
-      // Handle nested object syntax: if prefix ends with '[', close the bracket after field name
+      // Handle nested object syntax: if prefix ends with '[', create proper nested array notation
       if (!empty($prefix) && substr($prefix, -1) === '[') {
-        $field_name = $prefix . $field['name'] . ']';
+        $field_name = substr($prefix, 0, -1) . '][' . $field['name'];
       } else {
         $field_name = $prefix . $field['name'];
       }
@@ -2092,25 +2131,43 @@ class YAML_Custom_Fields {
           ]);
 
           if ($multiple) {
+            // Use checkboxes for better UX with multiple selection
             $field_value = is_array($field_value) ? $field_value : ($field_value ? [$field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field_name) . '][]" id="' . esc_attr($field_id) . '" multiple style="height: 150px;" class="regular-text">';
+
+            // Hidden field to ensure the field is submitted even when no checkboxes are checked
+            // This allows users to clear all selections
+            echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" value="" />';
+
+            echo '<div class="yaml-cf-taxonomy-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">';
+
+            if (!is_wp_error($terms) && !empty($terms)) {
+              foreach ($terms as $term) {
+                $checked = in_array($term->term_id, $field_value) ? 'checked' : '';
+                $checkbox_id = $field_id . '_' . $term->term_id;
+                echo '<label style="display: block; margin-bottom: 5px;">';
+                echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field_name) . '][]" id="' . esc_attr($checkbox_id) . '" value="' . esc_attr($term->term_id) . '" ' . esc_attr($checked) . ' />';
+                echo ' ' . esc_html($term->name);
+                echo '</label>';
+              }
+            } else {
+              echo '<p style="margin: 0; color: #666;">' . esc_html__('No terms found.', 'yaml-custom-fields') . '</p>';
+            }
+
+            echo '</div>';
           } else {
+            // Single select - use dropdown
             echo '<select name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
             echo '<option value="">-- Select ' . esc_html($field['label']) . ' --</option>';
-          }
 
-          if (!is_wp_error($terms) && !empty($terms)) {
-            foreach ($terms as $term) {
-              if ($multiple) {
-                $selected = in_array($term->term_id, $field_value) ? 'selected' : '';
-              } else {
+            if (!is_wp_error($terms) && !empty($terms)) {
+              foreach ($terms as $term) {
                 $selected = ($field_value == $term->term_id) ? 'selected' : '';
+                echo '<option value="' . esc_attr($term->term_id) . '" ' . esc_attr($selected) . '>' . esc_html($term->name) . '</option>';
               }
-              echo '<option value="' . esc_attr($term->term_id) . '" ' . esc_attr($selected) . '>' . esc_html($term->name) . '</option>';
             }
-          }
 
-          echo '</select>';
+            echo '</select>';
+          }
           break;
 
         case 'post_type':
@@ -2149,49 +2206,82 @@ class YAML_Custom_Fields {
           }
 
           if ($multiple) {
+            // Use checkboxes for better UX with multiple selection
             $field_value = is_array($field_value) ? $field_value : ($field_value ? [$field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field_name) . '][]" id="' . esc_attr($field_id) . '" multiple style="height: 150px;" class="regular-text">';
+
+            // Hidden field to ensure the field is submitted even when no checkboxes are checked
+            echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" value="" />';
+
+            if (!empty($data_entries)) {
+              // Get the schema to determine which field to use as label
+              $object_schema_yaml = $data_types[$object_type]['schema'];
+              $object_schema = $this->parse_yaml_schema($object_schema_yaml);
+              $label_field = '';
+              if (!empty($object_schema['fields'])) {
+                // Use first field as label
+                $label_field = $object_schema['fields'][0]['name'];
+              }
+
+              echo '<div class="yaml-cf-data-object-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">';
+
+              foreach ($data_entries as $entry_id => $entry_data) {
+                // Use first field value as label
+                $entry_label = isset($entry_data[$label_field]) ? $entry_data[$label_field] : $entry_id;
+                if (is_array($entry_label)) {
+                  $entry_label = $entry_id; // Fallback for complex data
+                }
+
+                $checked = in_array($entry_id, $field_value) ? 'checked' : '';
+                $checkbox_id = $field_id . '_' . sanitize_html_class($entry_id);
+                echo '<label style="display: block; margin-bottom: 5px;">';
+                echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field_name) . '][]" id="' . esc_attr($checkbox_id) . '" value="' . esc_attr($entry_id) . '" ' . esc_attr($checked) . ' />';
+                echo ' ' . esc_html($entry_label);
+                echo '</label>';
+              }
+
+              echo '</div>';
+            } else {
+              echo '<p class="description">' . sprintf(
+                // translators: %1$s is the data object type name, %2$s is the URL to manage entries
+                esc_html__('No %1$s entries found. %2$sAdd entries%3$s first.', 'yaml-custom-fields'),
+                esc_html($data_types[$object_type]['name']),
+                '<a href="' . esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($object_type))) . '">',
+                '</a>'
+              ) . '</p>';
+            }
           } else {
+            // Single select - use dropdown
             echo '<select name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" class="regular-text">';
             echo '<option value="">-- Select ' . esc_html($field['label']) . ' --</option>';
-          }
 
-          if (!empty($data_entries)) {
-            // Get the schema to determine which field to use as label
-            $object_schema_yaml = $data_types[$object_type]['schema'];
-            $object_schema = $this->parse_yaml_schema($object_schema_yaml);
-            $label_field = '';
-            if (!empty($object_schema['fields'])) {
-              // Use first field as label
-              $label_field = $object_schema['fields'][0]['name'];
-            }
-
-            foreach ($data_entries as $entry_id => $entry_data) {
-              // Use first field value as label
-              $entry_label = isset($entry_data[$label_field]) ? $entry_data[$label_field] : $entry_id;
-              if (is_array($entry_label)) {
-                $entry_label = $entry_id; // Fallback for complex data
+            if (!empty($data_entries)) {
+              // Get the schema to determine which field to use as label
+              $object_schema_yaml = $data_types[$object_type]['schema'];
+              $object_schema = $this->parse_yaml_schema($object_schema_yaml);
+              $label_field = '';
+              if (!empty($object_schema['fields'])) {
+                // Use first field as label
+                $label_field = $object_schema['fields'][0]['name'];
               }
 
-              if ($multiple) {
-                $selected = in_array($entry_id, $field_value) ? 'selected' : '';
-              } else {
+              foreach ($data_entries as $entry_id => $entry_data) {
+                // Use first field value as label
+                $entry_label = isset($entry_data[$label_field]) ? $entry_data[$label_field] : $entry_id;
+                if (is_array($entry_label)) {
+                  $entry_label = $entry_id; // Fallback for complex data
+                }
+
                 $selected = ($field_value === $entry_id) ? 'selected' : '';
+                echo '<option value="' . esc_attr($entry_id) . '" ' . esc_attr($selected) . '>' . esc_html($entry_label) . '</option>';
               }
-
-              echo '<option value="' . esc_attr($entry_id) . '" ' . esc_attr($selected) . '>' . esc_html($entry_label) . '</option>';
+            } else {
+              echo '<option value="" disabled>' . sprintf(
+                esc_html__('No %s entries found', 'yaml-custom-fields'),
+                esc_html($data_types[$object_type]['name'])
+              ) . '</option>';
             }
-          }
 
-          echo '</select>';
-          if (empty($data_entries)) {
-            echo '<p class="description">' . sprintf(
-              // translators: %1$s is the data object type name, %2$s is the URL to manage entries
-              esc_html__('No %1$s entries found. %2$sAdd entries%3$s first.', 'yaml-custom-fields'),
-              esc_html($data_types[$object_type]['name']),
-              '<a href="' . esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($object_type))) . '">',
-              '</a>'
-            ) . '</p>';
+            echo '</select>';
           }
           break;
 

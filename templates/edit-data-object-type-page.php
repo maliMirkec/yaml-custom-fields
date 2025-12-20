@@ -8,46 +8,33 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
-$yaml_cf_type_slug = YAML_Custom_Fields::get_param_key('type', '');
+// Variables passed from controller:
+// - $type_id: The data object type slug (from URL)
+// - $type_name: The data object type name
+// - $schema_yaml: The YAML schema
+// - $is_editing: Whether we're editing an existing type
+// - $success_message: Success message to display (if any)
+// - $error_message: Error message to display (if any)
 
-$yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
-$yaml_cf_is_editing = !empty($yaml_cf_type_slug) && isset($yaml_cf_data_object_types[$yaml_cf_type_slug]);
-
-// Handle form submission
-if (isset($_POST['yaml_cf_save_data_object_type_nonce'])) {
-  if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_data_object_type_nonce'])), 'yaml_cf_save_data_object_type')) {
-    wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
-  }
-
-  $yaml_cf_type_name = YAML_Custom_Fields::post_sanitized('type_name', '', 'sanitize_text_field');
-  $yaml_cf_new_type_slug = YAML_Custom_Fields::post_sanitized('type_slug', '', 'sanitize_key');
-  // Raw YAML content - will be sanitized by parse_yaml_schema()
-  $yaml_cf_schema_yaml = YAML_Custom_Fields::post_raw('schema', '');
-
-  if (empty($yaml_cf_type_name) || empty($yaml_cf_new_type_slug)) {
-    set_transient('yaml_cf_data_object_type_error_' . get_current_user_id(), 'required_fields', 60);
-    wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-data-object-type' . ($yaml_cf_type_slug ? '&type=' . urlencode($yaml_cf_type_slug) : '')));
-    exit;
-  } else {
-    $yaml_cf_data_object_types[$yaml_cf_new_type_slug] = [
-      'name' => $yaml_cf_type_name,
-      'schema' => $yaml_cf_schema_yaml,
-    ];
-
-    update_option('yaml_cf_data_object_types', $yaml_cf_data_object_types);
-
-    set_transient('yaml_cf_data_object_type_success_' . get_current_user_id(), 'type_saved', 60);
-
-    // Redirect to prevent form resubmission
-    wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type=' . urlencode($yaml_cf_new_type_slug)));
-    exit;
-  }
-}
-
-// Get current data
-$yaml_cf_type_name = $yaml_cf_is_editing ? $yaml_cf_data_object_types[$yaml_cf_type_slug]['name'] : '';
-$yaml_cf_schema_yaml = $yaml_cf_is_editing ? $yaml_cf_data_object_types[$yaml_cf_type_slug]['schema'] : '';
+$yaml_cf_type_slug = $type_id;
+$yaml_cf_is_editing = $is_editing;
+$yaml_cf_type_name = $type_name;
+$yaml_cf_schema_yaml = $schema_yaml;
 ?>
+
+<div id="yaml-cf-notifications">
+  <?php
+  // Display success message from controller
+  if (!empty($success_message)) {
+    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($success_message) . '</div>';
+  }
+
+  // Display error message from controller
+  if (!empty($error_message)) {
+    echo '<div class="yaml-cf-message error" data-type="error">' . esc_html($error_message) . '</div>';
+  }
+  ?>
+</div>
 
 <div class="wrap">
   <div class="yaml-cf-admin-container">
@@ -61,32 +48,6 @@ $yaml_cf_schema_yaml = $yaml_cf_is_editing ? $yaml_cf_data_object_types[$yaml_cf
       </div>
     </div>
 
-    <?php
-    // Display success messages (using transients - shown only once)
-    $success_key = 'yaml_cf_data_object_type_success_' . get_current_user_id();
-    $success_msg = get_transient($success_key);
-    if ($success_msg) {
-      $success_messages = [
-        'type_saved' => __('Data object type saved successfully!', 'yaml-custom-fields'),
-      ];
-      $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
-      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
-      delete_transient($success_key);
-    }
-
-    // Display error messages (using transients - shown only once)
-    $error_key = 'yaml_cf_data_object_type_error_' . get_current_user_id();
-    $error_msg = get_transient($error_key);
-    if ($error_msg) {
-      $error_messages = [
-        'required_fields' => __('Type name and slug are required.', 'yaml-custom-fields'),
-      ];
-      $message = isset($error_messages[$error_msg]) ? $error_messages[$error_msg] : __('An error occurred.', 'yaml-custom-fields');
-      echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($message) . '</p></div>';
-      delete_transient($error_key);
-    }
-    ?>
-
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>" class="button">
@@ -94,7 +55,7 @@ $yaml_cf_schema_yaml = $yaml_cf_is_editing ? $yaml_cf_data_object_types[$yaml_cf
           <?php esc_html_e('Back to Data Objects', 'yaml-custom-fields'); ?>
         </a>
         <?php if ($yaml_cf_is_editing) : ?>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary" style="margin-left: 10px;">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary" style="margin-left: 10px;">
             <span class="dashicons dashicons-admin-generic"></span>
             <?php esc_html_e('Manage Entries', 'yaml-custom-fields'); ?>
           </a>

@@ -222,7 +222,9 @@ class Plugin {
     });
 
     $this->container->register('data_object_controller', function($c) {
-      return new \YamlCF\Admin\Controllers\DataObjectController();
+      return new \YamlCF\Admin\Controllers\DataObjectController(
+        $c->get('schema_storage')
+      );
     });
 
     $this->container->register('validation_controller', function($c) {

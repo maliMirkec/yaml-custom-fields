@@ -101,7 +101,7 @@ if (!defined('ABSPATH')) {
           </div>
         </div>
 
-        <table class="wp-list-table widefat fixed striped">
+        <table class="wp-list-table widefat striped">
           <thead>
             <tr>
               <td class="check-column"><input type="checkbox" id="yaml-cf-select-all-checkbox"></td>

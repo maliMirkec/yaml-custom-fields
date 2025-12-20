@@ -41,6 +41,22 @@ if (isset($_POST['yaml_cf_delete_type_nonce'])) {
 $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
 ?>
 
+<div id="yaml-cf-notifications">
+  <?php
+  // Display success messages (using transients - shown only once)
+  $success_key = 'yaml_cf_data_objects_success_' . get_current_user_id();
+  $success_msg = get_transient($success_key);
+  if ($success_msg) {
+    $success_messages = [
+      'type_deleted' => __('Data object type and all its entries deleted successfully!', 'yaml-custom-fields'),
+    ];
+    $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($message) . '</div>';
+    delete_transient($success_key);
+  }
+  ?>
+</div>
+
 <div class="wrap">
   <div class="yaml-cf-admin-container">
     <div class="yaml-cf-header">
@@ -52,20 +68,6 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
         </div>
       </div>
     </div>
-
-    <?php
-    // Display success messages (using transients - shown only once)
-    $success_key = 'yaml_cf_data_objects_success_' . get_current_user_id();
-    $success_msg = get_transient($success_key);
-    if ($success_msg) {
-      $success_messages = [
-        'type_deleted' => __('Data object type and all its entries deleted successfully!', 'yaml-custom-fields'),
-      ];
-      $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
-      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
-      delete_transient($success_key);
-    }
-    ?>
 
     <div class="yaml-cf-intro">
       <p>
@@ -81,7 +83,7 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
       <p><?php esc_html_e('No data object types created yet. Click "Add New Type" to create your first data object type.', 'yaml-custom-fields'); ?></p>
     </div>
   <?php else : ?>
-    <table class="wp-list-table widefat fixed striped">
+    <table class="wp-list-table widefat striped">
       <thead>
         <tr>
           <th><?php esc_html_e('Type Name', 'yaml-custom-fields'); ?></th>
@@ -111,10 +113,10 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
               <?php endif; ?>
             </td>
             <td>
-              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type=' . urlencode($yaml_cf_slug))); ?>" class="button">
+              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_slug))); ?>" class="button">
                 <?php esc_html_e('Edit Schema', 'yaml-custom-fields'); ?>
               </a>
-              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($yaml_cf_slug))); ?>" class="button">
+              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_slug))); ?>" class="button">
                 <?php esc_html_e('Manage Entries', 'yaml-custom-fields'); ?>
               </a>
               <form method="post" style="display: inline;" onsubmit="return confirm('<?php

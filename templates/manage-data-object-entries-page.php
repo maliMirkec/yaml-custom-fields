@@ -8,85 +8,19 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
-$yaml_cf_type_slug = YAML_Custom_Fields::get_param_key('type', '');
+// Variables passed from controller:
+// - $type_id: The data object type slug
+// - $type_name: The data object type name
+// - $schema: The parsed schema
+// - $entries: All entries for this type
+
+$yaml_cf_type_slug = $type_id;
 $yaml_cf_entry_id = YAML_Custom_Fields::get_param('entry', ''); // Use get_param to preserve periods in entry IDs
 $yaml_cf_action = YAML_Custom_Fields::get_param_key('action', 'list');
-
-if (empty($yaml_cf_type_slug)) {
-  wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
-  exit;
-}
-
-$yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
-if (!isset($yaml_cf_data_object_types[$yaml_cf_type_slug])) {
-  wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
-  exit;
-}
-
-$yaml_cf_type_name = $yaml_cf_data_object_types[$yaml_cf_type_slug]['name'];
-$yaml_cf_schema_yaml = $yaml_cf_data_object_types[$yaml_cf_type_slug]['schema'];
-
-// Parse schema
+$yaml_cf_type_name = $type_name;
+$yaml_cf_schema = $schema;
+$yaml_cf_entries = $entries;
 $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
-$yaml_cf_schema = $yaml_cf_plugin->parse_yaml_schema($yaml_cf_schema_yaml);
-
-// Get all entries
-$yaml_cf_entries = get_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug, []);
-
-// Handle form submissions
-if (isset($_POST['yaml_cf_save_entry_nonce'])) {
-  if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_entry_nonce'])), 'yaml_cf_save_entry')) {
-    wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
-  }
-
-  // Get entry ID from form, or generate new one
-  // Don't use sanitize_key as it removes periods from old entry IDs
-  $yaml_cf_entry_id_from_form = YAML_Custom_Fields::post_raw('entry_id', '');
-  if (!empty($yaml_cf_entry_id_from_form)) {
-    // Editing existing entry - preserve the ID (may contain period for old entries)
-    $yaml_cf_entry_id_to_save = sanitize_text_field($yaml_cf_entry_id_from_form);
-  } else {
-    // New entry - generate ID without period
-    $yaml_cf_entry_id_to_save = uniqid('entry_');
-  }
-
-  // Raw entry data - will be sanitized via sanitize_field_data()
-  $yaml_cf_entry_data = $yaml_cf_plugin->sanitize_field_data(
-    YAML_Custom_Fields::post_raw('yaml_cf', []),
-    $yaml_cf_schema
-  );
-
-  $yaml_cf_entries[$yaml_cf_entry_id_to_save] = $yaml_cf_entry_data;
-  update_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug, $yaml_cf_entries);
-
-  // Set success message transient
-  set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_saved', 60);
-
-  // Redirect to prevent form resubmission
-  wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-entries&type=' . urlencode($yaml_cf_type_slug)));
-  exit;
-}
-
-// Handle delete
-if (isset($_POST['yaml_cf_delete_entry_nonce'])) {
-  if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_delete_entry_nonce'])), 'yaml_cf_delete_entry')) {
-    wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
-  }
-
-  // Don't use sanitize_key as it removes periods from old entry IDs
-  $yaml_cf_entry_id_to_delete = isset($_POST['entry_id']) ? sanitize_text_field(wp_unslash($_POST['entry_id'])) : '';
-  if (isset($yaml_cf_entries[$yaml_cf_entry_id_to_delete])) {
-    unset($yaml_cf_entries[$yaml_cf_entry_id_to_delete]);
-    update_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug, $yaml_cf_entries);
-
-    // Set success message transient
-    set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_deleted', 60);
-  }
-
-  // Redirect to prevent form resubmission
-  wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-entries&type=' . urlencode($yaml_cf_type_slug)));
-  exit;
-}
 
 // Get entry data for editing
 $yaml_cf_entry_data = [];
@@ -107,8 +41,40 @@ if ($yaml_cf_action === 'edit') {
       }
     }
   }
+
+  // Migrate old data format (keys like 'yaml_cfname' to 'name')
+  if (!empty($yaml_cf_entry_data)) {
+    $migrated_data = [];
+    foreach ($yaml_cf_entry_data as $key => $value) {
+      // Remove 'yaml_cf' prefix if present
+      if (strpos($key, 'yaml_cf') === 0) {
+        $new_key = substr($key, 7); // Remove 'yaml_cf' prefix
+        $migrated_data[$new_key] = $value;
+      } else {
+        $migrated_data[$key] = $value;
+      }
+    }
+    $yaml_cf_entry_data = $migrated_data;
+  }
 }
 ?>
+
+<div id="yaml-cf-notifications">
+  <?php
+  // Display success messages (using transients - shown only once)
+  $success_key = 'yaml_cf_data_object_success_' . get_current_user_id();
+  $success_msg = get_transient($success_key);
+  if ($success_msg) {
+    $success_messages = [
+      'entry_saved' => __('Entry saved successfully!', 'yaml-custom-fields'),
+      'entry_deleted' => __('Entry deleted successfully!', 'yaml-custom-fields'),
+    ];
+    $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($message) . '</div>';
+    delete_transient($success_key);
+  }
+  ?>
+</div>
 
 <div class="wrap">
   <div class="yaml-cf-admin-container">
@@ -122,21 +88,6 @@ if ($yaml_cf_action === 'edit') {
       </div>
     </div>
 
-    <?php
-    // Display success messages (using transients - shown only once)
-    $success_key = 'yaml_cf_data_object_success_' . get_current_user_id();
-    $success_msg = get_transient($success_key);
-    if ($success_msg) {
-      $success_messages = [
-        'entry_saved' => __('Entry saved successfully!', 'yaml-custom-fields'),
-        'entry_deleted' => __('Entry deleted successfully!', 'yaml-custom-fields'),
-      ];
-      $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
-      echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
-      delete_transient($success_key);
-    }
-    ?>
-
     <div class="yaml-cf-intro">
       <p>
         <?php if ($yaml_cf_action === 'list') : ?>
@@ -144,15 +95,15 @@ if ($yaml_cf_action === 'edit') {
             <span class="dashicons dashicons-arrow-left-alt2"></span>
             <?php esc_html_e('Back to Data Objects', 'yaml-custom-fields'); ?>
           </a>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary" style="margin-left: 10px;">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary" style="margin-left: 10px;">
             <span class="dashicons dashicons-edit"></span>
             <?php esc_html_e('Edit Schema', 'yaml-custom-fields'); ?>
           </a>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($yaml_cf_type_slug) . '&action=add')); ?>" class="button button-primary" style="margin-left: 10px;">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=add')); ?>" class="button button-primary" style="margin-left: 10px;">
             <?php esc_html_e('Add New Entry', 'yaml-custom-fields'); ?>
           </a>
         <?php else : ?>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($yaml_cf_type_slug))); ?>" class="button">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button">
             <span class="dashicons dashicons-arrow-left-alt2"></span>
             <?php esc_html_e('Back to Entries', 'yaml-custom-fields'); ?>
           </a>
@@ -195,7 +146,7 @@ if ($yaml_cf_action === 'edit') {
                   ?>
                 </td>
                 <td>
-                  <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($yaml_cf_type_slug) . '&action=edit&entry=' . urlencode($yaml_cf_entry_id))); ?>" class="button">
+                  <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=edit&entry=' . urlencode($yaml_cf_entry_id))); ?>" class="button">
                     <?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
                   </a>
                   <form method="post" style="display: inline;" onsubmit="return confirm('<?php esc_attr_e('Are you sure you want to delete this entry?', 'yaml-custom-fields'); ?>');">
@@ -222,7 +173,7 @@ if ($yaml_cf_action === 'edit') {
           <?php
           if (!empty($yaml_cf_schema['fields'])) {
             $yaml_cf_context = ['type' => 'data_object', 'object_type' => $yaml_cf_type_slug];
-            $yaml_cf_plugin->render_schema_fields($yaml_cf_schema['fields'], $yaml_cf_entry_data, 'yaml_cf', $yaml_cf_context);
+            $yaml_cf_plugin->render_schema_fields($yaml_cf_schema['fields'], $yaml_cf_entry_data, 'yaml_cf[', $yaml_cf_context);
           } else {
             echo '<p>' . esc_html__('No fields defined in schema.', 'yaml-custom-fields') . '</p>';
           }
@@ -233,7 +184,7 @@ if ($yaml_cf_action === 'edit') {
           <button type="submit" class="button button-primary button-large">
             <?php esc_html_e('Save Entry', 'yaml-custom-fields'); ?>
           </button>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-large">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-large">
             <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
           </a>
         </p>

@@ -84,8 +84,9 @@
             // Schema column is always the 4th column (index 3)
             const $schemaCell = $cells.eq(3);
 
-            // Data column is the 5th column (index 4) - only exists in partials table
-            const $dataCell = $cells.eq(4);
+            // Determine if this is a template table (6 columns) or partial table (5 columns)
+            const isTemplateTable = $cells.length === 6;
+            const isPartialTable = $cells.length === 5;
 
             if (enabled) {
               const editSchemaUrl =
@@ -107,20 +108,60 @@
                   checkmark
               );
 
-              // If this is a partial (has data column), update it too
-              if ($dataCell.length) {
+              // Handle template table (has Template Global Schema and Template Global Data columns)
+              if (isTemplateTable) {
+                const hasTemplateGlobalSchema = response.data && response.data.has_template_global_schema;
+                const templateGlobalButtonText = hasTemplateGlobalSchema ? 'Edit Template Global' : 'Add Template Global';
+                const templateGlobalCheckmark = hasTemplateGlobalSchema
+                  ? ' <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>'
+                  : '';
+
+                // Template Global Schema column (index 4)
+                const editTemplateGlobalUrl =
+                  yamlCF.admin_url +
+                  'admin.php?page=yaml-cf-edit-template-global&template=' +
+                  encodeURIComponent(template);
+                $cells.eq(4).html(
+                  '<a href="' +
+                    editTemplateGlobalUrl +
+                    '" class="button">' +
+                    templateGlobalButtonText +
+                    '</a>' +
+                    templateGlobalCheckmark
+                );
+
+                // Template Global Data column (index 5)
+                if (hasTemplateGlobalSchema) {
+                  const manageTemplateGlobalUrl =
+                    yamlCF.admin_url +
+                    'admin.php?page=yaml-cf-manage-template-global&template=' +
+                    encodeURIComponent(template);
+                  $cells.eq(5).html(
+                    '<a href="' +
+                      manageTemplateGlobalUrl +
+                      '" class="button">Manage Template Global Data</a>'
+                  );
+                } else {
+                  $cells.eq(5).html(
+                    '<span class="description">Add template global schema first</span>'
+                  );
+                }
+              }
+
+              // Handle partial table (has Data column)
+              if (isPartialTable) {
                 if (hasSchema) {
                   const manageDataUrl =
                     yamlCF.admin_url +
                     'admin.php?page=yaml-cf-edit-partial&template=' +
                     encodeURIComponent(template);
-                  $dataCell.html(
+                  $cells.eq(4).html(
                     '<a href="' +
                       manageDataUrl +
                       '" class="button">Manage Data</a>'
                   );
                 } else {
-                  $dataCell.html(
+                  $cells.eq(4).html(
                     '<span class="description">Add schema first</span>'
                   );
                 }
@@ -130,9 +171,19 @@
                 '<span class="description">Enable YAML first</span>'
               );
 
-              // If this is a partial (has data column), update it too
-              if ($dataCell.length) {
-                $dataCell.html(
+              // Update Template Global columns for template table
+              if (isTemplateTable) {
+                $cells.eq(4).html(
+                  '<span class="description">Enable YAML first</span>'
+                );
+                $cells.eq(5).html(
+                  '<span class="description">Add template global schema first</span>'
+                );
+              }
+
+              // Update Data column for partial table
+              if (isPartialTable) {
+                $cells.eq(4).html(
                   '<span class="description">Add schema first</span>'
                 );
               }
