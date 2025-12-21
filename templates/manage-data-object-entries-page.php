@@ -173,7 +173,7 @@ if ($yaml_cf_action === 'edit') {
           <?php
           if (!empty($yaml_cf_schema['fields'])) {
             $yaml_cf_context = ['type' => 'data_object', 'object_type' => $yaml_cf_type_slug];
-            $yaml_cf_plugin->render_schema_fields($yaml_cf_schema['fields'], $yaml_cf_entry_data, 'yaml_cf[', $yaml_cf_context);
+            $yaml_cf_plugin->render_schema_fields($yaml_cf_schema['fields'], $yaml_cf_entry_data, '', $yaml_cf_context);
           } else {
             echo '<p>' . esc_html__('No fields defined in schema.', 'yaml-custom-fields') . '</p>';
           }

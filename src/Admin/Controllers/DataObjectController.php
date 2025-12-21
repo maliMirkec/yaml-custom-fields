@@ -110,18 +110,14 @@ class DataObjectController extends AdminController {
 
       // Sanitize entry data using the plugin instance
       $plugin = \YAML_Custom_Fields::get_instance();
-      $raw_post = \YAML_Custom_Fields::post_raw('yaml_cf', []);
+
+      // Get form data from yaml_cf array (includes all fields including blocks)
+      $form_data = isset($_POST['yaml_cf']) && is_array($_POST['yaml_cf']) ? $_POST['yaml_cf'] : [];
 
       error_log('SAVE DEBUG: Entry ID: ' . $entry_id_to_save);
-      error_log('SAVE DEBUG: Raw POST yaml_cf: ' . print_r($raw_post, true));
+      error_log('SAVE DEBUG: Form data before sanitization: ' . print_r($form_data, true));
 
-      // Unwrap if there's an extra yaml_cf layer
-      if (isset($raw_post['yaml_cf']) && is_array($raw_post['yaml_cf'])) {
-        $raw_post = $raw_post['yaml_cf'];
-        error_log('SAVE DEBUG: Unwrapped nested yaml_cf array');
-      }
-
-      $entry_data = $plugin->sanitize_field_data($raw_post, $schema);
+      $entry_data = $plugin->sanitize_field_data($form_data, $schema);
 
       error_log('SAVE DEBUG: Sanitized data: ' . print_r($entry_data, true));
 
@@ -137,8 +133,8 @@ class DataObjectController extends AdminController {
       // Set success message transient
       set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_saved', 60);
 
-      // Redirect to prevent form resubmission
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($type_id)));
+      // Redirect back to edit page to prevent form resubmission
+      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($type_id) . '&action=edit&entry=' . urlencode($entry_id_to_save)));
       exit;
     }
 
