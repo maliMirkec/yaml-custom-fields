@@ -43,7 +43,7 @@ if (!defined('ABSPATH')) {
         <p style="margin: 0;">
           <strong><?php esc_html_e('What gets exported:', 'yaml-custom-fields'); ?></strong>
         </p>
-        <ul style="margin: 10px 0 0 20px;">
+        <ul style="margin: 0">
           <li><?php esc_html_e('All YAML schemas for page templates', 'yaml-custom-fields'); ?></li>
           <li><?php esc_html_e('All YAML schemas for partials', 'yaml-custom-fields'); ?></li>
           <li><?php esc_html_e('Template enable/disable settings', 'yaml-custom-fields'); ?></li>
@@ -51,10 +51,10 @@ if (!defined('ABSPATH')) {
       </div>
     </div>
 
-    <!-- Page Data Export/Import -->
+    <!-- Page Data Export -->
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-      <h2><?php esc_html_e('Page Data Export/Import', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('Export and import custom field data for individual posts and pages.', 'yaml-custom-fields'); ?></p>
+      <h2><?php esc_html_e('Page Data Export', 'yaml-custom-fields'); ?></h2>
+      <p><?php esc_html_e('Export custom field data for individual posts and pages.', 'yaml-custom-fields'); ?></p>
 
       <h3 style="margin-top: 20px;"><?php esc_html_e('Select Pages/Posts to Export', 'yaml-custom-fields'); ?></h3>
 
@@ -134,12 +134,13 @@ if (!defined('ABSPATH')) {
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
       <h3><?php esc_html_e('Import Page Data', 'yaml-custom-fields'); ?></h3>
+      <p><?php esc_html_e('Import custom field data for individual posts and pages.', 'yaml-custom-fields'); ?></p>
 
       <div class="yaml-cf-info-box" style="background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px; margin-bottom: 20px;">
         <p style="margin: 0;">
           <strong><?php esc_html_e('Import Instructions:', 'yaml-custom-fields'); ?></strong>
         </p>
-        <ul style="margin: 10px 0 0 20px;">
+        <ul style="margin: 0">
           <li><?php esc_html_e('Select a JSON file exported from this plugin', 'yaml-custom-fields'); ?></li>
           <li><?php esc_html_e('Posts will be matched based on the export preference (slug or ID)', 'yaml-custom-fields'); ?></li>
           <li><?php esc_html_e('Missing attachments (images/files) will be automatically removed', 'yaml-custom-fields'); ?></li>
@@ -162,10 +163,10 @@ if (!defined('ABSPATH')) {
       </div>
     </div>
 
-    <!-- Data Objects Export/Import -->
+    <!-- Data Objects Export -->
     <div class="card" style="max-width: 100%; margin-top: 40px;">
-      <h2><?php esc_html_e('Data Objects Export/Import', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('Export and import data object types and their entries.', 'yaml-custom-fields'); ?></p>
+      <h2><?php esc_html_e('Data Objects Export', 'yaml-custom-fields'); ?></h2>
+      <p><?php esc_html_e('Export data object types and their entries.', 'yaml-custom-fields'); ?></p>
 
       <h3 style="margin-top: 20px;"><?php esc_html_e('Export Data Objects', 'yaml-custom-fields'); ?></h3>
 
@@ -209,12 +210,13 @@ if (!defined('ABSPATH')) {
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
       <h3><?php esc_html_e('Import Data Objects', 'yaml-custom-fields'); ?></h3>
+      <p><?php esc_html_e('Import data object types and their entries.', 'yaml-custom-fields'); ?></p>
 
       <div class="yaml-cf-info-box" style="background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 12px; margin-bottom: 20px;">
         <p style="margin: 0;">
           <strong><?php esc_html_e('Import Instructions:', 'yaml-custom-fields'); ?></strong>
         </p>
-        <ul style="margin: 10px 0 0 20px;">
+        <ul style="margin: 0">
           <li><?php esc_html_e('Select a JSON file exported from this plugin', 'yaml-custom-fields'); ?></li>
           <li><?php esc_html_e('Existing data object types with the same slug will be updated', 'yaml-custom-fields'); ?></li>
           <li><?php esc_html_e('Missing attachments (images/files) will be automatically removed', 'yaml-custom-fields'); ?></li>

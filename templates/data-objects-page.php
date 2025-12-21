@@ -44,15 +44,15 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
 <div id="yaml-cf-notifications">
   <?php
   // Display success messages (using transients - shown only once)
-  $success_key = 'yaml_cf_data_objects_success_' . get_current_user_id();
-  $success_msg = get_transient($success_key);
-  if ($success_msg) {
-    $success_messages = [
+  $yaml_cf_success_key = 'yaml_cf_data_objects_success_' . get_current_user_id();
+  $yaml_cf_success_msg = get_transient($yaml_cf_success_key);
+  if ($yaml_cf_success_msg) {
+    $yaml_cf_success_messages = [
       'type_deleted' => __('Data object type and all its entries deleted successfully!', 'yaml-custom-fields'),
     ];
-    $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
-    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($message) . '</div>';
-    delete_transient($success_key);
+    $yaml_cf_message = isset($yaml_cf_success_messages[$yaml_cf_success_msg]) ? $yaml_cf_success_messages[$yaml_cf_success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($yaml_cf_message) . '</div>';
+    delete_transient($yaml_cf_success_key);
   }
   ?>
 </div>

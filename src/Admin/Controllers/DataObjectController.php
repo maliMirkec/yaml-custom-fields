@@ -70,15 +70,9 @@ class DataObjectController extends AdminController {
 
     // Handle data object entry save
     if (isset($_POST['yaml_cf_save_entry_nonce'])) {
-      error_log('ENTRY SAVE: Form submitted, nonce present');
-      error_log('ENTRY SAVE: POST data keys: ' . print_r(array_keys($_POST), true));
-
       if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_entry_nonce'])), 'yaml_cf_save_entry')) {
-        error_log('ENTRY SAVE: NONCE FAILED');
         wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
       }
-
-      error_log('ENTRY SAVE: Nonce verified');
 
       if (!current_user_can('manage_options')) {
         wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
@@ -112,23 +106,16 @@ class DataObjectController extends AdminController {
       $plugin = \YAML_Custom_Fields::get_instance();
 
       // Get form data from yaml_cf array (includes all fields including blocks)
-      $form_data = isset($_POST['yaml_cf']) && is_array($_POST['yaml_cf']) ? $_POST['yaml_cf'] : [];
+      // First pass: basic sanitization to satisfy PHPCS
+      $raw_form_data = isset($_POST['yaml_cf']) && is_array($_POST['yaml_cf']) ?
+        map_deep(wp_unslash($_POST['yaml_cf']), 'sanitize_text_field') : [];
 
-      error_log('SAVE DEBUG: Entry ID: ' . $entry_id_to_save);
-      error_log('SAVE DEBUG: Form data before sanitization: ' . print_r($form_data, true));
-
-      $entry_data = $plugin->sanitize_field_data($form_data, $schema);
-
-      error_log('SAVE DEBUG: Sanitized data: ' . print_r($entry_data, true));
+      // Second pass: schema-based sanitization that properly handles all field types
+      $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema);
 
       $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
       $entries[$entry_id_to_save] = $entry_data;
-
-      error_log('SAVE DEBUG: All entries before save: ' . print_r(array_keys($entries), true));
-
-      $result = update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
-
-      error_log('SAVE DEBUG: Update result: ' . ($result ? 'SUCCESS' : 'FAILED'));
+      update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
 
       // Set success message transient
       set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_saved', 60);

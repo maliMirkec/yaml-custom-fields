@@ -36,7 +36,7 @@ class ServiceContainer {
 
     // Create new instance using factory
     if (!isset($this->factories[$name])) {
-      throw new \Exception("Service not found: {$name}");
+      throw new \Exception('Service not found: ' . esc_html($name));
     }
 
     $this->services[$name] = call_user_func($this->factories[$name], $this);

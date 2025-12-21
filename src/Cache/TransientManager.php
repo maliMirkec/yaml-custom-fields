@@ -101,27 +101,22 @@ class TransientManager {
       $user_id = get_current_user_id();
     }
 
-    global $wpdb;
-
-    // Delete all transients matching our patterns
-    $patterns = [
-      'yaml_cf_invalid_%_' . $user_id,
-      'yaml_cf_import_error_' . $user_id . '%'
+    // Clear known transient types using WordPress API
+    $transient_types = [
+      'schema',
+      'global_schema',
+      'template_global_schema'
     ];
 
-    foreach ($patterns as $pattern) {
-      $wpdb->query(
-        $wpdb->prepare(
-          "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-          '_transient_' . $pattern
-        )
-      );
-      $wpdb->query(
-        $wpdb->prepare(
-          "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-          '_transient_timeout_' . $pattern
-        )
-      );
+    // Delete invalid schema transients
+    foreach ($transient_types as $type) {
+      delete_transient('yaml_cf_invalid_' . $type . '_' . $user_id);
     }
+
+    // Delete import error transients
+    delete_transient('yaml_cf_import_error_' . $user_id);
+
+    // Note: Post-specific import errors (yaml_cf_import_error_{user_id}_{post_id})
+    // will expire automatically after 60 seconds as set in storeImportError()
   }
 }

@@ -18,7 +18,7 @@ class InfoRenderer extends BaseFieldRenderer {
       echo '<div class="yaml-cf-info-box">';
       echo '<span class="dashicons dashicons-info"></span>';
       echo '<div class="yaml-cf-info-content">';
-      echo MarkdownParser::parse($info_text);
+      echo wp_kses_post(MarkdownParser::parse($info_text));
       echo '</div>';
       echo '</div>';
     }

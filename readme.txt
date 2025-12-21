@@ -2,7 +2,7 @@
 Contributors: starbist
 Tags: yaml, frontmatter, custom-fields, cms, page-builder
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 1.2.1
 License: GPLv2 or later

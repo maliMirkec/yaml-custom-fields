@@ -44,17 +44,17 @@ if ($yaml_cf_action === 'edit') {
 
   // Migrate old data format (keys like 'yaml_cfname' to 'name')
   if (!empty($yaml_cf_entry_data)) {
-    $migrated_data = [];
-    foreach ($yaml_cf_entry_data as $key => $value) {
+    $yaml_cf_migrated_data = [];
+    foreach ($yaml_cf_entry_data as $yaml_cf_key => $yaml_cf_value) {
       // Remove 'yaml_cf' prefix if present
-      if (strpos($key, 'yaml_cf') === 0) {
-        $new_key = substr($key, 7); // Remove 'yaml_cf' prefix
-        $migrated_data[$new_key] = $value;
+      if (strpos($yaml_cf_key, 'yaml_cf') === 0) {
+        $yaml_cf_new_key = substr($yaml_cf_key, 7); // Remove 'yaml_cf' prefix
+        $yaml_cf_migrated_data[$yaml_cf_new_key] = $yaml_cf_value;
       } else {
-        $migrated_data[$key] = $value;
+        $yaml_cf_migrated_data[$yaml_cf_key] = $yaml_cf_value;
       }
     }
-    $yaml_cf_entry_data = $migrated_data;
+    $yaml_cf_entry_data = $yaml_cf_migrated_data;
   }
 }
 ?>
@@ -62,16 +62,16 @@ if ($yaml_cf_action === 'edit') {
 <div id="yaml-cf-notifications">
   <?php
   // Display success messages (using transients - shown only once)
-  $success_key = 'yaml_cf_data_object_success_' . get_current_user_id();
-  $success_msg = get_transient($success_key);
-  if ($success_msg) {
-    $success_messages = [
+  $yaml_cf_success_key = 'yaml_cf_data_object_success_' . get_current_user_id();
+  $yaml_cf_success_msg = get_transient($yaml_cf_success_key);
+  if ($yaml_cf_success_msg) {
+    $yaml_cf_success_messages = [
       'entry_saved' => __('Entry saved successfully!', 'yaml-custom-fields'),
       'entry_deleted' => __('Entry deleted successfully!', 'yaml-custom-fields'),
     ];
-    $message = isset($success_messages[$success_msg]) ? $success_messages[$success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
-    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($message) . '</div>';
-    delete_transient($success_key);
+    $yaml_cf_message = isset($yaml_cf_success_messages[$yaml_cf_success_msg]) ? $yaml_cf_success_messages[$yaml_cf_success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
+    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($yaml_cf_message) . '</div>';
+    delete_transient($yaml_cf_success_key);
   }
   ?>
 </div>

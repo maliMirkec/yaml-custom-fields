@@ -50,8 +50,8 @@ if (!defined('ABSPATH')) {
         if (!empty($template_global_schema['fields'])) {
           $plugin = YAML_Custom_Fields::get_instance();
           // Add template-specific ID suffix to prevent browser autocomplete conflicts between templates
-          $template_id_suffix = '_' . sanitize_title($template);
-          $yaml_cf_context = ['type' => 'template_global', 'template' => $template, 'id_suffix' => $template_id_suffix];
+          $yaml_cf_template_id_suffix = '_' . sanitize_title($template);
+          $yaml_cf_context = ['type' => 'template_global', 'template' => $template, 'id_suffix' => $yaml_cf_template_id_suffix];
           $plugin->render_schema_fields($template_global_schema['fields'], $template_global_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('No fields defined in template global schema.', 'yaml-custom-fields') . '</p>';

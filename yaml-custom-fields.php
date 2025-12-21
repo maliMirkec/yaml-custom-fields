@@ -556,44 +556,8 @@ class YAML_Custom_Fields {
       $schema = isset($post_data['schema']) ? $post_data['schema'] : null;
       $cleaned_data = $this->validate_and_clean_attachment_data($post_data['data'], $schema);
 
-      // Use direct database update to bypass all WordPress sanitization filters
-      // This is necessary during import to preserve HTML in rich-text fields
-      global $wpdb;
-
-      // Serialize the data (WordPress does this normally in update_post_meta)
-      $meta_value = maybe_serialize($cleaned_data);
-
-      // Check if meta already exists
-      $meta_id = $wpdb->get_var($wpdb->prepare(
-        "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
-        $post_id,
-        '_yaml_cf_data'
-      ));
-
-      if ($meta_id) {
-        // Update existing meta
-        $wpdb->update(
-          $wpdb->postmeta,
-          ['meta_value' => $meta_value],
-          ['meta_id' => $meta_id],
-          ['%s'],
-          ['%d']
-        );
-      } else {
-        // Insert new meta
-        $wpdb->insert(
-          $wpdb->postmeta,
-          [
-            'post_id' => $post_id,
-            'meta_key' => '_yaml_cf_data',
-            'meta_value' => $meta_value
-          ],
-          ['%d', '%s', '%s']
-        );
-      }
-
-      // Clear the meta cache for this post
-      wp_cache_delete($post_id, 'post_meta');
+      // Update post meta using WordPress API (handles serialization and caching)
+      update_post_meta($post_id, '_yaml_cf_data', $cleaned_data);
 
       // Mark as imported and store schema if available
       update_post_meta($post_id, '_yaml_cf_imported', true);
@@ -763,14 +727,11 @@ class YAML_Custom_Fields {
       // Use post_raw() to get unslashed data safely without PHPCS warnings
       // Data will be sanitized by schema-aware sanitize_field_data()
       $posted_data = self::post_raw('yaml_cf', []);
-      error_log('Posted data: ' . print_r($posted_data, true));
       if (!empty($posted_data) && is_array($posted_data)) {
         $field_data = $this->sanitize_field_data($posted_data, $global_schema);
-        error_log('Sanitized data: ' . print_r($field_data, true));
       }
 
       update_option('yaml_cf_global_data', $field_data);
-      error_log('Saved data: ' . print_r(get_option('yaml_cf_global_data'), true));
 
       // Clear caches
       $this->clear_data_caches();
@@ -882,17 +843,12 @@ class YAML_Custom_Fields {
       $is_taxonomy = $field_def && isset($field_def['type']) && $field_def['type'] === 'taxonomy';
       $is_multiple = $field_def && isset($field_def['multiple']) && $field_def['multiple'];
 
-      if ($field_name) {
-        error_log("Processing field: $field_name, is_object: " . ($is_object ? 'yes' : 'no'));
-      }
-
       foreach ($data as $key => $value) {
         $child_schema = $schema;
 
         // If this is an object field, use its nested fields as the schema
         if ($is_object && isset($field_def['fields']) && is_array($field_def['fields'])) {
           $child_schema = ['fields' => $field_def['fields']];
-          error_log("Using nested schema for object field: $field_name");
         }
         // If this is a block list, find the appropriate block schema
         elseif ($is_block_list && is_array($value)) {
@@ -2031,7 +1987,7 @@ class YAML_Custom_Fields {
             echo '<div class="yaml-cf-info-box">';
             echo '<span class="dashicons dashicons-info"></span>';
             echo '<div class="yaml-cf-info-content">';
-            echo $this->parse_basic_markdown($info_text);
+            echo wp_kses_post($this->parse_basic_markdown($info_text));
             echo '</div>';
             echo '</div>';
           }
@@ -2276,6 +2232,7 @@ class YAML_Custom_Fields {
               }
             } else {
               echo '<option value="" disabled>' . sprintf(
+                /* translators: %s: data object type name (e.g., "Universities", "Companies") */
                 esc_html__('No %s entries found', 'yaml-custom-fields'),
                 esc_html($data_types[$object_type]['name'])
               ) . '</option>';
@@ -2482,7 +2439,7 @@ class YAML_Custom_Fields {
         }
 
         if ($block_field_type === 'boolean') {
-          echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="1" ' . checked($block_field_value, 1, false) . $disabled_attr . ' />';
+          echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="1" ' . checked($block_field_value, 1, false) . esc_attr($disabled_attr) . ' />';
         } elseif ($block_field_type === 'rich-text') {
           $editor_settings = [
             'textarea_name' => 'yaml_cf[' . $field['name'] . '][' . $index . '][' . $block_field['name'] . ']',
@@ -2514,7 +2471,7 @@ class YAML_Custom_Fields {
         } elseif ($block_field_type === 'code') {
           $block_field_options = isset($block_field['options']) ? $block_field['options'] : [];
           $language = isset($block_field_options['language']) ? $block_field_options['language'] : 'html';
-          echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '"' . $disabled_attr . '>' . esc_textarea($block_field_value) . '</textarea>';
+          echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '"' . esc_attr($disabled_attr) . '>' . esc_textarea($block_field_value) . '</textarea>';
         } elseif ($block_field_type === 'number') {
           $block_field_options = isset($block_field['options']) ? $block_field['options'] : [];
           $number_attrs = [
@@ -2563,7 +2520,7 @@ class YAML_Custom_Fields {
             $values = $block_field['values'];
           }
 
-          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($block_field_id) . '" ' . ($multiple ? 'multiple' : '') . $disabled_attr . '>';
+          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']' . ($multiple ? '[]' : '') . '" id="' . esc_attr($block_field_id) . '" ' . ($multiple ? 'multiple' : '') . esc_attr($disabled_attr) . '>';
           echo '<option value="">-- Select --</option>';
 
           if (is_array($values) && !empty($values)) {
@@ -2609,9 +2566,9 @@ class YAML_Custom_Fields {
 
           if ($multiple) {
             $block_field_value = is_array($block_field_value) ? $block_field_value : ($block_field_value ? [$block_field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . '][]" id="' . esc_attr($block_field_id) . '" multiple style="height: 150px;" class="regular-text"' . $disabled_attr . '>';
+            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . '][]" id="' . esc_attr($block_field_id) . '" multiple style="height: 150px;" class="regular-text"' . esc_attr($disabled_attr) . '>';
           } else {
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . $disabled_attr . '>';
+            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . esc_attr($disabled_attr) . '>';
             echo '<option value="">-- Select ' . esc_html($block_field['label']) . ' --</option>';
           }
 
@@ -2631,7 +2588,7 @@ class YAML_Custom_Fields {
           // Get all public post types
           $post_types = get_post_types(['public' => true], 'objects');
 
-          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . $disabled_attr . '>';
+          echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . esc_attr($disabled_attr) . '>';
           echo '<option value="">-- Select ' . esc_html($block_field['label']) . ' --</option>';
 
           foreach ($post_types as $post_type) {
@@ -2658,7 +2615,7 @@ class YAML_Custom_Fields {
               $label_field = $parsed_schema['fields'][0]['name'];
             }
 
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . $disabled_attr . '>';
+            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . esc_attr($disabled_attr) . '>';
             echo '<option value="">-- Select ' . esc_html($type_name) . ' --</option>';
 
             if (!empty($data_object_entries) && is_array($data_object_entries)) {
@@ -2677,7 +2634,7 @@ class YAML_Custom_Fields {
             echo '<p class="description" style="color: #d63638;">' . esc_html__('Error: object_type not specified in schema', 'yaml-custom-fields') . '</p>';
           }
         } elseif ($block_field_type === 'image') {
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . $disabled_attr . ' />';
+          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . esc_attr($disabled_attr) . ' />';
           if (!$readonly) {
             echo '<div class="yaml-cf-media-buttons">';
             echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($block_field_id) . '">Upload Image</button>';
@@ -2693,7 +2650,7 @@ class YAML_Custom_Fields {
             }
           }
         } elseif ($block_field_type === 'file') {
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . $disabled_attr . ' />';
+          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . esc_attr($disabled_attr) . ' />';
           if (!$readonly) {
             echo '<div class="yaml-cf-media-buttons">';
             echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">Upload File</button>';
@@ -2801,68 +2758,12 @@ class YAML_Custom_Fields {
 
       $sanitized_data = $this->sanitize_field_data($posted_data, $schema);
 
-      // Use direct database queries to bypass WordPress sanitization
-      // This preserves HTML in code fields for administrators
-      global $wpdb;
-
-      // Save _yaml_cf_data
-      $meta_value = maybe_serialize($sanitized_data);
-      $meta_id = $wpdb->get_var($wpdb->prepare(
-        "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
-        $post_id,
-        '_yaml_cf_data'
-      ));
-
-      if ($meta_id) {
-        $wpdb->update(
-          $wpdb->postmeta,
-          ['meta_value' => $meta_value],
-          ['meta_id' => $meta_id],
-          ['%s'],
-          ['%d']
-        );
-      } else {
-        $wpdb->insert(
-          $wpdb->postmeta,
-          [
-            'post_id' => $post_id,
-            'meta_key' => '_yaml_cf_data',
-            'meta_value' => $meta_value
-          ],
-          ['%d', '%s', '%s']
-        );
-      }
-
-      wp_cache_delete($post_id, 'post_meta');
+      // Update post meta using WordPress API (handles serialization and caching)
+      update_post_meta($post_id, '_yaml_cf_data', $sanitized_data);
 
       // Store schema for validation purposes
       if ($schema) {
-        $schema_value = maybe_serialize($schema);
-        $schema_meta_id = $wpdb->get_var($wpdb->prepare(
-          "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
-          $post_id,
-          '_yaml_cf_schema'
-        ));
-
-        if ($schema_meta_id) {
-          $wpdb->update(
-            $wpdb->postmeta,
-            ['meta_value' => $schema_value],
-            ['meta_id' => $schema_meta_id],
-            ['%s'],
-            ['%d']
-          );
-        } else {
-          $wpdb->insert(
-            $wpdb->postmeta,
-            [
-              'post_id' => $post_id,
-              'meta_key' => '_yaml_cf_schema',
-              'meta_value' => $schema_value
-            ],
-            ['%d', '%s', '%s']
-          );
-        }
+        update_post_meta($post_id, '_yaml_cf_schema', $schema);
       }
 
       // Track this post for efficient cache clearing (avoids slow meta_query)
@@ -2972,12 +2873,12 @@ class YAML_Custom_Fields {
       wp_send_json_error('Permission denied');
     }
 
-    if (!isset($_POST['data'])) {
+    if (!isset($_POST['data']) || !is_string($_POST['data'])) {
       wp_send_json_error('No data provided');
     }
 
-    // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
-    $json_data = wp_unslash($_POST['data']);
+    // Sanitize and decode JSON data
+    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
@@ -3187,12 +3088,12 @@ class YAML_Custom_Fields {
       wp_send_json_error('Permission denied');
     }
 
-    if (!isset($_POST['data'])) {
+    if (!isset($_POST['data']) || !is_string($_POST['data'])) {
       wp_send_json_error('No data provided');
     }
 
-    // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
-    $json_data = wp_unslash($_POST['data']);
+    // Sanitize and decode JSON data
+    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
@@ -3260,57 +3161,16 @@ class YAML_Custom_Fields {
       $original_data_count = is_array($post_data['data']) ? count($post_data['data']) : 0;
 
       // Debug: Log original data sample
-      error_log('YAML CF Import - Original data type: ' . gettype($post_data['data']));
-      if (is_array($post_data['data'])) {
-        error_log('YAML CF Import - Original data sample: ' . json_encode(array_slice($post_data['data'], 0, 3, true)));
-      }
-
       // Pass schema to validation so we know which fields are actually attachments
       $schema = isset($post_data['schema']) ? $post_data['schema'] : null;
       $cleaned_data = $this->validate_and_clean_attachment_data($post_data['data'], $schema);
 
-      // Debug: Check if data is empty
+      // Check if data is empty
       $data_field_count = is_array($cleaned_data) ? count($cleaned_data) : 0;
       $has_schema = isset($post_data['schema']);
 
-      // Use direct database update to bypass all WordPress sanitization filters
-      // This is necessary during import to preserve HTML in rich-text fields
-      global $wpdb;
-
-      // Serialize the data (WordPress does this normally in update_post_meta)
-      $meta_value = maybe_serialize($cleaned_data);
-
-      // Check if meta already exists
-      $meta_id = $wpdb->get_var($wpdb->prepare(
-        "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s",
-        $target_post->ID,
-        '_yaml_cf_data'
-      ));
-
-      if ($meta_id) {
-        // Update existing meta
-        $data_updated = $wpdb->update(
-          $wpdb->postmeta,
-          ['meta_value' => $meta_value],
-          ['meta_id' => $meta_id],
-          ['%s'],
-          ['%d']
-        );
-      } else {
-        // Insert new meta
-        $data_updated = $wpdb->insert(
-          $wpdb->postmeta,
-          [
-            'post_id' => $target_post->ID,
-            'meta_key' => '_yaml_cf_data',
-            'meta_value' => $meta_value
-          ],
-          ['%d', '%s', '%s']
-        );
-      }
-
-      // Clear the meta cache for this post
-      wp_cache_delete($target_post->ID, 'post_meta');
+      // Update post meta using WordPress API (handles serialization and caching)
+      $data_updated = update_post_meta($target_post->ID, '_yaml_cf_data', $cleaned_data);
 
       // Mark as imported and store schema if available
       update_post_meta($target_post->ID, '_yaml_cf_imported', true);
@@ -3375,25 +3235,14 @@ class YAML_Custom_Fields {
           $attachment = get_post(intval($value));
           if ($attachment && $attachment->post_type === 'attachment') {
             // Valid attachment, keep it
-            error_log("YAML CF - Keeping valid attachment: $key = $value");
             continue;
           } elseif ($attachment) {
             // It's a valid post ID but not an attachment, keep it
-            error_log("YAML CF - Keeping valid post ID: $key = $value");
             continue;
           } else {
             // Attachment doesn't exist, set to empty
-            error_log("YAML CF - CLEARING missing attachment: $key = $value (was numeric, attachment not found)");
             $data[$key] = '';
           }
-        } else {
-          // Not an attachment field, keep numeric value as is
-          error_log("YAML CF - Keeping number field: $key = $value (not an attachment field)");
-        }
-      } else {
-        // Not numeric or not positive, keep as is
-        if (!is_array($value)) {
-          error_log("YAML CF - Keeping non-numeric value: $key = " . substr($value, 0, 50));
         }
       }
     }
@@ -3537,12 +3386,12 @@ class YAML_Custom_Fields {
       wp_send_json_error('Permission denied');
     }
 
-    if (!isset($_POST['data'])) {
+    if (!isset($_POST['data']) || !is_string($_POST['data'])) {
       wp_send_json_error('No data provided');
     }
 
-    // Don't use sanitize_textarea_field as it can corrupt JSON - wp_unslash is sufficient
-    $json_data = wp_unslash($_POST['data']);
+    // Sanitize and decode JSON data
+    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
