@@ -18,6 +18,16 @@
 		<exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
 	</rule>
 
+	<!-- uninstall.php uses direct SQL for bulk deletion - this is the documented exception -->
+	<rule ref="WordPress.DB.DirectDatabaseQuery">
+		<exclude-pattern>uninstall.php</exclude-pattern>
+	</rule>
+
+	<!-- File uploads: tmp_name is validated by WordPress core wp_handle_upload() -->
+	<rule ref="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized">
+		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+	</rule>
+
 	<!-- Minimum supported PHP version -->
 	<config name="minimum_supported_wp_version" value="5.8"/>
 	<config name="testVersion" value="7.4-"/>

@@ -23,12 +23,12 @@ delete_option( 'yaml_cf_template_global_data' );
 delete_option( 'yaml_cf_data_object_types' );
 
 // Delete all data object entries (dynamic option names)
+// Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
 global $wpdb;
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk deletion on uninstall, caching not applicable
 $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'yaml_cf_data_object_entries_%'" );
 
 // Delete all post meta created by the plugin
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk deletion on uninstall, caching not applicable
+// Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
 $wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_yaml_cf_%'" );
 
 // For multisite, delete from all sites
@@ -54,11 +54,11 @@ if ( is_multisite() ) {
 		delete_option( 'yaml_cf_data_object_types' );
 
 		// Delete data object entries
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk deletion on uninstall, caching not applicable
+		// Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'yaml_cf_data_object_entries_%'" );
 
 		// Delete post meta
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk deletion on uninstall, caching not applicable
+		// Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
 		$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_yaml_cf_%'" );
 
 		restore_current_blog();
