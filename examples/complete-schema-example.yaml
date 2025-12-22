@@ -1,0 +1,598 @@
+# YAML Custom Fields - Complete Schema Example
+# This schema demonstrates ALL available field types and their options
+# Copy and paste this into your template schema editor to test all field types
+
+fields:
+  # ============================================
+  # STRING FIELD
+  # Single-line text input with validation
+  # ============================================
+  - name: page_title
+    label: Page Title
+    type: string
+    description: Main heading for the page
+    required: true
+    default: Welcome
+    options:
+      minlength: 3
+      maxlength: 100
+
+  # ============================================
+  # TEXT FIELD
+  # Multi-line textarea
+  # ============================================
+  - name: description
+    label: Description
+    type: text
+    description: Multi-line text description
+    options:
+      maxlength: 500
+
+  # ============================================
+  # RICH TEXT FIELD
+  # WordPress WYSIWYG editor with full formatting
+  # ============================================
+  - name: content
+    label: Page Content
+    type: rich-text
+    description: Full WYSIWYG editor with formatting
+
+  # ============================================
+  # CODE FIELDS
+  # Code editor with syntax highlighting
+  # ============================================
+  - name: custom_css
+    label: Custom CSS
+    type: code
+    options:
+      language: css  # Options: html, css, javascript, js, php, python, etc.
+
+  - name: tracking_code
+    label: Tracking Code
+    type: code
+    options:
+      language: javascript
+
+  # ============================================
+  # BOOLEAN FIELD
+  # Checkbox for true/false values
+  # ============================================
+  - name: featured
+    label: Featured Post
+    type: boolean
+    default: false
+
+  # ============================================
+  # NUMBER FIELD
+  # Number input with constraints
+  # ============================================
+  - name: price
+    label: Price
+    type: number
+    options:
+      min: 0
+      max: 9999
+
+  # ============================================
+  # DATE FIELDS
+  # Date picker with optional time
+  # ============================================
+  - name: event_date
+    label: Event Date
+    type: date
+    options:
+      time: true  # Include time picker
+
+  - name: publish_date
+    label: Publish Date
+    type: date
+    options:
+      time: false  # Date only, no time
+
+  # ============================================
+  # SELECT FIELD (Single Selection)
+  # Dropdown with single selection
+  # ============================================
+  - name: category
+    label: Category
+    type: select
+    multiple: false  # Single selection (this is at field level, not in options)
+    options:
+      values:
+        - value: news
+          label: News
+        - value: blog
+          label: Blog Posts
+        - value: events
+          label: Events
+
+  # ============================================
+  # SELECT FIELD (Multiple Selection)
+  # Dropdown with multiple selection
+  # ============================================
+  - name: topics
+    label: Topics
+    type: select
+    multiple: true  # Allow multiple selections
+    options:
+      values:
+        - value: tech
+          label: Technology
+        - value: design
+          label: Design
+        - value: business
+          label: Business
+
+  # ============================================
+  # TAXONOMY FIELD (Single Selection)
+  # WordPress taxonomy selector - single term
+  # ============================================
+  - name: primary_category
+    label: Primary Category
+    type: taxonomy
+    multiple: false
+    options:
+      taxonomy: category  # Standard WordPress category
+
+  # ============================================
+  # TAXONOMY FIELD (Multiple Selection)
+  # WordPress taxonomy selector - multiple terms
+  # ============================================
+  - name: tags
+    label: Tags
+    type: taxonomy
+    multiple: true
+    options:
+      taxonomy: post_tag  # Standard WordPress tags
+
+  # ============================================
+  # TAXONOMY FIELD (Custom Taxonomy)
+  # Note: Custom taxonomy must exist in WordPress
+  # ============================================
+  - name: portfolio_category
+    label: Portfolio Category
+    type: taxonomy
+    options:
+      taxonomy: portfolio_cat  # Custom taxonomy (must be registered)
+
+  # ============================================
+  # POST TYPE FIELD
+  # Dropdown to select registered WordPress post types
+  # ============================================
+  - name: content_type
+    label: Content Type
+    type: post_type
+
+  # ============================================
+  # DATA OBJECT FIELD (Single)
+  # Reference to a structured data object
+  # Note: Data object type "universities" must be created first
+  # Go to YAML CF > Data Objects to create it
+  # ============================================
+  - name: university
+    label: University
+    type: data_object
+    options:
+      object_type: universities
+
+  # ============================================
+  # DATA OBJECT FIELD (List)
+  # Multiple references to data objects
+  # ============================================
+  - name: partner_universities
+    label: Partner Universities
+    type: data_object
+    list: true  # Allow multiple selections
+    options:
+      object_type: universities
+
+  # ============================================
+  # IMAGE FIELD
+  # WordPress media uploader for images
+  # Returns attachment ID, use ycf_get_image() for full data
+  # ============================================
+  - name: hero_image
+    label: Hero Image
+    type: image
+
+  # ============================================
+  # FILE FIELD
+  # WordPress media uploader for any file type
+  # Returns attachment ID, use ycf_get_file() for full data
+  # ============================================
+  - name: pdf_brochure
+    label: PDF Brochure
+    type: file
+
+  # ============================================
+  # OBJECT FIELD (Nested Fields)
+  # Group of fields that can be nested
+  # Objects CAN contain other objects (multi-level nesting)
+  # ============================================
+  - name: author
+    label: Author Information
+    type: object
+    fields:
+      - name: name
+        label: Author Name
+        type: string
+      - name: email
+        label: Email
+        type: string
+      - name: bio
+        label: Biography
+        type: text
+      - name: photo
+        label: Author Photo
+        type: image
+      # Nested object within object
+      - name: social_links
+        label: Social Links
+        type: object
+        fields:
+          - name: twitter
+            label: Twitter URL
+            type: string
+          - name: linkedin
+            label: LinkedIn URL
+            type: string
+
+  # ============================================
+  # BLOCK FIELD
+  # Repeatable blocks for flexible page builders
+  # IMPORTANT: Blocks CANNOT contain other block fields
+  # Blocks CAN contain objects, and objects can be nested
+  # ============================================
+  - name: page_sections
+    label: Page Sections
+    type: block
+    list: true  # Make it repeatable
+    blockKey: type  # Field name that identifies block type
+    blocks:
+      # --- HERO BLOCK ---
+      - name: hero
+        label: Hero Section
+        fields:
+          - name: title
+            label: Hero Title
+            type: string
+            options:
+              maxlength: 100
+          - name: subtitle
+            label: Subtitle
+            type: text
+          - name: background_image
+            label: Background Image
+            type: image
+          - name: overlay_opacity
+            label: Overlay Opacity
+            type: number
+            options:
+              min: 0
+              max: 100
+          - name: show_cta
+            label: Show Call to Action
+            type: boolean
+          - name: cta_button
+            label: CTA Button
+            type: object
+            fields:
+              - name: text
+                label: Button Text
+                type: string
+              - name: url
+                label: Button URL
+                type: string
+          - name: category
+            label: Category
+            type: taxonomy
+            options:
+              taxonomy: category
+
+      # --- CONTENT BLOCK ---
+      - name: content_block
+        label: Content Block
+        fields:
+          - name: heading
+            label: Heading
+            type: string
+          - name: content
+            label: Content
+            type: rich-text
+          - name: layout
+            label: Layout
+            type: select
+            options:
+              values:
+                - value: full
+                  label: Full Width
+                - value: narrow
+                  label: Narrow
+                - value: wide
+                  label: Wide
+          - name: background_color
+            label: Background Color
+            type: string
+
+      # --- TWO COLUMN BLOCK ---
+      - name: two_column
+        label: Two Column Layout
+        fields:
+          - name: left_content
+            label: Left Column
+            type: rich-text
+          - name: right_content
+            label: Right Column
+            type: rich-text
+          - name: column_ratio
+            label: Column Ratio
+            type: select
+            options:
+              values:
+                - value: 50-50
+                  label: 50% / 50%
+                - value: 60-40
+                  label: 60% / 40%
+                - value: 70-30
+                  label: 70% / 30%
+
+      # --- IMAGE GALLERY BLOCK ---
+      - name: gallery
+        label: Image Gallery
+        fields:
+          - name: title
+            label: Gallery Title
+            type: string
+          # Object list within a block
+          - name: images
+            label: Gallery Images
+            type: object
+            list: true  # Repeatable object
+            fields:
+              - name: image
+                label: Image
+                type: image
+              - name: caption
+                label: Caption
+                type: text
+              - name: link
+                label: Link URL
+                type: string
+
+      # --- TEAM MEMBER BLOCK ---
+      - name: team_member
+        label: Team Member
+        fields:
+          - name: name
+            label: Name
+            type: string
+          - name: position
+            label: Position
+            type: string
+          - name: photo
+            label: Photo
+            type: image
+          - name: bio
+            label: Biography
+            type: text
+          - name: email
+            label: Email
+            type: string
+          - name: phone
+            label: Phone
+            type: string
+          - name: social_media
+            label: Social Media
+            type: object
+            fields:
+              - name: linkedin
+                label: LinkedIn
+                type: string
+              - name: twitter
+                label: Twitter
+                type: string
+
+      # --- TESTIMONIAL BLOCK ---
+      - name: testimonial
+        label: Testimonial
+        fields:
+          - name: quote
+            label: Quote
+            type: text
+            options:
+              maxlength: 500
+          - name: author
+            label: Author Name
+            type: string
+          - name: author_title
+            label: Author Title
+            type: string
+          - name: author_photo
+            label: Author Photo
+            type: image
+          - name: company
+            label: Company
+            type: data_object
+            options:
+              object_type: companies
+          - name: rating
+            label: Rating
+            type: number
+            options:
+              min: 1
+              max: 5
+
+      # --- CALL TO ACTION BLOCK ---
+      - name: cta
+        label: Call to Action
+        fields:
+          - name: headline
+            label: Headline
+            type: string
+          - name: description
+            label: Description
+            type: text
+          - name: button_text
+            label: Button Text
+            type: string
+          - name: button_url
+            label: Button URL
+            type: string
+          - name: background_image
+            label: Background Image
+            type: image
+          - name: style
+            label: Style
+            type: select
+            options:
+              values:
+                - value: default
+                  label: Default
+                - value: centered
+                  label: Centered
+                - value: split
+                  label: Split Layout
+
+      # --- FAQ BLOCK ---
+      - name: faq
+        label: FAQ Section
+        fields:
+          - name: question
+            label: Question
+            type: string
+          - name: answer
+            label: Answer
+            type: rich-text
+          - name: category
+            label: FAQ Category
+            type: taxonomy
+            multiple: true
+            options:
+              taxonomy: faq_category  # Custom taxonomy (must be registered)
+
+      # --- VIDEO BLOCK ---
+      - name: video
+        label: Video Block
+        fields:
+          - name: title
+            label: Video Title
+            type: string
+          - name: video_file
+            label: Video File
+            type: file
+          - name: thumbnail
+            label: Thumbnail
+            type: image
+          - name: video_url
+            label: Video URL (YouTube/Vimeo)
+            type: string
+          - name: autoplay
+            label: Autoplay
+            type: boolean
+          - name: show_controls
+            label: Show Controls
+            type: boolean
+
+      # --- CODE SNIPPET BLOCK ---
+      - name: code_snippet
+        label: Code Snippet
+        fields:
+          - name: title
+            label: Title
+            type: string
+          - name: code
+            label: Code
+            type: code
+            options:
+              language: javascript
+          - name: language
+            label: Language
+            type: select
+            options:
+              values:
+                - value: html
+                  label: HTML
+                - value: css
+                  label: CSS
+                - value: javascript
+                  label: JavaScript
+                - value: php
+                  label: PHP
+                - value: python
+                  label: Python
+
+      # --- DOWNLOAD BLOCK ---
+      - name: download
+        label: Download Section
+        fields:
+          - name: title
+            label: Title
+            type: string
+          - name: description
+            label: Description
+            type: text
+          - name: file
+            label: File
+            type: file
+          - name: file_type
+            label: File Type
+            type: select
+            options:
+              values:
+                - value: pdf
+                  label: PDF
+                - value: doc
+                  label: Document
+                - value: zip
+                  label: Archive
+
+      # --- CUSTOM DATA BLOCK ---
+      - name: university_info
+        label: University Information
+        fields:
+          - name: university
+            label: University
+            type: data_object
+            options:
+              object_type: universities
+          - name: program
+            label: Program Name
+            type: string
+          - name: start_date
+            label: Start Date
+            type: date
+            options:
+              time: false
+          - name: brochure
+            label: Program Brochure
+            type: file
+
+# =================================================================
+# DATA OBJECT SCHEMA EXAMPLE
+# =================================================================
+# Create this as a separate Data Object type called "universities"
+# Go to: YAML CF > Data Objects > Add New Type
+#
+# name: universities
+# label: Universities
+# schema:
+# fields:
+#   - name: name
+#     label: University Name
+#     type: string
+#     required: true
+#   - name: logo
+#     label: Logo
+#     type: image
+#   - name: website
+#     label: Website URL
+#     type: string
+#   - name: description
+#     label: Description
+#     type: text
+#   - name: location
+#     label: Location
+#     type: string
+#   - name: founded
+#     label: Founded Year
+#     type: number

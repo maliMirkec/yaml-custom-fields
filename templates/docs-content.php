@@ -613,8 +613,8 @@ echo '&lt;style&gt;' . esc_html(ycf_get_field('custom_css')) . '&lt;/style&gt;';
 <pre><code>- name: category
   label: Category
   type: select
+  multiple: false
   options:
-    multiple: false
     values:
       - value: news
         label: News
@@ -623,10 +623,14 @@ echo '&lt;style&gt;' . esc_html(ycf_get_field('custom_css')) . '&lt;/style&gt;';
       - value: events
         label: Events</code></pre>
 
+<p><strong>Attributes:</strong></p>
+<ul>
+  <li><code>multiple</code> (boolean, optional) - At field level. Allow multiple selections (default: false)</li>
+</ul>
+
 <p><strong>Options:</strong></p>
 <ul>
-  <li><code>multiple</code> - Allow multiple selections</li>
-  <li><code>values</code> - Array of options with <code>value</code> and <code>label</code> keys</li>
+  <li><code>values</code> (required) - Array of options with <code>value</code> and <code>label</code> keys</li>
 </ul>
 
 <h3>Taxonomy</h3>

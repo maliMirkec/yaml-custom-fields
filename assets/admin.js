@@ -464,9 +464,12 @@
             $field.append(
               $('<div>', {
                 style:
-                  'padding: 10px; background: #f0f0f0; border: 1px dashed #ccc;',
-                text: 'Rich text editor will appear after saving the page.',
-              })
+                  'padding: 10px; background: #fff3cd; border: 1px solid #f0ad4e; border-radius: 3px;',
+              }).html(
+                '<strong>ℹ️ Rich Text Editor</strong><br>' +
+                  'The visual editor will appear after you <strong>save this post</strong>. ' +
+                  'For now, you can save the post to enable the full WYSIWYG editor.'
+              )
             );
             // Add hidden input to preserve the field structure
             $field.append(
@@ -1176,10 +1179,11 @@
           // Integrate with WordPress's own save warning (if enabled)
           if (changed && config.gutenbergSupport) {
             if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-              // Gutenberg
-              wp.data
-                .dispatch('core/editor')
-                .editPost({ meta: { _ycf_changed: Date.now() } });
+              // Gutenberg - check if core/editor store exists
+              const editor = wp.data.dispatch('core/editor');
+              if (editor && editor.editPost) {
+                editor.editPost({ meta: { _ycf_changed: Date.now() } });
+              }
             } else {
               // Classic editor
               $('#post').trigger('change');

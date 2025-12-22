@@ -1994,8 +1994,33 @@ class YAML_Custom_Fields {
 
       // Skip label rendering for block and info fields as they handle their own display
       if ($field['type'] !== 'block' && $field['type'] !== 'info') {
+        // Check if this is a taxonomy field with multiple checkboxes
+        $is_multiple_taxonomy = false;
+        if ($field['type'] === 'taxonomy') {
+          $is_multiple_taxonomy = isset($field['multiple']) && $field['multiple'];
+        }
+
+        // Check if this is a data_object field with multiple checkboxes (list: true)
+        $is_multiple_data_object = false;
+        if ($field['type'] === 'data_object') {
+          $is_multiple_data_object = isset($field['list']) && $field['list'];
+          // Also check 'multiple' for consistency with taxonomy fields
+          if (!$is_multiple_data_object) {
+            $is_multiple_data_object = isset($field['multiple']) && $field['multiple'];
+          }
+        }
+
+        // Check if this is an object field (container with nested fields)
+        $is_object_field = ($field['type'] === 'object');
+
         if($field['type'] === 'image' || $field['type'] === 'file') {
           echo '<p>' . esc_html($field_label) . '</p>';
+        } elseif ($is_multiple_taxonomy || $is_multiple_data_object || $is_object_field) {
+          // Use heading instead of label for:
+          // - Multiple taxonomy fields (checkboxes) - no single input to associate with
+          // - Multiple data_object fields (checkboxes) - no single input to associate with
+          // - Object fields (container fields) - no input, just nested fields
+          echo '<h4 style="margin: 0 0 5px 0; font-size: 14px;">' . esc_html($field_label) . '</h4>';
         } else {
           echo '<label for="' . esc_attr($field_id) . '">' . esc_html($field_label) . '</label>';
         }
@@ -2376,7 +2401,7 @@ class YAML_Custom_Fields {
           if ($is_list) {
             $block_snippet = "<?php\n// Get all blocks\n\$blocks = ycf_get_field('" . esc_js($field['name']) . "', null);\n\nif (!empty(\$blocks)) {\n  foreach (\$blocks as \$block) {\n    // Access block fields using context parameter:\n    // \$value = ycf_get_field('field_name', null, \$block);\n    // \$image = ycf_get_image('image_field', null, 'thumbnail', \$block);\n    // \$file = ycf_get_file('file_field', null, \$block);\n    // \$term = ycf_get_term('taxonomy_field', null, \$block);\n    // \$post_type = ycf_get_post_type('post_type_field', null, \$block);\n    // \$data_object = ycf_get_data_object('data_object_field', null, \$block);\n  }\n}\n?>";
             $block_popover_id = 'snippet-' . sanitize_html_class($field_id);
-            echo '<label style="display: block; margin-bottom: 5px;">' . esc_html($field_label) . '</label>';
+            echo '<h4 style="display: block; margin-bottom: 10px;">' . esc_html($field_label) . '</h4>';
           }
 
           echo '<div class="yaml-cf-block-container" data-field-name="' . esc_attr($field['name']) . '">';
@@ -2392,7 +2417,9 @@ class YAML_Custom_Fields {
             echo '</div>';
             if (!$readonly) {
               echo '<div class="yaml-cf-block-controls">';
-              echo '<select class="yaml-cf-block-type-select">';
+              $block_select_id = $field_id . '_block_type_select';
+              echo '<label for="' . esc_attr($block_select_id) . '" class="screen-reader-text">' . esc_html__('Select block type to add', 'yaml-custom-fields') . '</label>';
+              echo '<select class="yaml-cf-block-type-select" id="' . esc_attr($block_select_id) . '" name="' . esc_attr($block_select_id) . '">';
               echo '<option value="">-- Add Block --</option>';
               foreach ($blocks as $block) {
                 echo '<option value="' . esc_attr($block['name']) . '">' . esc_html($block['label']) . '</option>';
@@ -2511,9 +2538,12 @@ class YAML_Custom_Fields {
         $block_popover_id = 'snippet-' . sanitize_html_class($block_field_id);
 
         echo '<div class="yaml-cf-field">';
-        // For image/file fields with hidden inputs, don't use 'for' attribute as it's invalid
+        // For image/file/object fields with hidden inputs or no direct input, don't use 'for' attribute
         if ($block_field_type === 'image' || $block_field_type === 'file') {
           echo '<p>' . esc_html($block_field['label']) . '</p>';
+        } elseif ($block_field_type === 'object') {
+          // Use heading for object fields (container fields with nested fields)
+          echo '<h4 style="margin: 0 0 5px 0; font-size: 14px;">' . esc_html($block_field['label']) . '</h4>';
         } else {
           echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field['label']) . '</label>';
         }
@@ -2523,15 +2553,17 @@ class YAML_Custom_Fields {
         } elseif ($block_field_type === 'rich-text') {
           $editor_settings = [
             'textarea_name' => 'yaml_cf[' . $field['name'] . '][' . $index . '][' . $block_field['name'] . ']',
-            'textarea_rows' => 5,
+            'textarea_rows' => 10,
             'media_buttons' => !$readonly,
+            'wpautop' => true,
             'tinymce' => [
               'toolbar1' => 'formatselect,bold,italic,bullist,numlist,link,unlink',
-              'readonly' => $readonly ? 1 : 0,
+              'wp_autoresize_on' => true,
             ],
-            '_content_editor_dfw' => false
+            'quicktags' => true,
           ];
           if ($readonly) {
+            $editor_settings['tinymce']['readonly'] = 1;
             $editor_settings['quicktags'] = false;
           }
           wp_editor($block_field_value, $block_field_id, $editor_settings);
