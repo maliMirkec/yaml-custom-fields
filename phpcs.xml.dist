@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<ruleset name="YAML Custom Fields">
+	<description>WordPress Coding Standards for YAML Custom Fields Plugin</description>
+
+	<!-- Check all PHP files in directory tree -->
+	<file>.</file>
+
+	<!-- Exclude build files, vendor, and test files -->
+	<exclude-pattern>/build/*</exclude-pattern>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/.git/*</exclude-pattern>
+	<exclude-pattern>/tests/*</exclude-pattern>
+
+	<!-- Use WordPress Coding Standards -->
+	<rule ref="WordPress">
+		<!-- Allow short array syntax -->
+		<exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+
+	<!-- Minimum supported PHP version -->
+	<config name="minimum_supported_wp_version" value="5.8"/>
+	<config name="testVersion" value="7.4-"/>
+</ruleset>

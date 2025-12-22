@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Field Renderer Interface
  * All field renderers must implement this interface
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Rendering;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 interface FieldRendererInterface {
   /**
    * Render the field

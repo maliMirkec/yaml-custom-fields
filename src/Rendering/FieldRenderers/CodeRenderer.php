@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Rendering\FieldRenderers;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Rendering\BaseFieldRenderer;
 
 class CodeRenderer extends BaseFieldRenderer {

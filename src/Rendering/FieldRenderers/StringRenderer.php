@@ -1,4 +1,5 @@
 <?php
+
 /**
  * String Field Renderer
  * Renders text input fields
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Rendering\FieldRenderers;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Rendering\BaseFieldRenderer;
 
 class StringRenderer extends BaseFieldRenderer {

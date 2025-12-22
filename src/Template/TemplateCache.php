@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template Cache
  * Cache template lists for performance
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Template;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class TemplateCache {
   private $scanner;
 

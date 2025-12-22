@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Base AJAX Handler
  * Common functionality for AJAX endpoints
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Ajax;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 abstract class AjaxHandler {
   /**
    * Send JSON success response

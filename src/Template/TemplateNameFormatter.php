@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template Name Formatter
  * Format template file names for display
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Template;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class TemplateNameFormatter {
   /**
    * Format template file name for display

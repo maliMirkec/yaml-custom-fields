@@ -38,19 +38,40 @@ class WPTestCase extends WP_UnitTestCase {
 		delete_option('yaml_cf_template_global_data');
 		delete_option('yaml_cf_data_object_types');
 
-		// Clean up transients
-		global $wpdb;
-		$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_yaml_cf_%'");
-		$wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_yaml_cf_%'");
+		// Clean up known transient patterns using WordPress API
+		$transient_patterns = [
+			'yaml_cf_import_error_',
+			'yaml_cf_import_success_',
+			'yaml_cf_export_error_',
+			'yaml_cf_export_success_',
+		];
+
+		// WordPress stores transients with user ID and post ID suffixes
+		// Clean up for common test user IDs (1-10) and post IDs (1-100)
+		foreach ($transient_patterns as $pattern) {
+			for ($user_id = 1; $user_id <= 10; $user_id++) {
+				for ($post_id = 1; $post_id <= 100; $post_id++) {
+					delete_transient($pattern . $user_id . '_' . $post_id);
+				}
+			}
+		}
 	}
 
 	/**
 	 * Clean up test posts
 	 */
 	protected function cleanUpPosts() {
-		global $wpdb;
-		$wpdb->query("DELETE FROM {$wpdb->posts} WHERE post_type IN ('post', 'page')");
-		$wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_yaml_cf_%'");
+		// Get all posts and pages created during tests
+		$posts = get_posts([
+			'post_type' => ['post', 'page'],
+			'posts_per_page' => -1,
+			'post_status' => 'any',
+		]);
+
+		// Delete each post using WordPress API (automatically handles post meta)
+		foreach ($posts as $post) {
+			wp_delete_post($post->ID, true);
+		}
 	}
 
 	/**
@@ -95,64 +116,5 @@ class WPTestCase extends WP_UnitTestCase {
 	 */
 	protected function actingAs($user_id) {
 		wp_set_current_user($user_id);
-	}
-
-	/**
-	 * Simulate AJAX request
-	 *
-	 * @param string $action AJAX action name
-	 * @param array $data POST data
-	 * @param bool $expect_success Whether to expect success
-	 */
-	protected function ajaxRequest($action, $data = [], $expect_success = true) {
-		$_POST = array_merge($_POST, $data);
-		$_REQUEST = array_merge($_REQUEST, $data);
-
-		try {
-			$this->_handleAjax($action);
-		} catch (\WPAjaxDieContinueException $e) {
-			// Expected for successful AJAX
-		} catch (\WPAjaxDieStopException $e) {
-			// Error case
-			if ($expect_success) {
-				$this->fail('AJAX request failed when success was expected');
-			}
-		}
-	}
-
-	/**
-	 * Get the last AJAX response
-	 *
-	 * @return array|null Decoded JSON response
-	 */
-	protected function getAjaxResponse() {
-		$output = $this->_last_response;
-		if (empty($output)) {
-			return null;
-		}
-
-		return json_decode($output, true);
-	}
-
-	/**
-	 * Assert AJAX success
-	 *
-	 * @param string $message Optional message
-	 */
-	protected function assertAjaxSuccess($message = '') {
-		$response = $this->getAjaxResponse();
-		$this->assertNotNull($response, 'AJAX response is null');
-		$this->assertTrue($response['success'], $message ?: 'AJAX request should succeed');
-	}
-
-	/**
-	 * Assert AJAX error
-	 *
-	 * @param string $message Optional message
-	 */
-	protected function assertAjaxError($message = '') {
-		$response = $this->getAjaxResponse();
-		$this->assertNotNull($response, 'AJAX response is null');
-		$this->assertFalse($response['success'], $message ?: 'AJAX request should fail');
 	}
 }

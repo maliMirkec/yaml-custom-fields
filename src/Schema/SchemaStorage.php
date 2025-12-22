@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Schema Storage
  * Save and load YAML schemas using the repository layer
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Schema;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Data\Repositories\TemplateSettingsRepository;
 use YamlCF\Data\Repositories\GlobalDataRepository;
 

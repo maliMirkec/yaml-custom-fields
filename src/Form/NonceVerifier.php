@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Nonce Verifier
  * Helper for WordPress nonce verification
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Form;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class NonceVerifier {
   /**
    * Verify nonce

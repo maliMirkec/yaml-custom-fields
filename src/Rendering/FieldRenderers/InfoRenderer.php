@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Info Field Renderer
  * Renders read-only info banners with markdown support
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Rendering\FieldRenderers;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Rendering\BaseFieldRenderer;
 use YamlCF\Helpers\MarkdownParser;
 

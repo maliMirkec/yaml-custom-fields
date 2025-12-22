@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\ImportExport;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Imports plugin settings (schemas, template settings, etc.)

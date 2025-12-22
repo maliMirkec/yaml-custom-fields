@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Admin;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use YamlCF\Helpers\RequestHelper;
 

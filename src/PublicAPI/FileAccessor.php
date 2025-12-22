@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\PublicAPI;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Accessor for file field data with WordPress attachment metadata

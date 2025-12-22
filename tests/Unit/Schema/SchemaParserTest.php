@@ -20,12 +20,10 @@ class SchemaParserTest extends TestCase {
 	 * Test parsing valid YAML
 	 */
 	public function testParsesValidYaml() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    type: string
-    label: Title
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"    label: Title\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -58,19 +56,17 @@ YAML;
 	 * Test parsing complex nested structure
 	 */
 	public function testParsesComplexStructure() {
-		$yaml = <<<YAML
-fields:
-  - name: group
-    type: group
-    fields:
-      - name: title
-        type: string
-      - name: items
-        type: repeater
-        fields:
-          - name: text
-            type: text
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: group\n" .
+			"    type: group\n" .
+			"    fields:\n" .
+			"      - name: title\n" .
+			"        type: string\n" .
+			"      - name: items\n" .
+			"        type: repeater\n" .
+			"        fields:\n" .
+			"          - name: text\n" .
+			"            type: text\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -84,11 +80,9 @@ YAML;
 	 * Test parsing with special characters
 	 */
 	public function testParsesSpecialCharacters() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    label: "Title with \"quotes\" and 'apostrophes'"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    label: \"Title with \\\"quotes\\\" and 'apostrophes'\"\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -101,11 +95,9 @@ YAML;
 	 * Test parseWithError returns success for valid YAML
 	 */
 	public function testParseWithErrorReturnsSuccessForValidYaml() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    type: string
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n";
 
 		$result = $this->parser->parseWithError($yaml);
 
@@ -147,15 +139,13 @@ YAML;
 	 * Test parsing YAML with arrays
 	 */
 	public function testParsesArrayValues() {
-		$yaml = <<<YAML
-fields:
-  - name: colors
-    type: select
-    options:
-      - red
-      - green
-      - blue
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: colors\n" .
+			"    type: select\n" .
+			"    options:\n" .
+			"      - red\n" .
+			"      - green\n" .
+			"      - blue\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -168,15 +158,13 @@ YAML;
 	 * Test parsing YAML with key-value options
 	 */
 	public function testParsesKeyValuePairs() {
-		$yaml = <<<YAML
-fields:
-  - name: size
-    type: select
-    options:
-      small: Small Size
-      medium: Medium Size
-      large: Large Size
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: size\n" .
+			"    type: select\n" .
+			"    options:\n" .
+			"      small: Small Size\n" .
+			"      medium: Medium Size\n" .
+			"      large: Large Size\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -189,14 +177,12 @@ YAML;
 	 * Test parsing multiline text
 	 */
 	public function testParsesMultilineText() {
-		$yaml = <<<YAML
-fields:
-  - name: description
-    help: |
-      This is a multiline
-      help text that spans
-      multiple lines
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: description\n" .
+			"    help: |\n" .
+			"      This is a multiline\n" .
+			"      help text that spans\n" .
+			"      multiple lines\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -209,13 +195,11 @@ YAML;
 	 * Test parsing boolean values
 	 */
 	public function testParsesBooleanValues() {
-		$yaml = <<<YAML
-fields:
-  - name: active
-    type: checkbox
-    required: true
-    default: false
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: active\n" .
+			"    type: checkbox\n" .
+			"    required: true\n" .
+			"    default: false\n";
 
 		$result = $this->parser->parse($yaml);
 
@@ -228,13 +212,11 @@ YAML;
 	 * Test parsing numeric values
 	 */
 	public function testParsesNumericValues() {
-		$yaml = <<<YAML
-fields:
-  - name: count
-    min: 0
-    max: 100
-    step: 5
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: count\n" .
+			"    min: 0\n" .
+			"    max: 100\n" .
+			"    step: 5\n";
 
 		$result = $this->parser->parse($yaml);
 

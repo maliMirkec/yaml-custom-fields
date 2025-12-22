@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template Settings Repository
  * Handle all template-related settings (schemas, enabled status, use_global flags)
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Data\Repositories;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class TemplateSettingsRepository {
   /**
    * Get all template settings

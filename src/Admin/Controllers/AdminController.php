@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Admin\Controllers;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Base class for admin page controllers

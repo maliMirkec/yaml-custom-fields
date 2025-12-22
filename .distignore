@@ -15,6 +15,7 @@ desktop.ini
 # Development files (not needed in distribution)
 node_modules
 .phpcs.xml
+phpcs.xml.dist
 .eslintrc
 composer.json
 composer.lock
@@ -37,6 +38,7 @@ build/composer.json
 # CI/CD
 .github
 .claude
+.claude-rules.md
 
 # Tests
 tests

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Hook Manager
  * Centralized WordPress hook registration
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Core;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class HookManager {
   private $plugin;
 

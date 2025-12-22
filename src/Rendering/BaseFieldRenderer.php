@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Base Field Renderer
  * Common functionality for all field renderers
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Rendering;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Helpers\HtmlHelper;
 
 abstract class BaseFieldRenderer implements FieldRendererInterface {

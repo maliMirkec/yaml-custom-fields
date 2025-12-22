@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Field Normalizer
  * Normalize shorthand field syntax to standard structure
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Schema;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class FieldNormalizer {
   /**
    * Normalize shorthand info field syntax to standard field structure

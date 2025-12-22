@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\ImportExport;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Imports data object types and entries

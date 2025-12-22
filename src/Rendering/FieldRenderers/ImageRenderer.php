@@ -1,8 +1,14 @@
 <?php
+
 /**
  * ImageRenderer - TODO: Complete implementation
  */
 namespace YamlCF\Rendering\FieldRenderers;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Rendering\BaseFieldRenderer;
 
 class ImageRenderer extends BaseFieldRenderer {

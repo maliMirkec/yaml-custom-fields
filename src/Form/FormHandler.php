@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Form Handler
  * Coordinates form submission handling
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Form;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class FormHandler {
   private $sanitizer;
   private $validator;

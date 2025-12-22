@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Service Container
  * Simple dependency injection container for managing plugin services
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Core;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class ServiceContainer {
   private $services = [];
   private $factories = [];

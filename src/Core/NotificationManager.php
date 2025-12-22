@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Notification Manager
  * Manages admin notifications using transients instead of URL parameters
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Core;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class NotificationManager {
   /**
    * Get transient key for current user

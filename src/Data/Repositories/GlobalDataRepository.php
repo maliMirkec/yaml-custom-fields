@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Global Data Repository
  * Handle all global/site-wide data operations
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Data\Repositories;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class GlobalDataRepository {
   /**
    * Get global data

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Markdown Parser
  * Basic markdown parser for info fields (bold, italic, links only)
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Helpers;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class MarkdownParser {
   /**
    * Parse basic markdown

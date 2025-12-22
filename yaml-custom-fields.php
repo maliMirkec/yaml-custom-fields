@@ -9,6 +9,7 @@
  * Author Email: me@silvestar.codes
  * License: GPL v2 or later
  * Text Domain: yaml-custom-fields
+ * Domain Path: /languages
  */
 
 if (!defined('ABSPATH')) {
@@ -35,6 +36,16 @@ $yaml_cf_plugin_headers = get_file_data(__FILE__, ['Version' => 'Version']);
 define('YAML_CF_VERSION', $yaml_cf_plugin_headers['Version']);
 define('YAML_CF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('YAML_CF_PLUGIN_URL', plugin_dir_url(__FILE__));
+
+/**
+ * Text domain and translations
+ *
+ * Since WordPress 4.6, translations are automatically loaded from WordPress.org
+ * for plugins hosted on the official repository. The 'Domain Path' header above
+ * tells WordPress where to find translation files.
+ *
+ * For local development, you can place .mo files in the /languages/ directory.
+ */
 
 class YAML_Custom_Fields {
   private static $instance = null;
@@ -454,6 +465,58 @@ class YAML_Custom_Fields {
         exit;
       }
 
+      // Validate file size (5MB limit for JSON imports)
+      $max_file_size = 5 * 1024 * 1024; // 5MB in bytes
+      if (isset($_FILES['yaml_cf_import_file']['size']) && $_FILES['yaml_cf_import_file']['size'] > $max_file_size) {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'file_too_large', 60);
+        wp_safe_redirect(add_query_arg([
+          'post' => $post_id,
+          'action' => 'edit'
+        ], admin_url('post.php')));
+        exit;
+      }
+
+      // Validate file upload errors
+      if (isset($_FILES['yaml_cf_import_file']['error']) && $_FILES['yaml_cf_import_file']['error'] !== UPLOAD_ERR_OK) {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'upload_error', 60);
+        wp_safe_redirect(add_query_arg([
+          'post' => $post_id,
+          'action' => 'edit'
+        ], admin_url('post.php')));
+        exit;
+      }
+
+      // Validate MIME type using finfo (server-side validation)
+      if (function_exists('finfo_open') && isset($_FILES['yaml_cf_import_file']['tmp_name'])) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- File path validated by WordPress core wp_handle_upload()
+        $mime_type = finfo_file($finfo, $_FILES['yaml_cf_import_file']['tmp_name']);
+        finfo_close($finfo);
+
+        // Accept both application/json and text/plain (some systems report JSON as text/plain)
+        $allowed_mimes = ['application/json', 'text/plain'];
+        if (!in_array($mime_type, $allowed_mimes, true)) {
+          set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'invalid_mime', 60);
+          wp_safe_redirect(add_query_arg([
+            'post' => $post_id,
+            'action' => 'edit'
+          ], admin_url('post.php')));
+          exit;
+        }
+      }
+
+      // Validate file extension (client-side check)
+      $filename = sanitize_file_name($_FILES['yaml_cf_import_file']['name']);
+      $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+      if ($file_ext !== 'json') {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'invalid_extension', 60);
+        wp_safe_redirect(add_query_arg([
+          'post' => $post_id,
+          'action' => 'edit'
+        ], admin_url('post.php')));
+        exit;
+      }
+
       // Configure upload handling for JSON files
       $upload_overrides = [
         'test_form' => false,
@@ -506,8 +569,20 @@ class YAML_Custom_Fields {
       // Clean up - delete the uploaded file after reading
       wp_delete_file($uploaded_file['file']);
 
+      // Validate JSON content can be decoded
       $import_data = json_decode($json_data, true);
 
+      // Check for JSON parsing errors
+      if (json_last_error() !== JSON_ERROR_NONE) {
+        set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'invalid_json', 60);
+        wp_safe_redirect(add_query_arg([
+          'post' => $post_id,
+          'action' => 'edit'
+        ], admin_url('post.php')));
+        exit;
+      }
+
+      // Validate data structure and plugin identifier
       if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
         set_transient('yaml_cf_import_error_' . get_current_user_id() . '_' . $post_id, 'invalid_format', 60);
         wp_safe_redirect(add_query_arg([

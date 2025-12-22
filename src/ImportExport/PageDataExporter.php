@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\ImportExport;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Exports page/post custom field data

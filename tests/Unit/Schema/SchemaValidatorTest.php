@@ -20,12 +20,10 @@ class SchemaValidatorTest extends TestCase {
 	 * Test validates valid schema
 	 */
 	public function testValidatesValidSchema() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    type: string
-    label: Title
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"    label: Title\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -49,10 +47,8 @@ YAML;
 	 * Test rejects schema without fields array
 	 */
 	public function testRejectsSchemaWithoutFieldsArray() {
-		$yaml = <<<YAML
-title: My Schema
-description: This is a schema
-YAML;
+		$yaml = "title: My Schema\n" .
+			"description: This is a schema\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -64,11 +60,9 @@ YAML;
 	 * Test rejects field without name
 	 */
 	public function testRejectsFieldWithoutName() {
-		$yaml = <<<YAML
-fields:
-  - type: string
-    label: Title
-YAML;
+		$yaml = "fields:\n" .
+			"  - type: string\n" .
+			"    label: Title\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -80,11 +74,9 @@ YAML;
 	 * Test rejects field without type
 	 */
 	public function testRejectsFieldWithoutType() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    label: Title
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    label: Title\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -108,15 +100,13 @@ YAML;
 	 * Test validates multiple fields
 	 */
 	public function testValidatesMultipleFields() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    type: string
-  - name: description
-    type: text
-  - name: active
-    type: checkbox
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"  - name: description\n" .
+			"    type: text\n" .
+			"  - name: active\n" .
+			"    type: checkbox\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -127,12 +117,10 @@ YAML;
 	 * Test rejects non-array field
 	 */
 	public function testRejectsNonArrayField() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    type: string
-  - "invalid field"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"  - \"invalid field\"\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -144,12 +132,10 @@ YAML;
 	 * Test info field shorthand is normalized during validation
 	 */
 	public function testNormalizesInfoFieldShorthand() {
-		$yaml = <<<YAML
-fields:
-  - info: "This is an info message"
-  - name: title
-    type: string
-YAML;
+		$yaml = "fields:\n" .
+			"  - info: \"This is an info message\"\n" .
+			"  - name: title\n" .
+			"    type: string\n";
 
 		// Info fields should be normalized and validated
 		// Without template restriction, they should be valid
@@ -162,12 +148,10 @@ YAML;
 	 * Test info field is allowed in page templates
 	 */
 	public function testAllowsInfoFieldInPageTemplate() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'page.php');
 
@@ -178,12 +162,10 @@ YAML;
 	 * Test info field is allowed in single templates
 	 */
 	public function testAllowsInfoFieldInSingleTemplate() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'single.php');
 
@@ -194,12 +176,10 @@ YAML;
 	 * Test info field is allowed in custom page templates
 	 */
 	public function testAllowsInfoFieldInCustomTemplate() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'template-custom.php');
 
@@ -210,12 +190,10 @@ YAML;
 	 * Test info field is rejected in header partial
 	 */
 	public function testRejectsInfoFieldInHeaderPartial() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'header.php');
 
@@ -228,12 +206,10 @@ YAML;
 	 * Test info field is rejected in footer partial
 	 */
 	public function testRejectsInfoFieldInFooterPartial() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'footer.php');
 
@@ -245,12 +221,10 @@ YAML;
 	 * Test info field is rejected in archive template
 	 */
 	public function testRejectsInfoFieldInArchiveTemplate() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'archive.php');
 
@@ -262,12 +236,10 @@ YAML;
 	 * Test info field is rejected in category template
 	 */
 	public function testRejectsInfoFieldInCategoryTemplate() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, 'category.php');
 
@@ -278,12 +250,10 @@ YAML;
 	 * Test info field is rejected in 404 template
 	 */
 	public function testRejectsInfoFieldIn404Template() {
-		$yaml = <<<YAML
-fields:
-  - name: info_field
-    type: info
-    text: "Information text"
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: info_field\n" .
+			"    type: info\n" .
+			"    text: \"Information text\"\n";
 
 		$result = $this->validator->validate($yaml, '404.php');
 
@@ -294,11 +264,9 @@ YAML;
 	 * Test validation result structure
 	 */
 	public function testValidationResultStructure() {
-		$yaml = <<<YAML
-fields:
-  - name: title
-    type: string
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -312,16 +280,14 @@ YAML;
 	 * Test validates nested field structures
 	 */
 	public function testValidatesNestedFieldStructures() {
-		$yaml = <<<YAML
-fields:
-  - name: group
-    type: group
-    fields:
-      - name: title
-        type: string
-      - name: description
-        type: text
-YAML;
+		$yaml = "fields:\n" .
+			"  - name: group\n" .
+			"    type: group\n" .
+			"    fields:\n" .
+			"      - name: title\n" .
+			"        type: string\n" .
+			"      - name: description\n" .
+			"        type: text\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -332,10 +298,8 @@ YAML;
 	 * Test info field shorthand is rejected in partials
 	 */
 	public function testRejectsInfoFieldShorthandInPartials() {
-		$yaml = <<<YAML
-fields:
-  - info: "This should be rejected"
-YAML;
+		$yaml = "fields:\n" .
+			"  - info: \"This should be rejected\"\n";
 
 		$result = $this->validator->validate($yaml, 'sidebar.php');
 

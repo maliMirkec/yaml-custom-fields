@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Schema Parser
  * Parse YAML schema strings using Symfony YAML component
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Schema;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Vendor\Symfony\Component\Yaml\Yaml;
 use YamlCF\Vendor\Symfony\Component\Yaml\Exception\ParseException;
 

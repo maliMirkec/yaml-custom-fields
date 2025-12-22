@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Class
  * Main plugin class that coordinates all services
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Core;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class Plugin {
   private static $instance = null;
   private $container;

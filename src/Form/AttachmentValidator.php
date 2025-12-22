@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Attachment Validator
  * Validate that attachment IDs exist and are valid
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Form;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class AttachmentValidator {
   /**
    * Validate and clean attachment data

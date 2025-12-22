@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Post Data Repository
  * Handle all post meta operations for YAML custom fields
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Data\Repositories;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class PostDataRepository {
   /**
    * Get YAML custom field data for a post

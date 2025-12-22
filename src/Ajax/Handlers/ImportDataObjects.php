@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Ajax\Handlers;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 use YamlCF\Ajax\AjaxHandler;
 
 class ImportDataObjects extends AjaxHandler {

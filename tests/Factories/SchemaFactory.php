@@ -12,15 +12,13 @@ class SchemaFactory {
 	 * @return string YAML schema
 	 */
 	public static function createSimpleSchema() {
-		return <<<YAML
-fields:
-  - name: title
-    type: string
-    label: Title
-  - name: description
-    type: text
-    label: Description
-YAML;
+		return "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"    label: Title\n" .
+			"  - name: description\n" .
+			"    type: text\n" .
+			"    label: Description\n";
 	}
 
 	/**
@@ -29,40 +27,38 @@ YAML;
 	 * @return string YAML schema
 	 */
 	public static function createCompleteSchema() {
-		return <<<YAML
-fields:
-  - name: title
-    type: string
-    label: Title
-    required: true
-  - name: subtitle
-    type: string
-    label: Subtitle
-  - name: description
-    type: text
-    label: Description
-  - name: content
-    type: rich-text
-    label: Content
-  - name: code
-    type: code
-    label: Code
-    language: php
-  - name: featured_image
-    type: image
-    label: Featured Image
-  - name: attachment
-    type: file
-    label: Attachment
-  - name: category
-    type: taxonomy
-    label: Category
-    taxonomy: category
-  - name: related_post
-    type: post_type
-    label: Related Post
-    post_type: post
-YAML;
+		return "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"    label: Title\n" .
+			"    required: true\n" .
+			"  - name: subtitle\n" .
+			"    type: string\n" .
+			"    label: Subtitle\n" .
+			"  - name: description\n" .
+			"    type: text\n" .
+			"    label: Description\n" .
+			"  - name: content\n" .
+			"    type: rich-text\n" .
+			"    label: Content\n" .
+			"  - name: code\n" .
+			"    type: code\n" .
+			"    label: Code\n" .
+			"    language: php\n" .
+			"  - name: featured_image\n" .
+			"    type: image\n" .
+			"    label: Featured Image\n" .
+			"  - name: attachment\n" .
+			"    type: file\n" .
+			"    label: Attachment\n" .
+			"  - name: category\n" .
+			"    type: taxonomy\n" .
+			"    label: Category\n" .
+			"    taxonomy: category\n" .
+			"  - name: related_post\n" .
+			"    type: post_type\n" .
+			"    label: Related Post\n" .
+			"    post_type: post\n";
 	}
 
 	/**
@@ -71,26 +67,24 @@ YAML;
 	 * @return string YAML schema
 	 */
 	public static function createBlockSchema() {
-		return <<<YAML
-fields:
-  - name: features
-    type: block
-    label: Features
-    list: true
-    blocks:
-      - name: feature
-        label: Feature
-        fields:
-          - name: title
-            type: string
-            label: Feature Title
-          - name: description
-            type: text
-            label: Feature Description
-          - name: icon
-            type: image
-            label: Icon
-YAML;
+		return "fields:\n" .
+			"  - name: features\n" .
+			"    type: block\n" .
+			"    label: Features\n" .
+			"    list: true\n" .
+			"    blocks:\n" .
+			"      - name: feature\n" .
+			"        label: Feature\n" .
+			"        fields:\n" .
+			"          - name: title\n" .
+			"            type: string\n" .
+			"            label: Feature Title\n" .
+			"          - name: description\n" .
+			"            type: text\n" .
+			"            label: Feature Description\n" .
+			"          - name: icon\n" .
+			"            type: image\n" .
+			"            label: Icon\n";
 	}
 
 	/**
@@ -99,26 +93,24 @@ YAML;
 	 * @return string YAML schema
 	 */
 	public static function createNestedSchema() {
-		return <<<YAML
-fields:
-  - name: settings
-    type: object
-    label: Settings
-    fields:
-      - name: enabled
-        type: string
-        label: Enabled
-      - name: options
-        type: object
-        label: Options
-        fields:
-          - name: color
-            type: string
-            label: Color
-          - name: size
-            type: string
-            label: Size
-YAML;
+		return "fields:\n" .
+			"  - name: settings\n" .
+			"    type: object\n" .
+			"    label: Settings\n" .
+			"    fields:\n" .
+			"      - name: enabled\n" .
+			"        type: string\n" .
+			"        label: Enabled\n" .
+			"      - name: options\n" .
+			"        type: object\n" .
+			"        label: Options\n" .
+			"        fields:\n" .
+			"          - name: color\n" .
+			"            type: string\n" .
+			"            label: Color\n" .
+			"          - name: size\n" .
+			"            type: string\n" .
+			"            label: Size\n";
 	}
 
 	/**
@@ -127,13 +119,11 @@ YAML;
 	 * @return string Invalid YAML schema
 	 */
 	public static function createInvalidSchema() {
-		return <<<YAML
-fields:
-  - type: string
-    label: Missing Name Field
-  - name: missing_type
-    label: Missing Type Field
-YAML;
+		return "fields:\n" .
+			"  - type: string\n" .
+			"    label: Missing Name Field\n" .
+			"  - name: missing_type\n" .
+			"    label: Missing Type Field\n";
 	}
 
 	/**
@@ -142,13 +132,11 @@ YAML;
 	 * @return string YAML schema
 	 */
 	public static function createDataObjectSchema() {
-		return <<<YAML
-fields:
-  - name: university
-    type: data_object
-    label: University
-    data_object_type: universities
-YAML;
+		return "fields:\n" .
+			"  - name: university\n" .
+			"    type: data_object\n" .
+			"    label: University\n" .
+			"    data_object_type: universities\n";
 	}
 
 	/**

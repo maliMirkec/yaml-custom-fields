@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template Scanner
  * Scan theme for templates and partials
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Template;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class TemplateScanner {
   private $formatter;
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Template Resolver
  * Resolve which template file a post uses
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Template;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class TemplateResolver {
   /**
    * Get template file for a post

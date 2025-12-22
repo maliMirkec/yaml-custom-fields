@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Admin\Controllers;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Controller for data validation page

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * HTML Helper
  * Build and output HTML attributes safely
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Helpers;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class HtmlHelper {
   /**
    * Build HTML attributes string from array

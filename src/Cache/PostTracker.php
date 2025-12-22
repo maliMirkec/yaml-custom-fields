@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Post Tracker
  * Track posts that have YAML custom field data for efficient cache clearing
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Cache;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class PostTracker {
   /**
    * Track post ID that has YAML custom field data

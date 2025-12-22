@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Data Sanitizer  
  * Sanitize field data based on schema
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Form;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class DataSanitizer {
   /**
    * Sanitize field data

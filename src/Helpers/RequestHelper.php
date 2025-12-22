@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Request Helper
  * Safely handle GET and POST parameters
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Helpers;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class RequestHelper {
   /**
    * Get sanitized GET parameter (string)

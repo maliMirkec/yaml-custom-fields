@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Field Renderer Factory
  * Delegates rendering to specific field type renderers
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Rendering;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class FieldRenderer {
   private $renderers = [];
 

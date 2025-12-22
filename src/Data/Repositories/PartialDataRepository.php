@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Partial Data Repository
  * Handle all partial template data operations
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Data\Repositories;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class PartialDataRepository {
   /**
    * Get all partial data

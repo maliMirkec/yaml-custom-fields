@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Data Object Repository
  * Handle all data object types and entries
@@ -6,6 +7,11 @@
 
 namespace YamlCF\Data\Repositories;
 
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 class DataObjectRepository {
   /**
    * Get all data object types

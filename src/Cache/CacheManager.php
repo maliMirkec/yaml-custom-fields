@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Cache;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * General cache management for the plugin

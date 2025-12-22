@@ -1,5 +1,11 @@
 <?php
+
 namespace YamlCF\Cache;
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Manages temporary transients for validation errors and import status
