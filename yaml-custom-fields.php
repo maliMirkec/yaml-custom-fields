@@ -2013,7 +2013,7 @@ class YAML_Custom_Fields {
         // Check if this is an object field (container with nested fields)
         $is_object_field = ($field['type'] === 'object');
 
-        if($field['type'] === 'image' || $field['type'] === 'file') {
+        if ($field['type'] === 'image' || $field['type'] === 'file') {
           echo '<p>' . esc_html($field_label) . '</p>';
         } elseif ($is_multiple_taxonomy || $is_multiple_data_object || $is_object_field) {
           // Use heading instead of label for:
@@ -2422,7 +2422,11 @@ class YAML_Custom_Fields {
               echo '<select class="yaml-cf-block-type-select" id="' . esc_attr($block_select_id) . '" name="' . esc_attr($block_select_id) . '">';
               echo '<option value="">-- Add Block --</option>';
               foreach ($blocks as $block) {
-                echo '<option value="' . esc_attr($block['name']) . '">' . esc_html($block['label']) . '</option>';
+                $block_name = isset($block['name']) ? $block['name'] : '';
+                $block_label = isset($block['label']) ? $block['label'] : $block_name;
+                if ($block_name) {
+                  echo '<option value="' . esc_attr($block_name) . '">' . esc_html($block_label) . '</option>';
+                }
               }
               echo '</select>';
               echo '<button type="button" class="button yaml-cf-add-block">Add Block</button>';
