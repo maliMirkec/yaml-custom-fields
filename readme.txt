@@ -3,7 +3,7 @@ Contributors: starbist
 Tags: yaml, frontmatter, custom-fields, cms, page-builder
 Requires at least: 5.0
 Tested up to: 6.9
-Requires PHP: 7.4
+Requires PHP: 8.1
 Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -100,7 +100,7 @@ $features = ycf_get_field('features');
 = Requirements =
 
 * WordPress 5.0 or higher
-* PHP 7.4 or higher
+* PHP 8.1 or higher
 * The plugin includes all necessary dependencies
 
 == Frequently Asked Questions ==
@@ -418,9 +418,9 @@ YAML Custom Fields does not collect, store, or transmit any user data outside of
 
 This plugin includes the following third-party libraries:
 
-* **Symfony YAML Component** (v5.4) - Licensed under MIT License (GPL-compatible)
+* **Symfony YAML Component** (v7.3) - Licensed under MIT License (GPL-compatible)
   - Homepage: https://symfony.com/components/Yaml
-  - License: https://github.com/symfony/yaml/blob/5.4/LICENSE
+  - License: https://github.com/symfony/yaml/blob/7.3/LICENSE
 
 == Credits ==
 

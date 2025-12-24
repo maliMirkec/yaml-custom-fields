@@ -235,13 +235,19 @@ class YAML_Custom_Fields {
 
 
   public function handle_single_post_export() {
-    $post_id = $this->get_param_int('yaml_cf_export_post', 0);
+    // Get nonce FIRST before accessing any other parameters
     $nonce = $this->get_param('_wpnonce');
-
-    if (!$post_id || !$nonce) {
+    if (!$nonce) {
       return;
     }
 
+    // Get post_id (needed for nonce action string)
+    $post_id = $this->get_param_int('yaml_cf_export_post', 0);
+    if (!$post_id) {
+      return;
+    }
+
+    // Immediately verify nonce BEFORE any operations
     if (!wp_verify_nonce($nonce, 'yaml_cf_export_post_' . $post_id)) {
       wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
     }
@@ -300,15 +306,21 @@ class YAML_Custom_Fields {
   }
 
   public function handle_settings_export() {
-    $export_settings = $this->get_param('yaml_cf_export_settings');
+    // Get nonce FIRST before accessing any other parameters
     $nonce = $this->get_param('_wpnonce');
-
-    if (!$export_settings || !$nonce) {
+    if (!$nonce) {
       return;
     }
 
+    // Immediately verify nonce BEFORE accessing other parameters
     if (!wp_verify_nonce($nonce, 'yaml_cf_export_settings')) {
       wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+    }
+
+    // Only NOW safe to access export_settings parameter
+    $export_settings = $this->get_param('yaml_cf_export_settings');
+    if (!$export_settings) {
+      return;
     }
 
     if (!current_user_can('manage_options')) {
@@ -3583,12 +3595,8 @@ function yaml_cf_init() {
 
 add_action('plugins_loaded', 'yaml_cf_init');
 
-// Load Composer autoload for src/ directory (new architecture)
-if (file_exists(__DIR__ . '/vendor/autoload.php')) {
-  require_once __DIR__ . '/vendor/autoload.php';
-}
-
 // Initialize new Plugin architecture (Phase 1: running in parallel with old code)
+// Note: PSR-4 autoloading for YamlCF namespace is now included in build/vendor/scoper-autoload.php
 // Old code continues to handle everything for now
 function yaml_cf_init_new_architecture() {
   \YamlCF\Core\Plugin::getInstance();

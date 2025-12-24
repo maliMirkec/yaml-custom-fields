@@ -51,6 +51,7 @@ cat > composer.json <<'EOF'
 {
   "autoload": {
     "psr-4": {
+      "YamlCF\\": "../src/",
       "YamlCF\\Vendor\\Symfony\\Component\\Yaml\\": "vendor/symfony/yaml/",
       "YamlCF\\Vendor\\Symfony\\Component\\DeprecationContracts\\": "vendor/symfony/deprecation-contracts/",
       "YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\": "vendor/symfony/polyfill-ctype/"

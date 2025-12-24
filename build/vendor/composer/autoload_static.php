@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c
+class ComposerStaticInit5a82deac6248b4abb8454f9cba9208bc
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -19,6 +19,7 @@ class ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c
             'YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\' => 37,
             'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\' => 37,
             'YamlCF\\Vendor\\Symfony\\Component\\DeprecationContracts\\' => 53,
+            'YamlCF\\' => 7,
         ),
     );
 
@@ -37,10 +38,94 @@ class ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c
         array (
             0 => __DIR__ . '/..' . '/symfony/deprecation-contracts',
         ),
+        'YamlCF\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/../src',
+        ),
     );
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'YamlCF\\Admin\\AssetManager' => __DIR__ . '/../..' . '/../src/Admin/AssetManager.php',
+        'YamlCF\\Admin\\Controllers\\AdminController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/AdminController.php',
+        'YamlCF\\Admin\\Controllers\\DataObjectController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/DataObjectController.php',
+        'YamlCF\\Admin\\Controllers\\DocsController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/DocsController.php',
+        'YamlCF\\Admin\\Controllers\\ExportImportController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/ExportImportController.php',
+        'YamlCF\\Admin\\Controllers\\GlobalDataController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/GlobalDataController.php',
+        'YamlCF\\Admin\\Controllers\\GlobalSchemaController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/GlobalSchemaController.php',
+        'YamlCF\\Admin\\Controllers\\PartialController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/PartialController.php',
+        'YamlCF\\Admin\\Controllers\\SchemaEditorController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/SchemaEditorController.php',
+        'YamlCF\\Admin\\Controllers\\TemplateGlobalController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/TemplateGlobalController.php',
+        'YamlCF\\Admin\\Controllers\\TemplateSchemaController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/TemplateSchemaController.php',
+        'YamlCF\\Admin\\Controllers\\ValidationController' => __DIR__ . '/../..' . '/../src/Admin/Controllers/ValidationController.php',
+        'YamlCF\\Admin\\MenuManager' => __DIR__ . '/../..' . '/../src/Admin/MenuManager.php',
+        'YamlCF\\Ajax\\AjaxHandler' => __DIR__ . '/../..' . '/../src/Ajax/AjaxHandler.php',
+        'YamlCF\\Ajax\\Handlers\\ExportPageData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ExportPageData.php',
+        'YamlCF\\Ajax\\Handlers\\ExportSettings' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ExportSettings.php',
+        'YamlCF\\Ajax\\Handlers\\GetPartialData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/GetPartialData.php',
+        'YamlCF\\Ajax\\Handlers\\GetPostsWithData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/GetPostsWithData.php',
+        'YamlCF\\Ajax\\Handlers\\GetSchema' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/GetSchema.php',
+        'YamlCF\\Ajax\\Handlers\\ImportDataObjects' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ImportDataObjects.php',
+        'YamlCF\\Ajax\\Handlers\\ImportPageData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ImportPageData.php',
+        'YamlCF\\Ajax\\Handlers\\ImportSettings' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ImportSettings.php',
+        'YamlCF\\Ajax\\Handlers\\SavePartialData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/SavePartialData.php',
+        'YamlCF\\Ajax\\Handlers\\SaveSchema' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/SaveSchema.php',
+        'YamlCF\\Ajax\\Handlers\\SaveTemplateSettings' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/SaveTemplateSettings.php',
+        'YamlCF\\Ajax\\Handlers\\ToggleUseGlobal' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ToggleUseGlobal.php',
+        'YamlCF\\Cache\\CacheManager' => __DIR__ . '/../..' . '/../src/Cache/CacheManager.php',
+        'YamlCF\\Cache\\PostTracker' => __DIR__ . '/../..' . '/../src/Cache/PostTracker.php',
+        'YamlCF\\Cache\\TransientManager' => __DIR__ . '/../..' . '/../src/Cache/TransientManager.php',
+        'YamlCF\\Core\\HookManager' => __DIR__ . '/../..' . '/../src/Core/HookManager.php',
+        'YamlCF\\Core\\NotificationManager' => __DIR__ . '/../..' . '/../src/Core/NotificationManager.php',
+        'YamlCF\\Core\\Plugin' => __DIR__ . '/../..' . '/../src/Core/Plugin.php',
+        'YamlCF\\Core\\ServiceContainer' => __DIR__ . '/../..' . '/../src/Core/ServiceContainer.php',
+        'YamlCF\\Data\\Repositories\\DataObjectRepository' => __DIR__ . '/../..' . '/../src/Data/Repositories/DataObjectRepository.php',
+        'YamlCF\\Data\\Repositories\\GlobalDataRepository' => __DIR__ . '/../..' . '/../src/Data/Repositories/GlobalDataRepository.php',
+        'YamlCF\\Data\\Repositories\\PartialDataRepository' => __DIR__ . '/../..' . '/../src/Data/Repositories/PartialDataRepository.php',
+        'YamlCF\\Data\\Repositories\\PostDataRepository' => __DIR__ . '/../..' . '/../src/Data/Repositories/PostDataRepository.php',
+        'YamlCF\\Data\\Repositories\\TemplateSettingsRepository' => __DIR__ . '/../..' . '/../src/Data/Repositories/TemplateSettingsRepository.php',
+        'YamlCF\\Form\\AttachmentValidator' => __DIR__ . '/../..' . '/../src/Form/AttachmentValidator.php',
+        'YamlCF\\Form\\DataSanitizer' => __DIR__ . '/../..' . '/../src/Form/DataSanitizer.php',
+        'YamlCF\\Form\\FormHandler' => __DIR__ . '/../..' . '/../src/Form/FormHandler.php',
+        'YamlCF\\Form\\NonceVerifier' => __DIR__ . '/../..' . '/../src/Form/NonceVerifier.php',
+        'YamlCF\\Helpers\\HtmlHelper' => __DIR__ . '/../..' . '/../src/Helpers/HtmlHelper.php',
+        'YamlCF\\Helpers\\MarkdownParser' => __DIR__ . '/../..' . '/../src/Helpers/MarkdownParser.php',
+        'YamlCF\\Helpers\\RequestHelper' => __DIR__ . '/../..' . '/../src/Helpers/RequestHelper.php',
+        'YamlCF\\ImportExport\\DataObjectExporter' => __DIR__ . '/../..' . '/../src/ImportExport/DataObjectExporter.php',
+        'YamlCF\\ImportExport\\DataObjectImporter' => __DIR__ . '/../..' . '/../src/ImportExport/DataObjectImporter.php',
+        'YamlCF\\ImportExport\\PageDataExporter' => __DIR__ . '/../..' . '/../src/ImportExport/PageDataExporter.php',
+        'YamlCF\\ImportExport\\PageDataImporter' => __DIR__ . '/../..' . '/../src/ImportExport/PageDataImporter.php',
+        'YamlCF\\ImportExport\\SettingsExporter' => __DIR__ . '/../..' . '/../src/ImportExport/SettingsExporter.php',
+        'YamlCF\\ImportExport\\SettingsImporter' => __DIR__ . '/../..' . '/../src/ImportExport/SettingsImporter.php',
+        'YamlCF\\PublicAPI\\DataObjectAccessor' => __DIR__ . '/../..' . '/../src/PublicAPI/DataObjectAccessor.php',
+        'YamlCF\\PublicAPI\\FieldAccessor' => __DIR__ . '/../..' . '/../src/PublicAPI/FieldAccessor.php',
+        'YamlCF\\PublicAPI\\FileAccessor' => __DIR__ . '/../..' . '/../src/PublicAPI/FileAccessor.php',
+        'YamlCF\\PublicAPI\\GlobalFieldAccessor' => __DIR__ . '/../..' . '/../src/PublicAPI/GlobalFieldAccessor.php',
+        'YamlCF\\PublicAPI\\ImageAccessor' => __DIR__ . '/../..' . '/../src/PublicAPI/ImageAccessor.php',
+        'YamlCF\\PublicAPI\\TaxonomyAccessor' => __DIR__ . '/../..' . '/../src/PublicAPI/TaxonomyAccessor.php',
+        'YamlCF\\Rendering\\BaseFieldRenderer' => __DIR__ . '/../..' . '/../src/Rendering/BaseFieldRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderer.php',
+        'YamlCF\\Rendering\\FieldRendererInterface' => __DIR__ . '/../..' . '/../src/Rendering/FieldRendererInterface.php',
+        'YamlCF\\Rendering\\FieldRenderers\\BlockRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/BlockRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\CodeRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/CodeRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\DataObjectRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/DataObjectRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\FileRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/FileRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\ImageRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/ImageRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\InfoRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/InfoRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\ObjectRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/ObjectRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\PostTypeRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/PostTypeRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\RichTextRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/RichTextRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\StringRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/StringRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\TaxonomyRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/TaxonomyRenderer.php',
+        'YamlCF\\Rendering\\FieldRenderers\\TextRenderer' => __DIR__ . '/../..' . '/../src/Rendering/FieldRenderers/TextRenderer.php',
+        'YamlCF\\Schema\\FieldNormalizer' => __DIR__ . '/../..' . '/../src/Schema/FieldNormalizer.php',
+        'YamlCF\\Schema\\SchemaParser' => __DIR__ . '/../..' . '/../src/Schema/SchemaParser.php',
+        'YamlCF\\Schema\\SchemaStorage' => __DIR__ . '/../..' . '/../src/Schema/SchemaStorage.php',
+        'YamlCF\\Schema\\SchemaValidator' => __DIR__ . '/../..' . '/../src/Schema/SchemaValidator.php',
+        'YamlCF\\Template\\TemplateCache' => __DIR__ . '/../..' . '/../src/Template/TemplateCache.php',
+        'YamlCF\\Template\\TemplateNameFormatter' => __DIR__ . '/../..' . '/../src/Template/TemplateNameFormatter.php',
+        'YamlCF\\Template\\TemplateResolver' => __DIR__ . '/../..' . '/../src/Template/TemplateResolver.php',
+        'YamlCF\\Template\\TemplateScanner' => __DIR__ . '/../..' . '/../src/Template/TemplateScanner.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Command\\LintCommand' => __DIR__ . '/..' . '/symfony/yaml/Command/LintCommand.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Dumper' => __DIR__ . '/..' . '/symfony/yaml/Dumper.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Escaper' => __DIR__ . '/..' . '/symfony/yaml/Escaper.php',
@@ -59,9 +144,9 @@ class ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit6ed106f430c3c75fbc12ce4fdb37a13c::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit5a82deac6248b4abb8454f9cba9208bc::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit5a82deac6248b4abb8454f9cba9208bc::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit5a82deac6248b4abb8454f9cba9208bc::$classMap;
 
         }, null, ClassLoader::class);
     }

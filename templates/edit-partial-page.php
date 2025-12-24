@@ -66,32 +66,3 @@ if (!defined('ABSPATH')) {
     </form>
   </div>
 </div>
-
-<?php if (!empty($success_message)) : ?>
-<script>
-jQuery(document).ready(function($) {
-  if (typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-    YamlCF.showMessage('<?php echo esc_js($success_message); ?>', 'success');
-  }
-});
-</script>
-<?php endif; ?>
-
-<script>
-jQuery(document).ready(function($) {
-  // Initialize form change tracking
-  if (typeof YamlCF !== 'undefined' && YamlCF.initFormChangeTracking) {
-    YamlCF.initFormChangeTracking({
-      container: '#yaml-cf-partial-form',
-      fieldsSelector: '.yaml-cf-fields',
-      message: '<?php echo esc_js(__('You have unsaved changes', 'yaml-custom-fields')); ?>',
-      submitSelector: '#yaml-cf-partial-form',
-      storageKey: 'originalPartialFormData',
-      hasChangesKey: 'hasPartialFormChanges',
-      beforeUnloadMessage: '<?php echo esc_js(__('You have unsaved changes. Are you sure you want to leave?', 'yaml-custom-fields')); ?>',
-      gutenbergSupport: false,
-      captureDelay: 500,
-    });
-  }
-});
-</script>

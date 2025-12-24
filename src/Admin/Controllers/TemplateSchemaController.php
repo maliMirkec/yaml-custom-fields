@@ -45,6 +45,19 @@ class TemplateSchemaController extends AdminController {
 
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
 
+    // Pass page initialization data (replaces inline scripts)
+    $page_data = [
+      'hasRefreshButton' => true,
+      'i18n' => [
+        'refreshing' => __('Refreshing...', 'yaml-custom-fields'),
+        'refreshFailed' => __('Failed to refresh template list', 'yaml-custom-fields')
+      ]
+    ];
+    if (!empty($notification)) {
+      $page_data['notification'] = $notification;
+    }
+    $this->localizePageInit($page_data);
+
     // Load template
     $this->loadTemplate('admin-page.php', compact(
       'notification',

@@ -50,6 +50,15 @@ class AssetManager {
     wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'assets/admin.css', [], YAML_CF_VERSION);
     wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'assets/admin.js', ['jquery'], YAML_CF_VERSION, true);
 
+    // Enqueue page initialization script (replaces inline scripts in templates)
+    wp_enqueue_script(
+      'yaml-cf-admin-page-init',
+      YAML_CF_PLUGIN_URL . 'assets/admin-page-init.js',
+      ['jquery', 'yaml-cf-admin'],
+      YAML_CF_VERSION,
+      true
+    );
+
     // Get current template and schema for post edit screens
     $schema_data = null;
     $post_id = RequestHelper::getParamInt('post', 0);

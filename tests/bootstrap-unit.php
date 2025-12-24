@@ -8,11 +8,16 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', dirname(dirname(__FILE__)) . '/');
 }
 
-// Load Composer autoloader
+// Load Composer autoloader (includes both PHPUnit and Symfony packages)
+// In tests, we use the unscoped Symfony libraries from vendor/
+// The scoped version in build/vendor is only used in production WordPress environment
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Load scoped vendor autoloader (for Symfony YAML and other dependencies)
-require_once dirname(__DIR__) . '/build/vendor/scoper-autoload.php';
+// Create aliases for scoped Symfony classes to unscoped versions for testing
+// In production, these are scoped to YamlCF\Vendor\Symfony\...  to avoid conflicts
+// In tests, we use the unscoped versions from vendor/
+class_alias('Symfony\Component\Yaml\Yaml', 'YamlCF\Vendor\Symfony\Component\Yaml\Yaml');
+class_alias('Symfony\Component\Yaml\Exception\ParseException', 'YamlCF\Vendor\Symfony\Component\Yaml\Exception\ParseException');
 
 // Load base test classes
 require_once __DIR__ . '/TestCase.php';

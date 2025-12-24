@@ -24,6 +24,10 @@ class PartialController extends AdminController {
   public function render() {
     $this->checkPermission();
 
+    // Get template parameter
+    // NOTE: This is a read-only display page behind manage_options capability.
+    // WordPress core doesn't require nonces for authenticated GET requests to admin pages.
+    // The checkPermission() call above verifies current_user_can('manage_options').
     $template = RequestHelper::getParam('template');
     if (!$template) {
       wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
@@ -64,6 +68,26 @@ class PartialController extends AdminController {
 
     // Localize schema data for JavaScript
     $this->localizeScript(['schema' => $schema]);
+
+    // Pass page initialization data (replaces inline scripts)
+    $page_data = [
+      'formTracking' => [
+        'enabled' => true,
+        'container' => '#yaml-cf-partial-form',
+        'fieldsSelector' => '.yaml-cf-fields',
+        'message' => __('You have unsaved changes', 'yaml-custom-fields'),
+        'submitSelector' => '#yaml-cf-partial-form',
+        'storageKey' => 'originalPartialFormData',
+        'hasChangesKey' => 'hasPartialFormChanges',
+        'beforeUnloadMessage' => __('You have unsaved changes. Are you sure you want to leave?', 'yaml-custom-fields'),
+        'gutenbergSupport' => false,
+        'captureDelay' => 500,
+      ]
+    ];
+    if (!empty($success_message)) {
+      $page_data['successMessage'] = $success_message;
+    }
+    $this->localizePageInit($page_data);
 
     // Load template
     $this->loadTemplate('edit-partial-page.php', compact(

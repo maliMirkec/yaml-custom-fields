@@ -59,6 +59,17 @@ abstract class AdminController {
   }
 
   /**
+   * Localize page initialization data
+   * Used to pass data to admin-page-init.js (replaces inline scripts)
+   *
+   * @param array $data Data to pass to page initialization script
+   * @param string $object_name JavaScript object name (default: yamlCFPageInit)
+   */
+  protected function localizePageInit($data, $object_name = 'yamlCFPageInit') {
+    wp_localize_script('yaml-cf-admin-page-init', $object_name, $data);
+  }
+
+  /**
    * Render the admin page
    * Must be implemented by child classes
    */

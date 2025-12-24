@@ -16,18 +16,14 @@ namespace YamlCF\Vendor\Symfony\Component\Yaml\Tag;
  */
 final class TaggedValue
 {
-    private $tag;
-    private $value;
-    public function __construct(string $tag, $value)
+    public function __construct(private string $tag, private mixed $value)
     {
-        $this->tag = $tag;
-        $this->value = $value;
     }
     public function getTag() : string
     {
         return $this->tag;
     }
-    public function getValue()
+    public function getValue() : mixed
     {
         return $this->value;
     }

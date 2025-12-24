@@ -29,7 +29,9 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('ComposerAutoloaderInit6ed106f430c3c75fbc12ce4fdb37a13c', 'YamlCF\Vendor\ComposerAutoloaderInit6ed106f430c3c75fbc12ce4fdb37a13c');
+humbug_phpscoper_expose_class('ComposerAutoloaderInit5a82deac6248b4abb8454f9cba9208bc', 'YamlCF\Vendor\ComposerAutoloaderInit5a82deac6248b4abb8454f9cba9208bc');
+humbug_phpscoper_expose_class('TypeError', 'YamlCF\Vendor\TypeError');
+humbug_phpscoper_expose_class('Error', 'YamlCF\Vendor\Error');
 humbug_phpscoper_expose_class('Normalizer', 'YamlCF\Vendor\Normalizer');
 
 // Function aliases. For more information see:

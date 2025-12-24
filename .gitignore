@@ -5,8 +5,15 @@
 composer.phar
 composer.lock
 
-# Keep scoped build - this SHOULD be committed
-# !/build/vendor/
-
 # Build artifacts
 /build/composer.json
+
+# Exclude dev dependencies from build (should not be scoped)
+/build/vendor/phpunit/
+/build/vendor/sebastian/
+/build/vendor/doctrine/
+/build/vendor/myclabs/
+/build/vendor/phar-io/
+/build/vendor/theseer/
+/build/vendor/yoast/
+/build/vendor/bin/phpunit

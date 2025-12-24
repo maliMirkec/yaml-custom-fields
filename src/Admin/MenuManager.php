@@ -263,6 +263,8 @@ class MenuManager {
     }
 
     // Handle data-object-based pages
+    // NOTE: type_id is used for display purposes only (page title customization).
+    // Actual permission checks happen in the controller methods.
     $type_id = RequestHelper::getParam('type_id');
     if ($type_id) {
       $data_object_types = get_option('yaml_cf_data_object_types', []);
