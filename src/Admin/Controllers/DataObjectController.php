@@ -38,8 +38,18 @@ class DataObjectController extends AdminController {
   public function handleFormSubmissions() {
     global $pagenow;
 
-    // Skip on plugins.php when WordPress is managing plugins
-    if ($pagenow === 'plugins.php' && (isset($_GET['action']) || isset($_POST['action']) || isset($_POST['action2']))) {
+    // Skip on plugin management pages (activation, deactivation, updates, installation)
+    if (in_array($pagenow, ['plugins.php', 'update.php', 'update-core.php', 'plugin-install.php'], true)) {
+      return;
+    }
+
+    // Skip during plugin upload/update operations
+    if (isset($_GET['action']) && in_array(sanitize_text_field(wp_unslash($_GET['action'])), ['activate', 'deactivate', 'upload-plugin', 'update-selected'], true)) {
+      return;
+    }
+
+    // Skip during plugin file operations
+    if (isset($_POST['action']) && in_array(sanitize_text_field(wp_unslash($_POST['action'])), ['upload-plugin', 'update-plugin'], true)) {
       return;
     }
 

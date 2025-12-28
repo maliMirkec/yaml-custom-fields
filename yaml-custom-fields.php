@@ -223,20 +223,19 @@ class YAML_Custom_Fields {
   private function should_skip_admin_init() {
     global $pagenow;
 
-    // Skip on plugins.php when WordPress is managing plugins
-    if ($pagenow === 'plugins.php' && isset($_GET['action'])) {
-      $action = sanitize_text_field(wp_unslash($_GET['action']));
-      if (in_array($action, ['activate', 'deactivate', 'delete-selected', 'deactivate-selected'], true)) {
-        return true;
-      }
+    // Skip on plugin management pages (activation, deactivation, updates)
+    if (in_array($pagenow, ['plugins.php', 'update.php', 'update-core.php', 'plugin-install.php'], true)) {
+      return true;
     }
 
-    // Skip during plugin activation/deactivation bulk actions
-    if ($pagenow === 'plugins.php' && isset($_POST['action']) || isset($_POST['action2'])) {
-      $action = isset($_POST['action']) ? sanitize_text_field(wp_unslash($_POST['action'])) : sanitize_text_field(wp_unslash($_POST['action2']));
-      if (in_array($action, ['activate-selected', 'deactivate-selected', 'delete-selected'], true)) {
-        return true;
-      }
+    // Skip during plugin upload/update operations
+    if (isset($_GET['action']) && in_array($_GET['action'], ['activate', 'deactivate', 'upload-plugin', 'update-selected'], true)) {
+      return true;
+    }
+
+    // Skip during plugin file operations
+    if (isset($_POST['action']) && in_array($_POST['action'], ['upload-plugin', 'update-plugin'], true)) {
+      return true;
     }
 
     return false;
@@ -287,19 +286,19 @@ class YAML_Custom_Fields {
       return;
     }
 
-    // Get nonce FIRST before accessing any other parameters
-    $nonce = $this->get_param('_wpnonce');
-    if (!$nonce) {
-      return;
-    }
-
-    // Get post_id (needed for nonce action string)
+    // Check if this is actually a post export request (not just any page with a nonce)
     $post_id = $this->get_param_int('yaml_cf_export_post', 0);
     if (!$post_id) {
       return;
     }
 
-    // Immediately verify nonce BEFORE any operations
+    // Now get and verify the nonce (only if we have the specific export parameter)
+    $nonce = $this->get_param('_wpnonce');
+    if (!$nonce) {
+      return;
+    }
+
+    // Verify nonce BEFORE any operations
     if (!wp_verify_nonce($nonce, 'yaml_cf_export_post_' . $post_id)) {
       wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
     }
@@ -363,13 +362,18 @@ class YAML_Custom_Fields {
       return;
     }
 
-    // Get nonce FIRST before accessing any other parameters
+    // Check if this is actually a settings export request (not just any page with a nonce)
+    if (!isset($_GET['yaml_cf_export_settings'])) {
+      return;
+    }
+
+    // Now get and verify the nonce (only if we have the specific export parameter)
     $nonce = $this->get_param('_wpnonce');
     if (!$nonce) {
       return;
     }
 
-    // Immediately verify nonce BEFORE accessing other parameters
+    // Verify nonce BEFORE accessing other parameters
     if (!wp_verify_nonce($nonce, 'yaml_cf_export_settings')) {
       wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
     }

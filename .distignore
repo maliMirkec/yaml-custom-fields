@@ -29,10 +29,18 @@ scoper.inc.php
 build-scoped.sh
 package-for-wporg.sh
 build/composer.json
+/bin/
+
+# Build artifacts and staging
+dist/
+*.zip
 
 # Documentation (all markdown files are GitHub only - readme.txt is for users)
 *.md
 **/*.md
+
+# Examples (developer documentation only)
+examples/
 
 # CI/CD
 .github
