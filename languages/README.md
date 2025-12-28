@@ -53,3 +53,9 @@ All translatable strings in this plugin use the text domain: `yaml-custom-fields
 
 For translation questions, please open an issue on GitHub:
 https://github.com/maliMirkec/yaml-custom-fields/issues
+
+---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Maintained By:** Silvestar Bistrović

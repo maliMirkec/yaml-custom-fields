@@ -12,8 +12,17 @@ This guide provides comprehensive manual testing procedures for the admin JavaSc
 - [Media Fields](#media-fields)
 - [Import/Export](#importexport)
 - [Template Global Fields](#template-global-fields)
+- [Code Snippets](#code-snippets)
+- [Reset All Data](#reset-all-data)
 - [Browser Compatibility](#browser-compatibility)
 - [Error Scenarios](#error-scenarios)
+- [Performance Testing](#performance-testing)
+- [Accessibility Testing](#accessibility-testing)
+- [Testing Sign-Off](#testing-sign-off)
+- [Regression Testing Checklist](#regression-testing-checklist)
+- [Known Limitations](#known-limitations)
+- [Troubleshooting](#troubleshooting)
+- [Next Steps](#next-steps)
 
 ---
 
@@ -672,3 +681,9 @@ After completing manual testing:
 4. Consider automated E2E tests for critical workflows (future enhancement)
 
 **Happy Testing! 🧪**
+
+---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Maintained By:** Silvestar Bistrović

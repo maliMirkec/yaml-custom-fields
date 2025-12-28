@@ -370,6 +370,6 @@ jobs:
 
 ---
 
-**Last Updated:** 2025-12-21
-**Plugin Version:** 1.2.1
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
 **Test Coverage:** 120 tests, 258 assertions

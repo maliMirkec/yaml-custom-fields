@@ -1,9 +1,10 @@
-# Testing Guide for YAML Custom Fields Plugin
+# Testing Guide
 
 This document explains how to run and write tests for the YAML Custom Fields WordPress plugin.
 
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [Overview](#overview)
 - [Installation](#installation)
 - [Running Tests](#running-tests)
@@ -11,6 +12,19 @@ This document explains how to run and write tests for the YAML Custom Fields Wor
 - [Writing Tests](#writing-tests)
 - [Test Utilities](#test-utilities)
 - [Troubleshooting](#troubleshooting)
+- [Quick Regression Checklist](#quick-regression-checklist)
+- [Manual Testing Guide](#manual-testing-guide)
+
+## Quick Start
+
+**Running all tests:**
+```bash
+composer test
+```
+
+**Current Coverage:** 120 tests, 258 assertions
+
+**See also:** [MANUAL-TESTING.md](MANUAL-TESTING.md) for comprehensive manual test suite
 
 ## Overview
 
@@ -376,3 +390,95 @@ When adding new features:
 **Memory Usage:** ~12MB
 
 Run tests frequently during development to catch issues early!
+
+---
+
+## Quick Regression Checklist
+
+### Critical Path (15 minutes)
+
+Use this checklist for quick regression testing before releases.
+
+**Prerequisites:**
+- [ ] WP_DEBUG = true in wp-config.php
+- [ ] WordPress site running
+- [ ] Plugin activated
+
+#### 1. Plugin Activation/Deactivation
+- [ ] Plugin activates without errors
+- [ ] Plugin deactivates without errors
+- [ ] No PHP errors in debug.log
+
+#### 2. Admin Page Loads
+- [ ] Main page loads: `/wp-admin/admin.php?page=yaml-custom-fields`
+- [ ] No JavaScript errors in console (F12)
+- [ ] Template list displays
+- [ ] Refresh button functional
+
+#### 3. Schema Editor
+- [ ] Schema editor loads
+- [ ] Can edit YAML
+- [ ] Save button works
+- [ ] Success message displays (green)
+- [ ] Invalid YAML shows error message (red)
+
+#### 4. Template Form Submission
+- [ ] Edit template/partial data
+- [ ] Unsaved changes warning works
+- [ ] Form saves successfully
+- [ ] No nonce errors
+
+#### 5. Data Objects
+- [ ] Data objects page loads
+- [ ] Can create new data object type
+- [ ] Can add entries
+- [ ] Can edit/delete entries
+
+#### 6. Export/Import
+- [ ] Single post export works
+- [ ] Settings export works
+- [ ] JSON files download correctly
+- [ ] No nonce security errors
+
+#### 7. Clean Uninstall
+- [ ] Deactivate and delete plugin
+- [ ] Check database for leftover data (should be clean)
+- [ ] Check options table (`SELECT * FROM wp_options WHERE option_name LIKE '%yaml_cf%'`)
+
+### Debug Checks
+
+**Browser Console (F12):**
+```javascript
+// Should not throw errors
+typeof yamlCFPageInit !== 'undefined'
+typeof YamlCF !== 'undefined'
+```
+
+**Debug Log:**
+```bash
+tail -100 wp-content/debug.log | grep -i "yaml\|fatal\|warning"
+```
+
+**Expected:** No fatal errors, no YAML Custom Fields warnings
+
+---
+
+## Manual Testing Guide
+
+For comprehensive manual testing, see: **[MANUAL-TESTING.md](MANUAL-TESTING.md)**
+
+The manual testing guide includes:
+- Complete feature testing (675 lines)
+- Browser compatibility matrix
+- Accessibility testing
+- Edge case scenarios
+- Multi-site testing
+- Conflict testing with other plugins
+
+**Recommendation:** Run full manual testing suite before major releases and WordPress.org submissions.
+
+---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Test Coverage:** 120 tests, 258 assertions

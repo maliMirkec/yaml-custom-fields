@@ -166,3 +166,9 @@ Found an issue with the examples or have suggestions? Please report it on [GitHu
 ---
 
 **Built with ❤️ for the WordPress community**
+
+---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Maintained By:** Silvestar Bistrović

@@ -32,6 +32,13 @@ RELEASE.md
 package-for-wporg.sh
 build/composer.json
 
+# Developer documentation (not for end users)
+AUTOMATION-TOOLS.md
+MANUAL-TESTING.md
+SECURITY-AUDIT-REPORT.md
+TESTING.md
+WORDPRESS-ORG-SUBMISSION.md
+
 # Documentation (GitHub only)
 # README.md
 

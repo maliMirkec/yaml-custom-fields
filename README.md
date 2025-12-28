@@ -1,8 +1,8 @@
 # YAML Custom Fields
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
-[![WordPress](https://img.shields.io/badge/wordpress-5.0%2B-blue.svg)](https://wordpress.org/)
-[![PHP](https://img.shields.io/badge/php-7.4%2B-purple.svg)](https://php.net)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
+[![WordPress](https://img.shields.io/badge/wordpress-6.0%2B-blue.svg)](https://wordpress.org/)
+[![PHP](https://img.shields.io/badge/php-8.1%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
 A WordPress plugin for managing YAML frontmatter schemas in theme templates and partials. Define structured content with an intuitive interface and ACF-like template functions.
@@ -481,5 +481,9 @@ GNU General Public License for more details.
 ```
 
 ---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Maintained By:** Silvestar Bistrović
 
 Made with ❤️ by [Silvestar Bistrovic](https://www.silvestar.codes)

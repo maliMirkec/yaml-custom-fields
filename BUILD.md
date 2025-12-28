@@ -110,3 +110,9 @@ To verify there are no conflicts:
 
 - [PHP-Scoper Documentation](https://github.com/humbug/php-scoper)
 - [Delicious Brains Article](https://deliciousbrains.com/php-scoper-namespace-composer-depencies/)
+
+---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Maintained By:** Silvestar Bistrović

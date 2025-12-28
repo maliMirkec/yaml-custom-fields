@@ -66,90 +66,47 @@ Before uploading, test the ZIP file:
 ### First-Time Submission
 
 1. Submit via: https://wordpress.org/plugins/developers/add/
-2. Upload the ZIP file
+2. Upload the ZIP file (created with `package-for-wporg.sh`)
 3. Wait for review (can take 1-2 weeks)
-4. Once approved, you'll get SVN access
+4. Once approved, you can upload updates and assets through the web interface
 
 ### Updating Existing Plugin
 
-You have two options: **SVN** or **GitHub Actions**.
+Once your plugin is approved, update it by uploading new ZIP files:
 
-#### Option A: Using SVN
+1. **Update version numbers:**
+   - `yaml-custom-fields.php` header: `Version: 1.2.3`
+   - `readme.txt` stable tag: `Stable tag: 1.2.3`
+   - Update changelog in `readme.txt`
 
-1. Check out the plugin SVN repo:
+2. **Build new package:**
    ```bash
-   svn co https://plugins.svn.wordpress.org/yaml-custom-fields
-   cd yaml-custom-fields
+   ./build-scoped.sh
+   ./package-for-wporg.sh
    ```
 
-2. Extract your ZIP into the `trunk` folder:
-   ```bash
-   unzip ../yaml-custom-fields.1.2.0.zip
-   rsync -av --delete yaml-custom-fields/ trunk/
-   ```
+3. **Upload to WordPress.org:**
+   - Go to: https://wordpress.org/plugins/developers/
+   - Select your plugin
+   - Upload the new ZIP file
 
-3. Add new files:
-   ```bash
-   svn add trunk/* --force
-   ```
-
-4. Remove deleted files:
-   ```bash
-   svn status | grep '^!' | awk '{print $2}' | xargs svn delete
-   ```
-
-5. Review changes:
-   ```bash
-   svn status
-   svn diff | less
-   ```
-
-6. Commit to trunk:
-   ```bash
-   svn ci -m "Updating to version 1.2.0"
-   ```
-
-7. Create a release tag:
-   ```bash
-   svn cp trunk tags/1.2.0
-   svn ci -m "Tagging version 1.2.0"
-   ```
-
-8. The plugin will be live within 15 minutes!
-
-#### Option B: Using GitHub Actions (If Set Up)
-
-If you have the WordPress.org deployment action configured:
-
-1. Push to GitHub:
-   ```bash
-   git push origin main
-   ```
-
-2. Create a release tag:
-   ```bash
-   git tag 1.2.0
-   git push origin 1.2.0
-   ```
-
-3. GitHub Action automatically deploys to WordPress.org
+4. **Plugin update is live within 15 minutes!**
 
 ### Uploading Assets (Banners, Icons, Screenshots)
 
-Assets go in the `/assets` folder in SVN (not `/trunk`):
+Upload assets through the WordPress.org web interface:
 
-```bash
-cd yaml-custom-fields
-svn add assets/*
-svn ci -m "Updating plugin assets"
-```
+1. Go to: https://wordpress.org/plugins/developers/
+2. Select your plugin: yaml-custom-fields
+3. Navigate to the Assets section
+4. Upload your assets:
+   - `banner-772x250.png` - Plugin header banner (small)
+   - `banner-1544x500.png` - Plugin header banner (large)
+   - `icon-128x128.png` - Plugin icon (small)
+   - `icon-256x256.png` - Plugin icon (large)
+   - `screenshot-1.png`, `screenshot-2.png`, etc. - Screenshots
 
-Assets you can upload:
-- `banner-772x250.png` - Plugin header banner (small)
-- `banner-1544x500.png` - Plugin header banner (large)
-- `icon-128x128.png` - Plugin icon (small)
-- `icon-256x256.png` - Plugin icon (large)
-- `screenshot-1.png`, `screenshot-2.png`, etc. - Screenshots
+**Note:** Assets are uploaded separately from the plugin ZIP and are not included in the distribution package.
 
 ## Important Notes
 
@@ -182,9 +139,9 @@ Because we use PHP-Scoper:
 ### Version Numbering
 
 WordPress.org requires:
-- Version in `yaml-custom-fields.php`: `Version: 1.2.0`
-- Version in `readme.txt`: `Stable tag: 1.2.0`
-- Must match the SVN tag: `tags/1.2.0`
+- Version in `yaml-custom-fields.php`: `Version: 1.2.2`
+- Version in `readme.txt`: `Stable tag: 1.2.2`
+- Both must match for proper updates
 
 ## Troubleshooting
 
@@ -204,15 +161,21 @@ WordPress.org requires:
 
 **Solution**: Check `.distignore` is properly configured and used by packaging script
 
-### Plugin Not Appearing After Tag
+### Plugin Not Updating
 
-**Cause**: `readme.txt` stable tag doesn't match SVN tag
+**Cause**: `readme.txt` stable tag doesn't match plugin version
 
-**Solution**: Ensure `Stable tag: 1.2.0` in readme.txt matches your SVN tag
+**Solution**: Ensure `Stable tag: 1.2.2` in readme.txt matches the version in `yaml-custom-fields.php`
 
 ## Resources
 
 - [WordPress Plugin Handbook](https://developer.wordpress.org/plugins/)
-- [SVN Guide](https://developer.wordpress.org/plugins/wordpress-org/how-to-use-subversion/)
 - [Plugin Assets](https://developer.wordpress.org/plugins/wordpress-org/plugin-assets/)
 - [Release Checklist](https://developer.wordpress.org/plugins/wordpress-org/plugin-developer-faq/)
+- [Plugin Developer Dashboard](https://wordpress.org/plugins/developers/)
+
+---
+
+**Last Updated:** 2025-12-28
+**Plugin Version:** 1.2.2
+**Maintained By:** Silvestar Bistrović

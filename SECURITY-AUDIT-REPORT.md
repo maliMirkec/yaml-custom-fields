@@ -1,7 +1,9 @@
 # Security Audit Report - YAML Custom Fields Plugin
 **Date:** 2025-12-21
-**Plugin Version:** 1.2.1
+**Plugin Version Audited:** 1.2.1 (current: 1.2.2)
 **Auditor:** Automated Security Audit + Manual Review
+
+> **Note:** This audit was performed on version 1.2.1. Changes in 1.2.2 are documentation-only and do not affect security.
 
 ---
 
