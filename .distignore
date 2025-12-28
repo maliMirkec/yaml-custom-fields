@@ -27,31 +27,21 @@ package-lock.json
 /vendor/
 scoper.inc.php
 build-scoped.sh
-BUILD.md
-RELEASE.md
 package-for-wporg.sh
 build/composer.json
 
-# Developer documentation (not for end users)
-AUTOMATION-TOOLS.md
-MANUAL-TESTING.md
-SECURITY-AUDIT-REPORT.md
-TESTING.md
-WORDPRESS-ORG-SUBMISSION.md
-
-# Documentation (GitHub only)
-# README.md
+# Documentation (all markdown files are GitHub only - readme.txt is for users)
+*.md
+**/*.md
 
 # CI/CD
 .github
 .claude
-.claude-rules.md
 
 # Tests
 tests
 phpunit.xml
 .phpunit.result.cache
-TESTING-CHECKLIST.md
 
 # Screenshots and assets for wp.org
 # These are usually uploaded separately to the assets folder
