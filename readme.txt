@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, cms, page-builder
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,12 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 8. Documentation page with comprehensive guides and examples
 
 == Changelog ==
+
+= 1.2.2 =
+* **UPDATED: Symfony Libraries** - Updated Symfony YAML Component to 7.4.1 and Deprecation Contracts to 3.6.0
+* **SECURITY: Nonce Verification** - Fixed GET parameter access to verify nonces before accessing other parameters
+* **IMPROVED: Script Enqueuing** - Converted all inline scripts to proper wp_enqueue_script usage with wp_localize_script
+* **REQUIREMENT: PHP 8.1+** - Minimum PHP version increased from 7.4 to 8.1 (required for Symfony 7.x)
 
 = 1.2.1 =
 * **FIX: Export/Import** - Template global schemas and data now properly exported and imported

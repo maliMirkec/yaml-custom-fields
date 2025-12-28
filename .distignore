@@ -24,7 +24,7 @@ package.json
 package-lock.json
 
 # Build tooling (users don't need these)
-vendor/
+/vendor/
 scoper.inc.php
 build-scoped.sh
 BUILD.md
@@ -43,6 +43,8 @@ build/composer.json
 # Tests
 tests
 phpunit.xml
+.phpunit.result.cache
+TESTING-CHECKLIST.md
 
 # Screenshots and assets for wp.org
 # These are usually uploaded separately to the assets folder

@@ -36,6 +36,7 @@ return [
             ->filter(function (\SplFileInfo $file) {
                 // Exclude dev dependencies
                 $devPackages = [
+                    // PHP-Scoper and its dependencies
                     'humbug/php-scoper',
                     'fidry/console',
                     'fidry/filesystem',
@@ -43,6 +44,20 @@ return [
                     'nikic/php-parser',
                     'thecodingmachine/safe',
                     'webmozart/assert',
+                    // PHPUnit and its dependencies
+                    'phpunit/phpunit',
+                    'phpunit/php-code-coverage',
+                    'phpunit/php-file-iterator',
+                    'phpunit/php-invoker',
+                    'phpunit/php-text-template',
+                    'phpunit/php-timer',
+                    'sebastian/',  // Matches all sebastian/* packages
+                    'doctrine/instantiator',
+                    'myclabs/deep-copy',
+                    'phar-io/manifest',
+                    'phar-io/version',
+                    'theseer/tokenizer',
+                    'yoast/phpunit-polyfills',
                 ];
 
                 foreach ($devPackages as $package) {

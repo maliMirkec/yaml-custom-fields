@@ -7,6 +7,8 @@ composer.lock
 
 # Build artifacts
 /build/composer.json
+/dist/
+*.zip
 
 # Exclude dev dependencies from build (should not be scoped)
 /build/vendor/phpunit/
