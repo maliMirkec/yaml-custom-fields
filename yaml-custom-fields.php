@@ -249,6 +249,7 @@ class YAML_Custom_Fields {
     add_action('admin_init', [$this, 'handle_page_data_export']);
     add_action('admin_init', [$this, 'handle_data_objects_export']);
     add_action('admin_init', [$this, 'handle_data_object_type_submissions']);
+    add_action('admin_init', [$this, 'handle_validation_page']);
 
     // NOTE: Admin menu, assets, and menu customization now handled by new architecture (HookManager)
     // add_action('admin_menu', [$this, 'add_admin_menu']);
@@ -520,6 +521,17 @@ class YAML_Custom_Fields {
     $plugin = \YamlCF\Core\Plugin::getInstance();
     $controller = $plugin->get('data_object_controller');
     $controller->handleFormSubmissions();
+  }
+
+  public function handle_validation_page() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
+    $plugin = \YamlCF\Core\Plugin::getInstance();
+    $controller = $plugin->get('validation_controller');
+    $controller->handleValidation();
   }
 
   public function handle_form_submissions() {

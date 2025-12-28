@@ -234,7 +234,9 @@ class Plugin {
     });
 
     $this->container->register('validation_controller', function($c) {
-      return new \YamlCF\Admin\Controllers\ValidationController();
+      return new \YamlCF\Admin\Controllers\ValidationController(
+        $c->get('attachment_validator')
+      );
     });
 
     $this->container->register('export_import_controller', function($c) {
