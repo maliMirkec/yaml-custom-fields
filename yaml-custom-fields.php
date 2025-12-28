@@ -16,6 +16,26 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
+// PHP version check (must be before autoloader loads Symfony)
+if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+  add_action('admin_notices', function() {
+    echo '<div class="notice notice-error"><p>';
+    echo '<strong>YAML Custom Fields:</strong> This plugin requires PHP 8.1 or higher. You are running PHP ' . PHP_VERSION . '. Please upgrade your PHP version.';
+    echo '</p></div>';
+  });
+  return; // Stop loading the plugin
+}
+
+// Symfony 6.4 is not compatible with PHP 8.4+ (use 8.1, 8.2, or 8.3)
+if (version_compare(PHP_VERSION, '8.4.0', '>=')) {
+  add_action('admin_notices', function() {
+    echo '<div class="notice notice-error"><p>';
+    echo '<strong>YAML Custom Fields:</strong> This plugin is not compatible with PHP 8.4. Please use PHP 8.1, 8.2, or 8.3. <a href="https://github.com/maliMirkec/yaml-custom-fields/issues" target="_blank">Report compatibility issues</a>.';
+    echo '</p></div>';
+  });
+  return; // Stop loading the plugin
+}
+
 // Load scoped Composer dependencies to avoid conflicts with other plugins
 if (file_exists(__DIR__ . '/build/vendor/scoper-autoload.php')) {
   require_once __DIR__ . '/build/vendor/scoper-autoload.php';
@@ -196,6 +216,32 @@ class YAML_Custom_Fields {
     \YamlCF\Helpers\HtmlHelper::outputAttrs($attrs);
   }
 
+  /**
+   * Check if we should skip admin_init processing
+   * Prevents interference with WordPress plugin management actions
+   */
+  private function should_skip_admin_init() {
+    global $pagenow;
+
+    // Skip on plugins.php when WordPress is managing plugins
+    if ($pagenow === 'plugins.php' && isset($_GET['action'])) {
+      $action = sanitize_text_field(wp_unslash($_GET['action']));
+      if (in_array($action, ['activate', 'deactivate', 'delete-selected', 'deactivate-selected'], true)) {
+        return true;
+      }
+    }
+
+    // Skip during plugin activation/deactivation bulk actions
+    if ($pagenow === 'plugins.php' && isset($_POST['action']) || isset($_POST['action2'])) {
+      $action = isset($_POST['action']) ? sanitize_text_field(wp_unslash($_POST['action'])) : sanitize_text_field(wp_unslash($_POST['action2']));
+      if (in_array($action, ['activate-selected', 'deactivate-selected', 'delete-selected'], true)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   private function init_hooks() {
     add_action('admin_init', [$this, 'handle_form_submissions']);
     add_action('admin_init', [$this, 'handle_single_post_export']);
@@ -235,6 +281,11 @@ class YAML_Custom_Fields {
 
 
   public function handle_single_post_export() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
     // Get nonce FIRST before accessing any other parameters
     $nonce = $this->get_param('_wpnonce');
     if (!$nonce) {
@@ -306,6 +357,11 @@ class YAML_Custom_Fields {
   }
 
   public function handle_settings_export() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
     // Get nonce FIRST before accessing any other parameters
     $nonce = $this->get_param('_wpnonce');
     if (!$nonce) {
@@ -356,6 +412,11 @@ class YAML_Custom_Fields {
   }
 
   public function handle_page_data_export() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
     if (!isset($_POST['yaml_cf_export_page_data_nonce'])) {
       return;
     }
@@ -429,6 +490,11 @@ class YAML_Custom_Fields {
   }
 
   public function handle_data_objects_export() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
     if (!isset($_POST['yaml_cf_export_data_objects_nonce'])) {
       return;
     }
@@ -446,12 +512,22 @@ class YAML_Custom_Fields {
   }
 
   public function handle_data_object_type_submissions() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
     $plugin = \YamlCF\Core\Plugin::getInstance();
     $controller = $plugin->get('data_object_controller');
     $controller->handleFormSubmissions();
   }
 
   public function handle_form_submissions() {
+    // Skip during plugin management actions
+    if ($this->should_skip_admin_init()) {
+      return;
+    }
+
     // Handle single post import
     if (isset($_POST['yaml_cf_import_post_nonce']) &&
         wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_import_post_nonce'])), 'yaml_cf_import_post')) {

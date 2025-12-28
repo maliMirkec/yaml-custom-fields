@@ -45,7 +45,10 @@ class LintCommand extends Command
         $this->directoryIteratorProvider = null === $directoryIteratorProvider ? null : $directoryIteratorProvider(...);
         $this->isReadableProvider = null === $isReadableProvider ? null : $isReadableProvider(...);
     }
-    protected function configure() : void
+    /**
+     * @return void
+     */
+    protected function configure()
     {
         $this->addArgument('filename', InputArgument::IS_ARRAY, 'A file, a directory or "-" for reading from STDIN')->addOption('format', null, InputOption::VALUE_REQUIRED, \sprintf('The output format ("%s")', \implode('", "', $this->getAvailableFormatOptions())))->addOption('exclude', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Path(s) to exclude')->addOption('parse-tags', null, InputOption::VALUE_NEGATABLE, 'Parse custom tags', null)->setHelp(<<<EOF
 The <info>%command.name%</info> command lints a YAML file and outputs to STDOUT
@@ -62,9 +65,6 @@ You can also validate the syntax of a file:
 Or of a whole directory:
 
   <info>php %command.full_name% dirname</info>
-
-The <info>--format</info> option specifies the format of the command output:
-
   <info>php %command.full_name% dirname --format=json</info>
 
 You can also exclude one or more specific files:
@@ -184,7 +184,7 @@ EOF
             return;
         }
         foreach ($this->getDirectoryIterator($fileOrDirectory) as $file) {
-            if (!\in_array($file->getExtension(), ['yml', 'yaml'], \true)) {
+            if (!\in_array($file->getExtension(), ['yml', 'yaml'])) {
                 continue;
             }
             (yield $file);
@@ -216,7 +216,6 @@ EOF
             $suggestions->suggestValues($this->getAvailableFormatOptions());
         }
     }
-    /** @return string[] */
     private function getAvailableFormatOptions() : array
     {
         return ['txt', 'json', 'github'];

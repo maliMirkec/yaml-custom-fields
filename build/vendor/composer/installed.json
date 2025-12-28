@@ -3203,31 +3203,31 @@
         },
         {
             "name": "symfony\/yaml",
-            "version": "v7.4.1",
-            "version_normalized": "7.4.1.0",
+            "version": "v6.4.30",
+            "version_normalized": "6.4.30.0",
             "source": {
                 "type": "git",
                 "url": "https:\/\/github.com\/symfony\/yaml.git",
-                "reference": "24dd4de28d2e3988b311751ac49e684d783e2345"
+                "reference": "8207ae83da19ee3748d6d4f567b4d9a7c656e331"
             },
             "dist": {
                 "type": "zip",
-                "url": "https:\/\/api.github.com\/repos\/symfony\/yaml\/zipball\/24dd4de28d2e3988b311751ac49e684d783e2345",
-                "reference": "24dd4de28d2e3988b311751ac49e684d783e2345",
+                "url": "https:\/\/api.github.com\/repos\/symfony\/yaml\/zipball\/8207ae83da19ee3748d6d4f567b4d9a7c656e331",
+                "reference": "8207ae83da19ee3748d6d4f567b4d9a7c656e331",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.2",
+                "php": ">=8.1",
                 "symfony\/deprecation-contracts": "^2.5|^3",
                 "symfony\/polyfill-ctype": "^1.8"
             },
             "conflict": {
-                "symfony\/console": "<6.4"
+                "symfony\/console": "<5.4"
             },
             "require-dev": {
-                "symfony\/console": "^6.4|^7.0|^8.0"
+                "symfony\/console": "^5.4|^6.0|^7.0"
             },
-            "time": "2025-12-04T18:11:45+00:00",
+            "time": "2025-12-02T11:50:18+00:00",
             "bin": [
                 "Resources\/bin\/yaml-lint"
             ],
@@ -3258,7 +3258,7 @@
             "description": "Loads and dumps YAML files",
             "homepage": "https:\/\/symfony.com",
             "support": {
-                "source": "https:\/\/github.com\/symfony\/yaml\/tree\/v7.4.1"
+                "source": "https:\/\/github.com\/symfony\/yaml\/tree\/v6.4.30"
             },
             "funding": [
                 {

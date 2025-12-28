@@ -147,10 +147,10 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 == Changelog ==
 
 = 1.2.2 =
-* **UPDATED: Symfony Libraries** - Updated Symfony YAML Component to 7.4.1 and Deprecation Contracts to 3.6.0
+* **UPDATED: Symfony Libraries** - Updated Symfony YAML Component to 6.4 and Deprecation Contracts to 3.6.0 for PHP 8.1+ compatibility
 * **SECURITY: Nonce Verification** - Fixed GET parameter access to verify nonces before accessing other parameters
 * **IMPROVED: Script Enqueuing** - Converted all inline scripts to proper wp_enqueue_script usage with wp_localize_script
-* **REQUIREMENT: PHP 8.1+** - Minimum PHP version increased from 7.4 to 8.1 (required for Symfony 7.x)
+* **REQUIREMENT: PHP 8.1+** - Minimum PHP version requirement (Symfony 6.4 LTS supports PHP 8.1+)
 
 = 1.2.1 =
 * **FIX: Export/Import** - Template global schemas and data now properly exported and imported
@@ -424,7 +424,7 @@ YAML Custom Fields does not collect, store, or transmit any user data outside of
 
 This plugin includes the following third-party libraries:
 
-* **Symfony YAML Component** (v7.3) - Licensed under MIT License (GPL-compatible)
+* **Symfony YAML Component** (v6.4) - Licensed under MIT License (GPL-compatible)
   - Homepage: https://symfony.com/components/Yaml
   - License: https://github.com/symfony/yaml/blob/7.3/LICENSE
 

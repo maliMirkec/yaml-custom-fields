@@ -8,35 +8,6 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
-// Handle delete
-if (isset($_POST['yaml_cf_delete_type_nonce'])) {
-  if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_delete_type_nonce'])), 'yaml_cf_delete_type')) {
-    wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
-  }
-
-  $yaml_cf_type_slug_to_delete = isset($_POST['type_slug']) ? sanitize_key($_POST['type_slug']) : '';
-
-  if (!empty($yaml_cf_type_slug_to_delete)) {
-    $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
-
-    if (isset($yaml_cf_data_object_types[$yaml_cf_type_slug_to_delete])) {
-      // Delete the type
-      unset($yaml_cf_data_object_types[$yaml_cf_type_slug_to_delete]);
-      update_option('yaml_cf_data_object_types', $yaml_cf_data_object_types);
-
-      // Delete all entries for this type
-      delete_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug_to_delete);
-
-      // Set success message transient
-      set_transient('yaml_cf_data_objects_success_' . get_current_user_id(), 'type_deleted', 60);
-    }
-
-    // Redirect to prevent form resubmission
-    wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
-    exit;
-  }
-}
-
 // Get all data object types
 $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
 ?>

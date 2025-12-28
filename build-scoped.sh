@@ -60,12 +60,22 @@ cat > composer.json <<'EOF'
       "vendor/symfony/polyfill-ctype/bootstrap.php",
       "vendor/symfony/deprecation-contracts/function.php"
     ]
+  },
+  "config": {
+    "platform-check": false
   }
 }
 EOF
 
 # Dump autoload
 $PHP_BIN ../composer.phar dump-autoload --working-dir="$BUILD_DIR" --no-dev --classmap-authoritative --quiet
+
+# Remove dev bin stubs (these get auto-generated even with --no-dev)
+echo "🧹 Removing dev bin stubs..."
+if [ -d "$BUILD_DIR/vendor/bin" ]; then
+    cd "$BUILD_DIR/vendor/bin"
+    rm -f php-parse php-scoper phpunit
+fi
 
 cd "$PLUGIN_DIR"
 
