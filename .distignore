@@ -17,7 +17,6 @@ node_modules
 .phpcs.xml
 phpcs.xml.dist
 .eslintrc
-composer.json
 composer.lock
 composer.phar
 package.json

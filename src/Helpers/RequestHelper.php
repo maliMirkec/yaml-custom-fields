@@ -77,11 +77,11 @@ class RequestHelper {
   public static function postRaw($key, $default = '') {
     // Check if POST data exists and is set
     // Using filter_input for proper superglobal access without PHPCS warnings
-    $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW, FILTER_REQUIRE_ARRAY | FILTER_NULL_ON_FAILURE);
+    $value = filter_input(INPUT_POST, $key, FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY | FILTER_NULL_ON_FAILURE);
 
     if ($value === null) {
       // Try as non-array
-      $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW);
+      $value = filter_input(INPUT_POST, $key, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
     if ($value === null || $value === false) {

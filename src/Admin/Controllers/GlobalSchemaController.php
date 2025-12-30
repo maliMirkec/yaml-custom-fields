@@ -41,11 +41,20 @@ class GlobalSchemaController extends AdminController {
       $success_message = __('Global schema saved successfully!', 'yaml-custom-fields');
     }
 
+    // Pass messages to JavaScript via localization
+    $page_config = [];
+    if ($success_message) {
+      $page_config['successMessage'] = $success_message;
+    }
+    if ($error_message) {
+      $page_config['errorMessage'] = $error_message;
+    }
+
+    if (!empty($page_config)) {
+      $this->localizePageInit($page_config);
+    }
+
     // Load template
-    $this->loadTemplate('edit-global-schema-page.php', compact(
-      'global_schema',
-      'error_message',
-      'success_message'
-    ));
+    $this->loadTemplate('edit-global-schema-page.php', compact('global_schema'));
   }
 }

@@ -1193,3 +1193,34 @@
     font-size: 14px;
   }
 }
+
+/* Data Validation Page Styles */
+.yaml-cf-validation-container {
+  max-width: 100%;
+}
+
+.yaml-cf-filter-btn {
+  margin-left: 5px;
+}
+
+.yaml-cf-filter-btn.active {
+  background: #2271b1;
+  color: #fff;
+  border-color: #2271b1;
+}
+
+.yaml-cf-validation-row[data-status="hidden"] {
+  display: none;
+}
+
+.yaml-cf-summary-grid {
+  margin-bottom: 20px;
+}
+
+.yaml-cf-stat-box {
+  transition: transform 0.2s;
+}
+
+.yaml-cf-stat-box:hover {
+  transform: translateY(-2px);
+}

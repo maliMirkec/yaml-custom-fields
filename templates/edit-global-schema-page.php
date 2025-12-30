@@ -110,23 +110,3 @@ if (!defined('ABSPATH')) {
     </div>
   </div>
 </div>
-
-<?php if (!empty($success_message)) : ?>
-<script>
-jQuery(document).ready(function($) {
-  if (typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-    YamlCF.showMessage('<?php echo esc_js($success_message); ?>', 'success');
-  }
-});
-</script>
-<?php endif; ?>
-
-<?php if (!empty($error_message)) : ?>
-<script>
-jQuery(document).ready(function($) {
-  if (typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-    YamlCF.showMessage('<?php echo esc_js($error_message); ?>', 'error', true);
-  }
-});
-</script>
-<?php endif; ?>

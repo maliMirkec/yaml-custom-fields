@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: A WordPress plugin for managing YAML frontmatter schemas in theme templates
- * Version: 1.2.2
+ * Version: 1.2.3
  * Author: Silvestar Bistrović
  * Author URI: https://www.silvestar.codes
  * Author Email: me@silvestar.codes
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 if (version_compare(PHP_VERSION, '8.1.0', '<')) {
   add_action('admin_notices', function() {
     echo '<div class="notice notice-error"><p>';
-    echo '<strong>YAML Custom Fields:</strong> This plugin requires PHP 8.1 or higher. You are running PHP ' . PHP_VERSION . '. Please upgrade your PHP version.';
+    echo '<strong>YAML Custom Fields:</strong> This plugin requires PHP 8.1 or higher. You are running PHP ' . esc_html(PHP_VERSION) . '. Please upgrade your PHP version.';
     echo '</p></div>';
   });
   return; // Stop loading the plugin

@@ -8,7 +8,7 @@ set -e
 PLUGIN_SLUG="yaml-custom-fields"
 VERSION=$(grep "Version:" yaml-custom-fields.php | awk '{print $3}')
 DIST_DIR="dist"
-ZIP_NAME="${PLUGIN_SLUG}.${VERSION}.zip"
+ZIP_NAME="${PLUGIN_SLUG}.zip"
 
 echo "📦 Packaging YAML Custom Fields v${VERSION}"
 echo "=========================================="

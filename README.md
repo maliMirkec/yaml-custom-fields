@@ -409,6 +409,29 @@ Contributions are welcome! Please follow these guidelines:
 
 ## Changelog
 
+### 1.2.3
+
+- **FIX: Dynamic Block Fields** - Fixed taxonomy, post_type, and data_object fields not rendering correctly in dynamically added blocks
+- **NEW: JavaScript Field Handlers** - Added missing post_type and data_object field support to JavaScript block rendering
+- **IMPROVED: Field Type Parity** - All field types now work identically in both static (PHP) and dynamic (JavaScript) rendering
+- **IMPROVED: Data Localization** - Enhanced controllers to pass taxonomy terms, post types, and data objects to JavaScript
+
+### 1.2.2
+
+- **UPDATED: Symfony Libraries** - Updated Symfony YAML Component to 6.4 and Deprecation Contracts to 3.6.0 for PHP 8.1+ compatibility
+- **SECURITY: Nonce Verification** - Fixed GET parameter access to verify nonces before accessing other parameters
+- **IMPROVED: Script Enqueuing** - Converted all inline scripts to proper wp_enqueue_script usage with wp_localize_script
+- **REQUIREMENT: PHP 8.1+** - Minimum PHP version requirement (Symfony 6.4 LTS supports PHP 8.1+)
+
+### 1.2.1
+
+- **FIX: Export/Import** - Template global schemas and data now properly exported and imported
+- **FIX: Page Data Export** - Schema is now included in page data exports (form-based and AJAX)
+- **FIX: Page Data Import** - Now correctly handles both single-post and multi-post export formats
+- **NEW: Template Global Readonly Display** - Template-global-only fields now display as readonly in post editor
+- **NEW: Auto-fallback for Template Global Fields** - `ycf_get_field()` now automatically retrieves template global data
+- Fixed browser autocomplete issues with template global form fields
+
 ### 1.2.0
 
 - **NEW: Template Global Fields** - Define shared default values for all posts using the same template

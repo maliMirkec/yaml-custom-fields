@@ -68,13 +68,24 @@ class TemplateGlobalController extends AdminController {
       $success_message = __('Template global schema saved successfully!', 'yaml-custom-fields');
     }
 
+    // Pass messages to JavaScript via localization
+    $page_config = [];
+    if ($success_message) {
+      $page_config['successMessage'] = $success_message;
+    }
+    if ($error_message) {
+      $page_config['errorMessage'] = $error_message;
+    }
+
+    if (!empty($page_config)) {
+      $this->localizePageInit($page_config);
+    }
+
     // Load template
     $this->loadTemplate('edit-template-global-schema-page.php', compact(
       'template',
       'template_name',
-      'template_global_schema',
-      'error_message',
-      'success_message'
+      'template_global_schema'
     ));
   }
 
@@ -120,13 +131,31 @@ class TemplateGlobalController extends AdminController {
     // Localize schema data for JavaScript
     $this->localizeScript(['schema' => $template_global_schema]);
 
+    // Pass messages and form tracking config to JavaScript
+    $page_config = [];
+    if ($success_message) {
+      $page_config['successMessage'] = $success_message;
+    }
+    $page_config['formTracking'] = [
+      'enabled' => true,
+      'container' => '#yaml-cf-template-global-data-form',
+      'fieldsSelector' => '.yaml-cf-fields',
+      'message' => __('You have unsaved changes', 'yaml-custom-fields'),
+      'submitSelector' => '#yaml-cf-template-global-data-form',
+      'storageKey' => 'originalTemplateGlobalDataFormData',
+      'hasChangesKey' => 'hasTemplateGlobalDataFormChanges',
+      'beforeUnloadMessage' => __('You have unsaved changes. Are you sure?', 'yaml-custom-fields'),
+      'gutenbergSupport' => false,
+      'captureDelay' => 500
+    ];
+    $this->localizePageInit($page_config);
+
     // Load template
     $this->loadTemplate('manage-template-global-data-page.php', compact(
       'template',
       'template_name',
       'template_global_schema',
-      'template_global_data',
-      'success_message'
+      'template_global_data'
     ));
   }
 

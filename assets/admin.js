@@ -595,6 +595,111 @@
             }
 
             $field.append($select);
+          } else if (blockField.type === 'taxonomy') {
+            // Taxonomy field - renders as select dropdown
+            const options = blockField.options || {};
+            const taxonomy = options.taxonomy || 'category';
+            const multiple = blockField.multiple || false;
+
+            const $select = $('<select>', {
+              name:
+                'yaml_cf[' +
+                fieldName +
+                '][' +
+                index +
+                '][' +
+                blockField.name +
+                ']' +
+                (multiple ? '[]' : ''),
+              id: blockFieldId,
+              class: 'regular-text',
+              multiple: multiple,
+            });
+
+            const fieldLabel = blockField.label || blockField.name;
+            $select.append($('<option>', { value: '', text: '-- Select ' + fieldLabel + ' --' }));
+
+            // Get taxonomy terms from pre-loaded data
+            if (typeof yamlCF !== 'undefined' && yamlCF.taxonomyTerms && yamlCF.taxonomyTerms[taxonomy]) {
+              yamlCF.taxonomyTerms[taxonomy].forEach(function (term) {
+                $select.append(
+                  $('<option>', { value: term.id, text: term.name })
+                );
+              });
+            }
+
+            $field.append($select);
+          } else if (blockField.type === 'post_type') {
+            // Post type field - renders as select dropdown
+            const $select = $('<select>', {
+              name:
+                'yaml_cf[' +
+                fieldName +
+                '][' +
+                index +
+                '][' +
+                blockField.name +
+                ']',
+              id: blockFieldId,
+              class: 'regular-text',
+            });
+
+            const fieldLabel = blockField.label || blockField.name;
+            $select.append($('<option>', { value: '', text: '-- Select ' + fieldLabel + ' --' }));
+
+            // Get post types from pre-loaded data
+            if (typeof yamlCF !== 'undefined' && yamlCF.postTypes && Array.isArray(yamlCF.postTypes)) {
+              yamlCF.postTypes.forEach(function (postType) {
+                $select.append(
+                  $('<option>', { value: postType.name, text: postType.label })
+                );
+              });
+            }
+
+            $field.append($select);
+          } else if (blockField.type === 'data_object') {
+            // Data object field - renders as select dropdown
+            const options = blockField.options || {};
+            const objectType = options.object_type || '';
+            const multiple = blockField.multiple || false;
+
+            if (!objectType) {
+              $field.append(
+                $('<p>', {
+                  style: 'color: #d63638;',
+                  text: 'Error: object_type not specified in field options.'
+                })
+              );
+            } else {
+              const $select = $('<select>', {
+                name:
+                  'yaml_cf[' +
+                  fieldName +
+                  '][' +
+                  index +
+                  '][' +
+                  blockField.name +
+                  ']' +
+                  (multiple ? '[]' : ''),
+                id: blockFieldId,
+                class: 'regular-text',
+                multiple: multiple,
+              });
+
+              const fieldLabel = blockField.label || blockField.name;
+              $select.append($('<option>', { value: '', text: '-- Select ' + fieldLabel + ' --' }));
+
+              // Get data object entries from pre-loaded data
+              if (typeof yamlCF !== 'undefined' && yamlCF.dataObjects && yamlCF.dataObjects[objectType]) {
+                yamlCF.dataObjects[objectType].forEach(function (entry) {
+                  $select.append(
+                    $('<option>', { value: entry.id, text: entry.label })
+                  );
+                });
+              }
+
+              $field.append($select);
+            }
           } else if (blockField.type === 'image') {
             // Image upload field
             $field.append(
