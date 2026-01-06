@@ -1,6 +1,6 @@
 === YAML Custom Fields ===
 Contributors: starbist
-Tags: yaml, frontmatter, custom-fields, cms, page-builder
+Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
@@ -211,6 +211,18 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 * Copy snippet buttons for all field types with complete function signatures
 
 == Upgrade Notice ==
+
+= 1.2.3 =
+Bug fix for dynamic block fields. Taxonomy, post type, and data object fields now render correctly when adding blocks dynamically.
+
+= 1.2.2 =
+Important security update with nonce verification fixes. Updated to PHP 8.1+ requirement with Symfony 6.4 compatibility.
+
+= 1.2.1 =
+Fixes for export/import functionality and template global field handling. Recommended update for better data portability.
+
+= 1.2.0 =
+Major feature update introducing Template Global Fields for shared default values across posts using the same template.
 
 = 1.1.0 =
 Code quality improvements, consolidated Export/Import page, and enhanced security. All functionality remains backwards compatible.
