@@ -68,7 +68,14 @@ cat > composer.json <<'EOF'
 EOF
 
 # Dump autoload
-$PHP_BIN ../composer.phar dump-autoload --working-dir="$BUILD_DIR" --no-dev --classmap-authoritative --quiet
+# Use composer.phar if it exists, otherwise use global composer command
+if [ -f "../composer.phar" ]; then
+    COMPOSER_CMD="$PHP_BIN ../composer.phar"
+else
+    COMPOSER_CMD="composer"
+fi
+
+$COMPOSER_CMD dump-autoload --working-dir="$BUILD_DIR" --no-dev --classmap-authoritative --quiet
 
 # Remove dev bin stubs (these get auto-generated even with --no-dev)
 echo "🧹 Removing dev bin stubs..."
