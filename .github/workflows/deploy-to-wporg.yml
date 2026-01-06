@@ -20,7 +20,7 @@ jobs:
           php-version: '8.1'
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader
+        run: composer install --optimize-autoloader
 
       - name: Build scoped dependencies
         run: |
