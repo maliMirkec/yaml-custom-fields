@@ -209,7 +209,7 @@ echo "11. Checking for Debug Code..."
 echo "-------------------------------"
 
 # Check for debugging code
-DEBUG_CODE=$(grep -rn "var_dump\|print_r\|error_log\|console\.log" src/ yaml-custom-fields.php assets/ --include="*.php" --include="*.js" | grep -v "//.*var_dump\|//.*print_r" | wc -l)
+DEBUG_CODE=$(grep -rn "var_dump\|print_r\|error_log\|console\.log" src/ yaml-custom-fields.php admin-assets/ --include="*.php" --include="*.js" | grep -v "//.*var_dump\|//.*print_r" | wc -l)
 if [ "$DEBUG_CODE" -eq 0 ]; then
     print_check "No debug code found" 0
 else

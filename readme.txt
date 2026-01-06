@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -146,6 +146,12 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 
 == Changelog ==
 
+= 1.2.4 =
+* **REFACTOR: Assets Folder Structure** - Reorganized assets for WordPress.org compliance
+* **IMPROVED: File Organization** - Separated admin assets (CSS/JS) into 'admin-assets' folder
+* **IMPROVED: Plugin Assets** - Moved WordPress.org assets (icons, banners, screenshots) to 'assets' folder
+* **UPDATED: File References** - Updated all asset paths in templates and AssetManager
+
 = 1.2.3 =
 * **FIX: Dynamic Block Fields** - Fixed taxonomy, post_type, and data_object fields not rendering correctly in dynamically added blocks
 * **NEW: JavaScript Field Handlers** - Added missing post_type and data_object field support to JavaScript block rendering
@@ -211,6 +217,9 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 * Copy snippet buttons for all field types with complete function signatures
 
 == Upgrade Notice ==
+
+= 1.2.4 =
+Asset folder reorganization for better WordPress.org compliance. All functionality remains unchanged.
 
 = 1.2.3 =
 Bug fix for dynamic block fields. Taxonomy, post type, and data object fields now render correctly when adding blocks dynamically.

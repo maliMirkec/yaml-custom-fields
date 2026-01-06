@@ -461,7 +461,7 @@ Once approved, you'll have access to upload plugin assets through your WordPress
 
 ### Updating Your Plugin
 
-**To release a new version (e.g., 1.2.3):**
+**To release a new version (e.g., 1.2.4):**
 
 1. **Update version numbers:**
    - `yaml-custom-fields.php` header

@@ -1,6 +1,6 @@
 /**
  * YAML Custom Fields Admin JavaScript
- * File: assets/admin.js
+ * File: admin-assets/admin.js
  */
 
 (function ($) {

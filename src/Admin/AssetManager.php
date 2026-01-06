@@ -57,13 +57,13 @@ class AssetManager {
     // Enqueue WordPress media library (needed for image/file uploads)
     wp_enqueue_media();
 
-    wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'assets/admin.css', [], YAML_CF_VERSION);
-    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'assets/admin.js', ['jquery'], YAML_CF_VERSION, true);
+    wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.css', [], YAML_CF_VERSION);
+    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery'], YAML_CF_VERSION, true);
 
     // Enqueue page initialization script (replaces inline scripts in templates)
     wp_enqueue_script(
       'yaml-cf-admin-page-init',
-      YAML_CF_PLUGIN_URL . 'assets/admin-page-init.js',
+      YAML_CF_PLUGIN_URL . 'admin-assets/admin-page-init.js',
       ['jquery', 'yaml-cf-admin'],
       YAML_CF_VERSION,
       true
@@ -142,7 +142,7 @@ class AssetManager {
     if ($current_page === 'yaml-cf-data-validation') {
       wp_enqueue_script(
         'yaml-cf-validation',
-        YAML_CF_PLUGIN_URL . 'assets/admin-validation.js',
+        YAML_CF_PLUGIN_URL . 'admin-assets/admin-validation.js',
         ['jquery'],
         YAML_CF_VERSION,
         true
@@ -152,7 +152,7 @@ class AssetManager {
     if ($current_page === 'yaml-cf-export-data') {
       wp_enqueue_script(
         'yaml-cf-export-import',
-        YAML_CF_PLUGIN_URL . 'assets/admin-export-import.js',
+        YAML_CF_PLUGIN_URL . 'admin-assets/admin-export-import.js',
         ['jquery', 'yaml-cf-admin'],
         YAML_CF_VERSION,
         true

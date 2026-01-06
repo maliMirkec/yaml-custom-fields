@@ -75,8 +75,8 @@ Before uploading, test the ZIP file:
 Once your plugin is approved, update it by uploading new ZIP files:
 
 1. **Update version numbers:**
-   - `yaml-custom-fields.php` header: `Version: 1.2.3`
-   - `readme.txt` stable tag: `Stable tag: 1.2.3`
+   - `yaml-custom-fields.php` header: `Version: 1.2.4`
+   - `readme.txt` stable tag: `Stable tag: 1.2.4`
    - Update changelog in `readme.txt`
 
 2. **Build new package:**

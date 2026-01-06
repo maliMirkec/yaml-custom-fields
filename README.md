@@ -1,13 +1,13 @@
 # YAML Custom Fields
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
 [![WordPress](https://img.shields.io/badge/wordpress-6.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/php-8.1%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
 A WordPress plugin for managing YAML frontmatter schemas in theme templates and partials. Define structured content with an intuitive interface and ACF-like template functions.
 
-![YAML Custom Fields Logo](icon-256x256.png)
+![YAML Custom Fields Logo](assets/icon-256x256.png)
 
 ## Features
 
@@ -409,6 +409,13 @@ Contributions are welcome! Please follow these guidelines:
 
 ## Changelog
 
+### 1.2.4
+
+- **REFACTOR: Assets Folder Structure** - Reorganized assets for WordPress.org compliance
+- **IMPROVED: File Organization** - Separated admin assets (CSS/JS) into 'admin-assets' folder
+- **IMPROVED: Plugin Assets** - Moved WordPress.org assets (icons, banners, screenshots) to 'assets' folder
+- **UPDATED: File References** - Updated all asset paths in templates and AssetManager
+
 ### 1.2.3
 
 - **FIX: Dynamic Block Fields** - Fixed taxonomy, post_type, and data_object fields not rendering correctly in dynamically added blocks
@@ -505,8 +512,8 @@ GNU General Public License for more details.
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
+**Last Updated:** 2026-01-06
+**Plugin Version:** 1.2.4
 **Maintained By:** Silvestar Bistrović
 
 Made with ❤️ by [Silvestar Bistrovic](https://www.silvestar.codes)

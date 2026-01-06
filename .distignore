@@ -50,11 +50,9 @@ tests
 phpunit.xml
 .phpunit.result.cache
 
-# Screenshots and assets for wp.org
-# These are usually uploaded separately to the assets folder
-# Exclude all images EXCEPT icon-256x256.png (used in admin UI)
-banner-*.png
-screenshot-*.png
-icon-128x128.png
+# WordPress.org specific assets (uploaded separately to SVN assets/ folder)
+# Exclude banners and small icon, but keep screenshots (used in docs) and icon-256x256.png (used in admin UI)
+assets/banner-*.png
+assets/icon-128x128.png
 *.jpg
 *.gif
