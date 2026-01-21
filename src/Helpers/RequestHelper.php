@@ -76,12 +76,14 @@ class RequestHelper {
    */
   public static function postRaw($key, $default = '') {
     // Check if POST data exists and is set
-    // Using filter_input for proper superglobal access without PHPCS warnings
-    $value = filter_input(INPUT_POST, $key, FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY | FILTER_NULL_ON_FAILURE);
+    // Using FILTER_UNSAFE_RAW to preserve raw data for schema-aware sanitization later
+    // FILTER_SANITIZE_FULL_SPECIAL_CHARS was encoding HTML entities before sanitize_field_data()
+    // could identify code fields and preserve them properly
+    $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW, FILTER_REQUIRE_ARRAY | FILTER_NULL_ON_FAILURE);
 
     if ($value === null) {
       // Try as non-array
-      $value = filter_input(INPUT_POST, $key, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+      $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW);
     }
 
     if ($value === null || $value === false) {

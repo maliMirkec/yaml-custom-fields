@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: A WordPress plugin for managing YAML frontmatter schemas in theme templates
- * Version: 1.2.4
+ * Version: 1.2.5
  * Author: Silvestar Bistrović
  * Author URI: https://www.silvestar.codes
  * Author Email: me@silvestar.codes

@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -146,6 +146,9 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 
 == Changelog ==
 
+= 1.2.5 =
+* **FIX: Code Field Sanitization** - Changed filter from FILTER_SANITIZE_FULL_SPECIAL_CHARS to FILTER_UNSAFE_RAW in postRaw() to preserve raw data for schema-aware sanitization, fixing HTML entities being encoded before code fields could be properly identified
+
 = 1.2.4 =
 * **REFACTOR: Assets Folder Structure** - Reorganized assets for WordPress.org compliance
 * **IMPROVED: File Organization** - Separated admin assets (CSS/JS) into 'admin-assets' folder
@@ -217,6 +220,9 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 * Copy snippet buttons for all field types with complete function signatures
 
 == Upgrade Notice ==
+
+= 1.2.5 =
+Bug fix for code field sanitization. Code fields now preserve raw content correctly without premature HTML entity encoding.
 
 = 1.2.4 =
 Asset folder reorganization for better WordPress.org compliance. All functionality remains unchanged.
