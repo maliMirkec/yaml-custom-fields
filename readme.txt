@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -146,6 +146,11 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 
 == Changelog ==
 
+= 1.2.6 =
+* **FIX: Code Field HTML Preservation** - Code fields now use base64 encoding with a marker prefix to preserve HTML/JavaScript/CSS code exactly as entered, preventing WordPress sanitization from stripping tags
+* **FIX: Code Field Re-save Protection** - Already-encoded code fields are now preserved on re-save even if schema detection fails, preventing data loss on page refresh
+* **NEW: Auto-decode on Frontend** - Code field values are automatically decoded when retrieved via yaml_cf_get_field() and related functions
+
 = 1.2.5 =
 * **FIX: Code Field Sanitization** - Changed filter from FILTER_SANITIZE_FULL_SPECIAL_CHARS to FILTER_UNSAFE_RAW in postRaw() to preserve raw data for schema-aware sanitization, fixing HTML entities being encoded before code fields could be properly identified
 
@@ -220,6 +225,9 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 * Copy snippet buttons for all field types with complete function signatures
 
 == Upgrade Notice ==
+
+= 1.2.6 =
+Important fix for code fields. HTML/JavaScript/CSS code is now properly preserved using base64 encoding. Re-save any code fields that previously had content stripped.
 
 = 1.2.5 =
 Bug fix for code field sanitization. Code fields now preserve raw content correctly without premature HTML entity encoding.

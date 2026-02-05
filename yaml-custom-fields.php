@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: A WordPress plugin for managing YAML frontmatter schemas in theme templates
- * Version: 1.2.5
+ * Version: 1.2.6
  * Author: Silvestar Bistrović
  * Author URI: https://www.silvestar.codes
  * Author Email: me@silvestar.codes
@@ -1074,6 +1074,10 @@ class YAML_Custom_Fields {
 
       return $sanitized;
     } elseif (is_string($data)) {
+      // Preserve already-encoded code fields (in case schema detection fails on re-save)
+      if (strpos($data, self::CODE_FIELD_MARKER) === 0) {
+        return $data;
+      }
       // Check if this is a code field
       if ($schema && $field_name && $this->is_code_field($schema, $field_name)) {
         return $this->sanitize_code_field($data, $schema, $field_name);
@@ -1130,6 +1134,17 @@ class YAML_Custom_Fields {
     }
 
     return false;
+  }
+
+  /**
+   * Public wrapper for is_code_field to allow external access.
+   *
+   * @param array $schema The schema to check.
+   * @param string $field_name The field name to check.
+   * @return bool True if the field is a code field.
+   */
+  public function is_code_field_public($schema, $field_name) {
+    return $this->is_code_field($schema, $field_name);
   }
 
   private function is_rich_text_field($schema, $field_name) {
@@ -1194,40 +1209,41 @@ class YAML_Custom_Fields {
     return 'html';
   }
 
+  // Marker prefix for encoded code fields
+  const CODE_FIELD_MARKER = '__YAMLCF_B64__';
+
   private function sanitize_code_field($code, $schema, $field_name) {
-    $language = $this->get_code_field_language($schema, $field_name);
+    if (empty($code)) {
+      return '';
+    }
 
-    // For users with unfiltered_html capability (administrators), allow raw code
-    if (current_user_can('unfiltered_html')) {
-      switch (strtolower($language)) {
-        case 'css':
-          // Still sanitize CSS to remove dangerous patterns even for admins
-          return $this->sanitize_css_code($code);
+    // Base64 encode with marker prefix to identify code fields
+    return self::CODE_FIELD_MARKER . base64_encode($code);
+  }
 
-        case 'javascript':
-        case 'js':
-        case 'html':
-        default:
-          // For administrators, preserve code exactly as entered
-          return $code;
+  /**
+   * Decode a code field value that may be base64 encoded.
+   * Handles backward compatibility with non-encoded values.
+   *
+   * @param string $value The value to decode.
+   * @return string The decoded value.
+   */
+  public function decode_code_field($value) {
+    if (empty($value) || !is_string($value)) {
+      return $value === null ? '' : $value;
+    }
+
+    // Check for marker prefix (new format)
+    if (strpos($value, self::CODE_FIELD_MARKER) === 0) {
+      $encoded = substr($value, strlen(self::CODE_FIELD_MARKER));
+      $decoded = base64_decode($encoded, true);
+      if ($decoded !== false) {
+        return $decoded;
       }
     }
 
-    // For non-administrators, be more restrictive
-    switch (strtolower($language)) {
-      case 'css':
-        return $this->sanitize_css_code($code);
-
-      case 'javascript':
-      case 'js':
-        // Strip all tags for non-admins
-        return wp_strip_all_tags($code);
-
-      case 'html':
-      default:
-        // For HTML, use wp_kses_post which allows safe HTML tags
-        return wp_kses_post($code);
-    }
+    // Return as-is if not encoded (legacy data or non-code fields)
+    return $value;
   }
 
   private function sanitize_css_code($css) {
@@ -2194,6 +2210,8 @@ class YAML_Custom_Fields {
         case 'code':
           $options = isset($field['options']) ? $field['options'] : [];
           $language = isset($options['language']) ? $options['language'] : 'html';
+          // Decode base64 encoded code field value for display
+          $field_value = $this->decode_code_field($field_value);
           echo '<textarea name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($field_value) . '</textarea>';
           break;
 
@@ -3730,9 +3748,17 @@ add_action('plugins_loaded', 'yaml_cf_init_new_architecture', 11);
  *   }
  */
 function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
+  $value = null;
+  $schema = null;
+  $plugin = null;
+  $template = null;
+  $post = null;
+
   // If context data is provided, search within that array
   if (is_array($context_data)) {
-    return isset($context_data[$field_name]) ? $context_data[$field_name] : null;
+    $value = isset($context_data[$field_name]) ? $context_data[$field_name] : null;
+    // For context data, we can't easily get the schema, so use helper function for decoding
+    return yaml_cf_maybe_decode_code_field($value);
   }
 
   // Handle partials
@@ -3741,7 +3767,15 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
     $partial_data = get_option('yaml_cf_partial_data', []);
 
     if (isset($partial_data[$partial_file][$field_name])) {
-      return $partial_data[$partial_file][$field_name];
+      $value = $partial_data[$partial_file][$field_name];
+
+      // Get schema for partial to check if field is code type
+      $partial_schemas = get_option('yaml_cf_partial_schemas', []);
+      if (isset($partial_schemas[$partial_file])) {
+        $schema = $partial_schemas[$partial_file];
+      }
+
+      return yaml_cf_auto_decode_if_code_field($value, $schema, $field_name);
     }
 
     return null;
@@ -3761,58 +3795,104 @@ function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
     $data = [];
   }
 
+  // Get post, plugin, and template for schema lookup
+  $post = get_post($post_id);
+  if ($post) {
+    $plugin = YAML_Custom_Fields::get_instance();
+    $template = $plugin->get_template_for_post($post);
+
+    // Get schema for this template
+    $schemas = get_option('yaml_cf_schemas', []);
+    if (isset($schemas[$template])) {
+      $schema = $schemas[$template];
+    }
+  }
+
   // Check if template global is enabled for this specific field
   $use_template_global_fields = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
   if (is_array($use_template_global_fields) && isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1') {
-    // Get the template for this post
-    $post = get_post($post_id);
-    if ($post) {
-      $plugin = YAML_Custom_Fields::get_instance();
-      $template = $plugin->get_template_for_post($post);
-
+    if ($post && $template) {
       // Get template global data
       $template_global_data_array = get_option('yaml_cf_template_global_data', []);
       if (isset($template_global_data_array[$template][$field_name])) {
-        return $template_global_data_array[$template][$field_name];
+        $value = $template_global_data_array[$template][$field_name];
+        return yaml_cf_auto_decode_if_code_field($value, $schema, $field_name);
       }
     }
   }
 
   // Check for site-wide global data
   // (Only if the template has site-wide global enabled)
-  $post = $post ?? get_post($post_id);
-  if ($post) {
-    $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
-    $template = $template ?? $plugin->get_template_for_post($post);
-
+  if ($post && $template) {
     $template_settings = get_option('yaml_cf_template_settings', []);
     $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
 
     if ($use_global) {
       $global_data = get_option('yaml_cf_global_data', []);
       if (is_array($global_data) && isset($global_data[$field_name])) {
-        return $global_data[$field_name];
+        $value = $global_data[$field_name];
+        return yaml_cf_auto_decode_if_code_field($value, $schema, $field_name);
       }
     }
   }
 
   // Finally, check post-specific data
   if (isset($data[$field_name])) {
-    return $data[$field_name];
+    $value = $data[$field_name];
+    return yaml_cf_auto_decode_if_code_field($value, $schema, $field_name);
   }
 
   // Fallback: check template global data for fields defined only in template global schema
-  if ($post) {
-    $plugin = $plugin ?? YAML_Custom_Fields::get_instance();
-    $template = $template ?? $plugin->get_template_for_post($post);
-
+  if ($post && $template) {
     $template_global_data_array = get_option('yaml_cf_template_global_data', []);
     if (isset($template_global_data_array[$template][$field_name])) {
-      return $template_global_data_array[$template][$field_name];
+      $value = $template_global_data_array[$template][$field_name];
+      return yaml_cf_auto_decode_if_code_field($value, $schema, $field_name);
     }
   }
 
   return null;
+}
+
+/**
+ * Helper function to decode a value if it's a code field.
+ * Always attempts to decode since only code fields are base64 encoded.
+ *
+ * @param mixed $value The field value.
+ * @param array|null $schema The schema for this template/partial (unused, kept for compatibility).
+ * @param string $field_name The field name (unused, kept for compatibility).
+ * @return mixed The decoded value if base64 encoded, otherwise the original value.
+ */
+function yaml_cf_auto_decode_if_code_field($value, $schema, $field_name) {
+  // Always try to decode - only code fields are base64 encoded,
+  // and the decode function safely returns the original if not encoded
+  return yaml_cf_maybe_decode_code_field($value);
+}
+
+/**
+ * Helper function to decode a potentially base64-encoded code field value.
+ * Only decodes values with the YAMLCF marker prefix.
+ * Safe to call on any value - returns the original if not a marked code field.
+ *
+ * @param mixed $value The value to decode.
+ * @return mixed The decoded value if it's a marked code field, otherwise the original value.
+ */
+function yaml_cf_maybe_decode_code_field($value) {
+  if (empty($value) || !is_string($value)) {
+    return $value;
+  }
+
+  // Only decode values with the marker prefix
+  $marker = YAML_Custom_Fields::CODE_FIELD_MARKER;
+  if (strpos($value, $marker) === 0) {
+    $encoded = substr($value, strlen($marker));
+    $decoded = base64_decode($encoded, true);
+    if ($decoded !== false) {
+      return $decoded;
+    }
+  }
+
+  return $value;
 }
 
 /**
@@ -3832,7 +3912,8 @@ function yaml_cf_get_fields($post_id = null) {
     $partial_file = str_replace('partial:', '', $post_id);
     $partial_data = get_option('yaml_cf_partial_data', []);
 
-    return isset($partial_data[$partial_file]) ? $partial_data[$partial_file] : [];
+    $data = isset($partial_data[$partial_file]) ? $partial_data[$partial_file] : [];
+    return yaml_cf_decode_all_code_fields($data);
   }
 
   // Handle post/page data
@@ -3855,7 +3936,7 @@ function yaml_cf_get_fields($post_id = null) {
   // Get post and template info
   $post = get_post($post_id);
   if (!$post) {
-    return $merged_data;
+    return yaml_cf_decode_all_code_fields($merged_data);
   }
 
   $plugin = YAML_Custom_Fields::get_instance();
@@ -3888,7 +3969,30 @@ function yaml_cf_get_fields($post_id = null) {
   // Remove internal keys
   unset($merged_data['_template_global_override']);
 
-  return $merged_data;
+  // Decode any base64-encoded code fields
+  return yaml_cf_decode_all_code_fields($merged_data);
+}
+
+/**
+ * Recursively decode all base64-encoded code field values in an array.
+ *
+ * @param mixed $data The data to process.
+ * @return mixed The data with code fields decoded.
+ */
+function yaml_cf_decode_all_code_fields($data) {
+  if (!is_array($data)) {
+    return yaml_cf_maybe_decode_code_field($data);
+  }
+
+  foreach ($data as $key => $value) {
+    if (is_array($value)) {
+      $data[$key] = yaml_cf_decode_all_code_fields($value);
+    } else if (is_string($value)) {
+      $data[$key] = yaml_cf_maybe_decode_code_field($value);
+    }
+  }
+
+  return $data;
 }
 
 /**
@@ -3916,7 +4020,7 @@ function yaml_cf_get_global_field($field_name) {
   $global_data = get_option('yaml_cf_global_data', []);
 
   if (is_array($global_data) && isset($global_data[$field_name])) {
-    return $global_data[$field_name];
+    return yaml_cf_maybe_decode_code_field($global_data[$field_name]);
   }
 
   return null;
@@ -3932,7 +4036,8 @@ function yaml_cf_get_global_field($field_name) {
  */
 function yaml_cf_get_global_fields() {
   $global_data = get_option('yaml_cf_global_data', []);
-  return is_array($global_data) ? $global_data : [];
+  $data = is_array($global_data) ? $global_data : [];
+  return yaml_cf_decode_all_code_fields($data);
 }
 
 /**
