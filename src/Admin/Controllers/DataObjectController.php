@@ -275,8 +275,14 @@ class DataObjectController extends AdminController {
     // Get all entries
     $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
 
+    // Collect data objects for block fields that contain data_object fields
+    $data_objects = [];
+    if ($schema && isset($schema['fields'])) {
+      $data_objects = $this->collectDataObjects($schema['fields']);
+    }
+
     // Localize schema data for JavaScript
-    $this->localizeScript(['schema' => $schema]);
+    $this->localizeScript(['schema' => $schema, 'dataObjects' => $data_objects]);
 
     // Load template
     $this->loadTemplate('manage-data-object-entries-page.php', compact(
@@ -293,5 +299,63 @@ class DataObjectController extends AdminController {
   public function render() {
     // Default to list view
     $this->renderList();
+  }
+
+  /**
+   * Recursively collect data object entries for all data_object fields in the schema
+   *
+   * @param array $fields Schema fields array
+   * @return array Associative array of object_type => formatted entries
+   */
+  private function collectDataObjects($fields) {
+    $data_objects = [];
+
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'data_object') {
+        $object_type = isset($field['options']['object_type']) ? $field['options']['object_type'] : '';
+
+        if (!empty($object_type) && !isset($data_objects[$object_type])) {
+          $entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+          $data_types = get_option('yaml_cf_data_object_types', []);
+
+          if (isset($data_types[$object_type]) && !empty($entries)) {
+            $object_schema_yaml = $data_types[$object_type]['schema'];
+            $object_schema = $this->schemaStorage->parseSchema($object_schema_yaml);
+            $label_field = '';
+
+            if (!empty($object_schema['fields'])) {
+              $label_field = $object_schema['fields'][0]['name'];
+            }
+
+            $formatted_entries = [];
+            foreach ($entries as $entry_id => $entry_data) {
+              $entry_label = isset($entry_data[$label_field]) ? $entry_data[$label_field] : $entry_id;
+              if (is_array($entry_label)) {
+                $entry_label = $entry_id;
+              }
+              $formatted_entries[] = ['id' => $entry_id, 'label' => $entry_label];
+            }
+
+            $data_objects[$object_type] = $formatted_entries;
+          }
+        }
+      }
+
+      // Recursively check block fields
+      if (isset($field['type']) && $field['type'] === 'block' && isset($field['blocks'])) {
+        foreach ($field['blocks'] as $block) {
+          if (isset($block['fields'])) {
+            $data_objects = array_merge($data_objects, $this->collectDataObjects($block['fields']));
+          }
+        }
+      }
+
+      // Recursively check object fields
+      if (isset($field['type']) && $field['type'] === 'object' && isset($field['fields'])) {
+        $data_objects = array_merge($data_objects, $this->collectDataObjects($field['fields']));
+      }
+    }
+
+    return $data_objects;
   }
 }

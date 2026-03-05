@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: A WordPress plugin for managing YAML frontmatter schemas in theme templates
- * Version: 1.2.6
+ * Version: 1.2.7
  * Author: Silvestar Bistrović
  * Author URI: https://www.silvestar.codes
  * Author Email: me@silvestar.codes
@@ -3461,7 +3461,8 @@ class YAML_Custom_Fields {
 
     // Build a map of attachment field names from schema
     $attachment_fields = [];
-    if ($schema && isset($schema['fields']) && is_array($schema['fields'])) {
+    $has_schema = $schema && isset($schema['fields']) && is_array($schema['fields']);
+    if ($has_schema) {
       $this->build_attachment_field_map($schema['fields'], $attachment_fields);
     }
 
@@ -3473,8 +3474,10 @@ class YAML_Custom_Fields {
         // Recursively clean nested arrays
         $data[$key] = $this->validate_and_clean_attachment_data($value, $schema, $field_path);
       } elseif (is_numeric($value) && intval($value) > 0) {
-        // Only validate if this field is an image/file field according to schema
-        $is_attachment_field = empty($attachment_fields) || in_array($key, $attachment_fields) || in_array($field_path, $attachment_fields);
+        // Only validate if this field is an image/file field according to schema.
+        // If no schema is available, fall back to checking all numeric values (conservative).
+        // If schema IS available but has no image/file fields, $attachment_fields is empty and nothing should be cleared.
+        $is_attachment_field = (!$has_schema) || in_array($key, $attachment_fields) || in_array($field_path, $attachment_fields);
 
         if ($is_attachment_field) {
           // Check if this might be an attachment ID
@@ -3601,7 +3604,8 @@ class YAML_Custom_Fields {
 
       // Clean attachment data in entries
       $cleaned_entries = [];
-      $schema = isset($type_data['schema']) ? $type_data['schema'] : null;
+      $schema_yaml = isset($type_data['schema']) ? $type_data['schema'] : null;
+      $schema = $schema_yaml ? $this->parse_yaml_schema($schema_yaml) : null;
       foreach ($entries as $entry_id => $entry_data) {
         $cleaned_entries[$entry_id] = $this->validate_and_clean_attachment_data($entry_data, $schema);
       }
@@ -3681,9 +3685,10 @@ class YAML_Custom_Fields {
       // Import entries
       if (isset($type_data['entries']) && is_array($type_data['entries'])) {
         $cleaned_entries = [];
+        $import_schema = isset($type_data['schema']) ? $this->parse_yaml_schema($type_data['schema']) : null;
         foreach ($type_data['entries'] as $entry_id => $entry_data) {
           // Clean attachment data
-          $cleaned_entries[$entry_id] = $this->validate_and_clean_attachment_data($entry_data);
+          $cleaned_entries[$entry_id] = $this->validate_and_clean_attachment_data($entry_data, $import_schema);
           $entries_imported++;
         }
 

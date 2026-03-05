@@ -72,6 +72,7 @@ class AssetManager {
     // Get current template and schema for post edit screens
     $schema_data = null;
     $taxonomy_terms = [];
+    $data_objects = [];
     $post_id = RequestHelper::getParamInt('post', 0);
 
     if ($is_post_edit && $post_id) {
@@ -88,6 +89,7 @@ class AssetManager {
           // Collect taxonomy terms for all taxonomy fields in the schema
           if ($schema_data && isset($schema_data['fields'])) {
             $taxonomy_terms = $this->collectTaxonomyTerms($schema_data['fields']);
+            $data_objects = $this->collectDataObjects($schema_data['fields']);
           }
         }
       }
@@ -125,6 +127,7 @@ class AssetManager {
 
       if ($admin_schema && isset($admin_schema['fields'])) {
         $taxonomy_terms = $this->collectTaxonomyTerms($admin_schema['fields']);
+        $data_objects = $this->collectDataObjects($admin_schema['fields']);
       }
     }
 
@@ -133,7 +136,8 @@ class AssetManager {
       'admin_url' => admin_url(),
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
       'schema' => $schema_data,
-      'taxonomyTerms' => $taxonomy_terms
+      'taxonomyTerms' => $taxonomy_terms,
+      'dataObjects' => $data_objects
     ]);
 
     // Page-specific conditional enqueuing
@@ -216,5 +220,63 @@ class AssetManager {
     }
 
     return $taxonomy_terms;
+  }
+
+  /**
+   * Recursively collect data object entries for all data_object fields in the schema
+   *
+   * @param array $fields Schema fields array
+   * @return array Associative array of object_type => formatted entries
+   */
+  private function collectDataObjects($fields) {
+    $data_objects = [];
+
+    foreach ($fields as $field) {
+      if (isset($field['type']) && $field['type'] === 'data_object') {
+        $object_type = isset($field['options']['object_type']) ? $field['options']['object_type'] : '';
+
+        if (!empty($object_type) && !isset($data_objects[$object_type])) {
+          $entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+          $data_types = get_option('yaml_cf_data_object_types', []);
+
+          if (isset($data_types[$object_type]) && !empty($entries)) {
+            $object_schema_yaml = $data_types[$object_type]['schema'];
+            $object_schema = $this->schemaParser->parse($object_schema_yaml);
+            $label_field = '';
+
+            if (!empty($object_schema['fields'])) {
+              $label_field = $object_schema['fields'][0]['name'];
+            }
+
+            $formatted_entries = [];
+            foreach ($entries as $entry_id => $entry_data) {
+              $entry_label = isset($entry_data[$label_field]) ? $entry_data[$label_field] : $entry_id;
+              if (is_array($entry_label)) {
+                $entry_label = $entry_id;
+              }
+              $formatted_entries[] = ['id' => $entry_id, 'label' => $entry_label];
+            }
+
+            $data_objects[$object_type] = $formatted_entries;
+          }
+        }
+      }
+
+      // Recursively check block fields
+      if (isset($field['type']) && $field['type'] === 'block' && isset($field['blocks'])) {
+        foreach ($field['blocks'] as $block) {
+          if (isset($block['fields'])) {
+            $data_objects = array_merge($data_objects, $this->collectDataObjects($block['fields']));
+          }
+        }
+      }
+
+      // Recursively check object fields
+      if (isset($field['type']) && $field['type'] === 'object' && isset($field['fields'])) {
+        $data_objects = array_merge($data_objects, $this->collectDataObjects($field['fields']));
+      }
+    }
+
+    return $data_objects;
   }
 }

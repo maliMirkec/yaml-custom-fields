@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,11 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 8. Documentation page with comprehensive guides and examples
 
 == Changelog ==
+
+= 1.2.7 =
+* **FIX: Data Object Fields in Blocks/Objects** - Fixed data_object fields not rendering correctly when nested inside block or object fields by adding recursive data object collection in AssetManager and DataObjectController
+* **FIX: Attachment Data Validation** - Fixed attachment validation logic to correctly handle the case where a schema exists but has no image/file fields, preventing numeric values from being incorrectly cleared
+* **FIX: Import Schema Parsing** - Fixed data object import to parse YAML schema before validating attachment data, ensuring attachment IDs are preserved correctly during import
 
 = 1.2.6 =
 * **FIX: Code Field HTML Preservation** - Code fields now use base64 encoding with a marker prefix to preserve HTML/JavaScript/CSS code exactly as entered, preventing WordPress sanitization from stripping tags
