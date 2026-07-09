@@ -2,9 +2,9 @@
 Contributors: starbist
 Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,9 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 8. Documentation page with comprehensive guides and examples
 
 == Changelog ==
+
+= 1.2.9 =
+* **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"
 
 = 1.2.8 =
 * **NEW: Multiple File Uploads** - File fields now support `list: true` to attach multiple files, with a dedicated admin UI for adding and removing files
