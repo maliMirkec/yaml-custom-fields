@@ -4,7 +4,7 @@ Tags: yaml, frontmatter, custom-fields, meta-fields, schema
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 8.1
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -145,6 +145,11 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 8. Documentation page with comprehensive guides and examples
 
 == Changelog ==
+
+= 1.2.8 =
+* **NEW: Multiple File Uploads** - File fields now support `list: true` to attach multiple files, with a dedicated admin UI for adding and removing files
+* **UPDATED: ycf_get_file() for Lists** - When `list: true` is set, `ycf_get_file()` returns an array of file-data arrays instead of a single one
+* **IMPROVED: Attachment Validation** - Validation now checks each attachment ID in file/image list fields individually
 
 = 1.2.7 =
 * **FIX: Data Object Fields in Blocks/Objects** - Fixed data_object fields not rendering correctly when nested inside block or object fields by adding recursive data object collection in AssetManager and DataObjectController
