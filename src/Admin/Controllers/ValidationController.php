@@ -34,10 +34,14 @@ class ValidationController extends AdminController {
       return;
     }
 
+    $this->checkPermission();
+
     // Get all posts with custom field data and validate them
-    // Try to get from cache first
+    // Try to get from cache first. A transient (rather than wp_cache_*) is used
+    // so this actually persists across requests on sites without a persistent
+    // object cache plugin, which is the majority of WordPress installs.
     $cache_key = 'yaml_cf_validation_posts';
-    $posts = wp_cache_get($cache_key, 'yaml-custom-fields');
+    $posts = get_transient($cache_key);
 
     if (false === $posts) {
       // Query all posts without meta_key to avoid slow query warnings
@@ -64,7 +68,7 @@ class ValidationController extends AdminController {
       }
 
       // Cache for 5 minutes
-      wp_cache_set($cache_key, $posts, 'yaml-custom-fields', 300);
+      set_transient($cache_key, $posts, 300);
     }
 
     $this->validationResults = [];

@@ -9,6 +9,11 @@ if (!defined('ABSPATH')) {
 
 /**
  * Exports data object types and entries
+ *
+ * SECURITY: this class performs no nonce or capability checks of its own -
+ * it has no access to the request. Whatever caller wires this up to an
+ * AJAX/admin-post action MUST verify check_ajax_referer()/wp_verify_nonce()
+ * and current_user_can('manage_options') before calling download().
  */
 class DataObjectExporter {
   private $attachmentValidator;

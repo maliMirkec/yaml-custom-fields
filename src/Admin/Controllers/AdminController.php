@@ -29,9 +29,15 @@ abstract class AdminController {
    * @param array $data Data to extract for template
    */
   protected function loadTemplate($template_name, $data = []) {
-    // Extract data for use in template
-    if (!empty($data)) {
-      extract($data, EXTR_SKIP);
+    // Make $data's keys available as local variables to the included
+    // template, without extract()'s implicit dynamic-variable behavior.
+    // Guard the function's own local variable names so a data key can't
+    // clobber them (mirrors extract()'s EXTR_SKIP).
+    foreach ($data as $variable_name => $variable_value) {
+      if (in_array($variable_name, ['template_name', 'data', 'template_path', 'variable_name', 'variable_value'], true)) {
+        continue;
+      }
+      $$variable_name = $variable_value;
     }
 
     $template_path = YAML_CF_PLUGIN_DIR . 'templates/' . $template_name;

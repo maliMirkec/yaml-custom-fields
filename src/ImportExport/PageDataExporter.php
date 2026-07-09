@@ -9,6 +9,12 @@ if (!defined('ABSPATH')) {
 
 /**
  * Exports page/post custom field data
+ *
+ * SECURITY: this class performs no nonce or capability checks of its own -
+ * it has no access to the request. Whatever caller wires this up to an
+ * AJAX/admin-post action MUST verify check_ajax_referer()/wp_verify_nonce()
+ * and current_user_can('manage_options') (and, for exportPost(), that the
+ * current user can edit the specific $post_id) before calling download().
  */
 class PageDataExporter {
   /**

@@ -26,16 +26,6 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
   return; // Stop loading the plugin
 }
 
-// Symfony 6.4 is not compatible with PHP 8.4+ (use 8.1, 8.2, or 8.3)
-if (version_compare(PHP_VERSION, '8.4.0', '>=')) {
-  add_action('admin_notices', function() {
-    echo '<div class="notice notice-error"><p>';
-    echo '<strong>YAML Custom Fields:</strong> This plugin is not compatible with PHP 8.4. Please use PHP 8.1, 8.2, or 8.3. <a href="https://github.com/maliMirkec/yaml-custom-fields/issues" target="_blank">Report compatibility issues</a>.';
-    echo '</p></div>';
-  });
-  return; // Stop loading the plugin
-}
-
 // Load scoped Composer dependencies to avoid conflicts with other plugins
 if (file_exists(__DIR__ . '/build/vendor/scoper-autoload.php')) {
   require_once __DIR__ . '/build/vendor/scoper-autoload.php';
@@ -655,7 +645,6 @@ class YAML_Custom_Fields {
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $tmp_file_path);
-        finfo_close($finfo);
 
         // Accept both application/json and text/plain (some systems report JSON as text/plain)
         $allowed_mimes = ['application/json', 'text/plain'];
@@ -727,7 +716,9 @@ class YAML_Custom_Fields {
         exit;
       }
 
-      // Read uploaded file content using WordPress filesystem API
+      // Read the uploaded file's content. The path is WordPress-generated
+      // (via wp_handle_upload() above) and the file is deleted immediately
+      // after, so a raw file_get_contents() read is safe here.
       $json_data = file_get_contents($uploaded_file['file']);
 
       // Clean up - delete the uploaded file after reading
@@ -849,7 +840,7 @@ class YAML_Custom_Fields {
 
       $schemas = get_option('yaml_cf_schemas', []);
       $schemas[$template] = $schema;
-      update_option('yaml_cf_schemas', $schemas);
+      update_option('yaml_cf_schemas', $schemas, false);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_schema_' . get_current_user_id());
@@ -895,7 +886,7 @@ class YAML_Custom_Fields {
 
       $partial_data = get_option('yaml_cf_partial_data', []);
       $partial_data[$template] = $field_data;
-      update_option('yaml_cf_partial_data', $partial_data);
+      update_option('yaml_cf_partial_data', $partial_data, false);
 
       // Clear caches
       $this->clear_data_caches();
@@ -936,7 +927,7 @@ class YAML_Custom_Fields {
         }
       }
 
-      update_option('yaml_cf_global_schema', $global_schema);
+      update_option('yaml_cf_global_schema', $global_schema, false);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
@@ -977,7 +968,7 @@ class YAML_Custom_Fields {
         $this->maybe_flag_code_field_permission_denied();
       }
 
-      update_option('yaml_cf_global_data', $field_data);
+      update_option('yaml_cf_global_data', $field_data, false);
 
       // Clear caches
       $this->clear_data_caches();
@@ -1021,7 +1012,7 @@ class YAML_Custom_Fields {
 
       $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
       $template_global_schemas[$template] = $template_global_schema;
-      update_option('yaml_cf_template_global_schemas', $template_global_schemas);
+      update_option('yaml_cf_template_global_schemas', $template_global_schemas, false);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
@@ -1067,7 +1058,7 @@ class YAML_Custom_Fields {
 
       $template_global_data = get_option('yaml_cf_template_global_data', []);
       $template_global_data[$template] = $field_data;
-      update_option('yaml_cf_template_global_data', $template_global_data);
+      update_option('yaml_cf_template_global_data', $template_global_data, false);
 
       // Clear caches
       $this->clear_data_caches();
@@ -1133,8 +1124,14 @@ class YAML_Custom_Fields {
       $is_data_object = $field_def && isset($field_def['type']) && $field_def['type'] === 'data_object';
       $is_file_list = $field_def && isset($field_def['type']) && $field_def['type'] === 'file' && isset($field_def['list']) && $field_def['list'];
       if ((($is_taxonomy || $is_data_object) && $is_multiple) || $is_file_list) {
-        $sanitized = array_filter($sanitized, function($value) {
-          return $value !== '';
+        $sanitized = array_filter($sanitized, function($value) use ($is_file_list) {
+          if ($value === '') {
+            return false;
+          }
+          // For file lists, also drop IDs that aren't real attachments
+          // (list items are recursed into by array index, not field name, so
+          // the single-field attachment check below never sees them directly)
+          return !$is_file_list || $this->is_valid_attachment_id($value);
         });
         // Re-index array to avoid gaps in numeric keys
         $sanitized = array_values($sanitized);
@@ -1154,10 +1151,67 @@ class YAML_Custom_Fields {
       if ($schema && $field_name && $this->is_rich_text_field($schema, $field_name)) {
         return wp_kses_post($data);
       }
+      // Check if this is a single file/image field - only store the value if
+      // it's a real attachment ID, so arbitrary/other-post attachment IDs
+      // can't be submitted through the field
+      if ($data !== '' && $schema && $field_name && $this->is_attachment_field($schema, $field_name)) {
+        return $this->is_valid_attachment_id($data) ? (string) intval($data) : '';
+      }
       // Use sanitize_textarea_field to preserve newlines and structure
       return sanitize_textarea_field($data);
     }
     return $data;
+  }
+
+  /**
+   * Check whether a value is the ID of an actual attachment post.
+   *
+   * @param mixed $value Field value to check.
+   * @return bool True if $value is a positive numeric ID of a real attachment.
+   */
+  private function is_valid_attachment_id($value) {
+    if (!is_numeric($value) || intval($value) <= 0) {
+      return false;
+    }
+    $attachment = get_post(intval($value));
+    return $attachment && $attachment->post_type === 'attachment';
+  }
+
+  /**
+   * Check if a field is a single-value file or image field.
+   *
+   * @param array $schema Schema to check.
+   * @param string $field_name Field name to check.
+   * @return bool True if the field is of type 'file' or 'image'.
+   */
+  private function is_attachment_field($schema, $field_name) {
+    if (!isset($schema['fields']) || !is_array($schema['fields'])) {
+      return false;
+    }
+
+    foreach ($schema['fields'] as $field) {
+      if (isset($field['name']) && $field['name'] === $field_name && isset($field['type']) && in_array($field['type'], ['image', 'file'], true)) {
+        return true;
+      }
+      // Check nested fields in objects
+      if (isset($field['fields']) && is_array($field['fields'])) {
+        if ($this->is_attachment_field(['fields' => $field['fields']], $field_name)) {
+          return true;
+        }
+      }
+      // Check blocks
+      if (isset($field['blocks']) && is_array($field['blocks'])) {
+        foreach ($field['blocks'] as $block) {
+          if (isset($block['fields']) && is_array($block['fields'])) {
+            if ($this->is_attachment_field(['fields' => $block['fields']], $field_name)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   private function get_field_definition($schema, $field_name) {
@@ -1552,7 +1606,7 @@ class YAML_Custom_Fields {
     $settings = get_option('yaml_cf_template_settings', []);
     $settings[$template] = $enabled;
 
-    update_option('yaml_cf_template_settings', $settings);
+    update_option('yaml_cf_template_settings', $settings, false);
 
     // Check if schema exists for this template
     $schemas = get_option('yaml_cf_schemas', []);
@@ -1609,7 +1663,7 @@ class YAML_Custom_Fields {
     $settings = get_option('yaml_cf_template_settings', []);
     $settings[$template . '_use_global'] = $use_global;
 
-    update_option('yaml_cf_template_settings', $settings);
+    update_option('yaml_cf_template_settings', $settings, false);
 
     wp_send_json_success([
       'use_global' => $use_global
@@ -1630,7 +1684,7 @@ class YAML_Custom_Fields {
     $schemas = get_option('yaml_cf_schemas', []);
     $schemas[$template] = $schema;
 
-    update_option('yaml_cf_schemas', $schemas);
+    update_option('yaml_cf_schemas', $schemas, false);
 
     wp_send_json_success();
   }
@@ -1776,10 +1830,11 @@ class YAML_Custom_Fields {
     echo '</span>';
     echo ' | ';
 
-    // Reset All Data (simple text link)
-    echo '<a href="#" class="yaml-cf-reset-data" data-post-id="' . esc_attr($post->ID) . '" style="color: #d63638;">';
+    // Reset All Data (styled as a text link, but a real button so it's
+    // keyboard-activatable with Space and announced correctly to screen readers)
+    echo '<button type="button" class="yaml-cf-reset-data" data-post-id="' . esc_attr($post->ID) . '" style="background: none; border: none; padding: 0; margin: 0; font: inherit; cursor: pointer; color: #d63638; text-decoration: underline;">';
     echo esc_html__('Reset All Data', 'yaml-custom-fields');
-    echo '</a>';
+    echo '</button>';
 
     echo '</p>';
     echo '</div>';
@@ -2487,7 +2542,7 @@ class YAML_Custom_Fields {
             $file_ids = is_array($field_value) ? $field_value : [];
             echo '<input type="hidden" class="yaml-cf-file-list-placeholder" name="yaml_cf[' . esc_attr($field_name) . '][]" value="" />';
             echo '<div class="yaml-cf-file-list" data-field-name="' . esc_attr($field_name) . '">';
-            echo '<div class="yaml-cf-file-list-items">';
+            echo '<div class="yaml-cf-file-list-items" aria-live="polite">';
             foreach ($file_ids as $file_id) {
               $this->render_file_list_item($field_name, $file_id);
             }
@@ -2539,7 +2594,7 @@ class YAML_Custom_Fields {
 
           if ($is_list) {
             $block_values = is_array($field_value) ? $field_value : [];
-            echo '<div class="yaml-cf-block-list">';
+            echo '<div class="yaml-cf-block-list" aria-live="polite">';
 
             foreach ($block_values as $index => $block_data) {
               $this->render_block_item($field, $blocks, $block_data, $index, $block_key, $context);
@@ -2939,7 +2994,7 @@ class YAML_Custom_Fields {
             $block_file_ids = is_array($block_field_value) ? $block_field_value : [];
             echo '<input type="hidden" class="yaml-cf-file-list-placeholder" name="yaml_cf[' . esc_attr($block_field_name_path) . '][]" value=""' . esc_attr($disabled_attr) . ' />';
             echo '<div class="yaml-cf-file-list" data-field-name="' . esc_attr($block_field_name_path) . '">';
-            echo '<div class="yaml-cf-file-list-items">';
+            echo '<div class="yaml-cf-file-list-items" aria-live="polite">';
             foreach ($block_file_ids as $block_file_id) {
               $this->render_file_list_item($block_field_name_path, $block_file_id);
             }
@@ -3136,7 +3191,7 @@ class YAML_Custom_Fields {
     $partial_data[$template] = $data;
 
     // Save back to options
-    update_option('yaml_cf_partial_data', $partial_data);
+    update_option('yaml_cf_partial_data', $partial_data, false);
 
     // Clear caches
     $this->clear_data_caches();
@@ -3246,7 +3301,7 @@ class YAML_Custom_Fields {
         $existing = get_option('yaml_cf_template_settings', []);
         $settings['template_settings'] = array_merge($existing, $settings['template_settings']);
       }
-      update_option('yaml_cf_template_settings', $settings['template_settings']);
+      update_option('yaml_cf_template_settings', $settings['template_settings'], false);
     }
 
     // Import schemas
@@ -3255,7 +3310,7 @@ class YAML_Custom_Fields {
         $existing = get_option('yaml_cf_schemas', []);
         $settings['schemas'] = array_merge($existing, $settings['schemas']);
       }
-      update_option('yaml_cf_schemas', $settings['schemas']);
+      update_option('yaml_cf_schemas', $settings['schemas'], false);
     }
 
     // Import partial data
@@ -3264,7 +3319,7 @@ class YAML_Custom_Fields {
         $existing = get_option('yaml_cf_partial_data', []);
         $settings['partial_data'] = array_merge($existing, $settings['partial_data']);
       }
-      update_option('yaml_cf_partial_data', $settings['partial_data']);
+      update_option('yaml_cf_partial_data', $settings['partial_data'], false);
     }
 
     // Import template global schemas
@@ -3273,7 +3328,7 @@ class YAML_Custom_Fields {
         $existing = get_option('yaml_cf_template_global_schemas', []);
         $settings['template_global_schemas'] = array_merge($existing, $settings['template_global_schemas']);
       }
-      update_option('yaml_cf_template_global_schemas', $settings['template_global_schemas']);
+      update_option('yaml_cf_template_global_schemas', $settings['template_global_schemas'], false);
     }
 
     // Import template global data
@@ -3282,12 +3337,12 @@ class YAML_Custom_Fields {
         $existing = get_option('yaml_cf_template_global_data', []);
         $settings['template_global_data'] = array_merge($existing, $settings['template_global_data']);
       }
-      update_option('yaml_cf_template_global_data', $settings['template_global_data']);
+      update_option('yaml_cf_template_global_data', $settings['template_global_data'], false);
     }
 
     // Import global schema
     if (isset($settings['global_schema'])) {
-      update_option('yaml_cf_global_schema', $settings['global_schema']);
+      update_option('yaml_cf_global_schema', $settings['global_schema'], false);
     }
 
     // Import global data
@@ -3296,7 +3351,7 @@ class YAML_Custom_Fields {
         $existing = get_option('yaml_cf_global_data', []);
         $settings['global_data'] = array_merge($existing, $settings['global_data']);
       }
-      update_option('yaml_cf_global_data', $settings['global_data']);
+      update_option('yaml_cf_global_data', $settings['global_data'], false);
     }
 
     // Clear template cache
@@ -3321,9 +3376,11 @@ class YAML_Custom_Fields {
     }
 
     // Get all posts and pages that have custom field data
-    // Try to get from cache first
+    // Try to get from cache first. A transient (rather than wp_cache_*) is used
+    // so this actually persists across requests on sites without a persistent
+    // object cache plugin, which is the majority of WordPress installs.
     $cache_key = 'yaml_cf_posts_with_data';
-    $posts = wp_cache_get($cache_key, 'yaml-custom-fields');
+    $posts = get_transient($cache_key);
 
     if (false === $posts) {
       // Query all posts without meta_query to avoid slow query warnings
@@ -3359,7 +3416,7 @@ class YAML_Custom_Fields {
       }
 
       // Cache for 1 hour
-      wp_cache_set($cache_key, $posts, 'yaml-custom-fields', 3600);
+      set_transient($cache_key, $posts, 3600);
     }
 
     wp_send_json_success(['posts' => $posts]);
@@ -3645,10 +3702,10 @@ class YAML_Custom_Fields {
    */
   private function clear_data_caches($post_id = null) {
     // Clear validation page cache
-    wp_cache_delete('yaml_cf_validation_posts', 'yaml-custom-fields');
+    delete_transient('yaml_cf_validation_posts');
 
     // Clear export page cache
-    wp_cache_delete('yaml_cf_posts_with_data', 'yaml-custom-fields');
+    delete_transient('yaml_cf_posts_with_data');
 
     // Clear WordPress post meta cache
     // This ensures that get_post_meta() calls return fresh data
@@ -3808,14 +3865,14 @@ class YAML_Custom_Fields {
           $entries_imported++;
         }
 
-        update_option('yaml_cf_data_object_entries_' . $type_slug, $cleaned_entries);
+        update_option('yaml_cf_data_object_entries_' . $type_slug, $cleaned_entries, false);
       }
 
       $types_imported++;
     }
 
     // Save updated types
-    update_option('yaml_cf_data_object_types', $existing_types);
+    update_option('yaml_cf_data_object_types', $existing_types, false);
 
     wp_send_json_success([
       'message' => sprintf('Import complete. %d types imported with %d total entries.', $types_imported, $entries_imported),
