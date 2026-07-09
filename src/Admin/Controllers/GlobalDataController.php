@@ -19,15 +19,40 @@ class GlobalDataController extends AdminController {
     $this->schemaStorage = $schemaStorage;
   }
 
-  public function render() {
-    $this->checkPermission();
-
+  /**
+   * Redirect away from the global data page if no valid global schema exists.
+   *
+   * Must run on admin_init (see HookManager::redirectInvalidPageSelections()),
+   * NOT from inside render() itself: add_submenu_page callbacks run after
+   * admin-header.php has already sent output, so a redirect attempted from
+   * within render() cannot succeed and previously produced a blank page.
+   */
+  public function maybeRedirectInvalidSchema() {
     $global_schema_yaml = get_option('yaml_cf_global_schema', '');
     $global_schema = $this->schemaStorage->parseSchema($global_schema_yaml);
 
     if (!$global_schema || !isset($global_schema['fields'])) {
       wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-global-schema'));
       exit;
+    }
+  }
+
+  public function render() {
+    $this->checkPermission();
+
+    $global_schema_yaml = get_option('yaml_cf_global_schema', '');
+    $global_schema = $this->schemaStorage->parseSchema($global_schema_yaml);
+
+    // Normally unreachable: maybeRedirectInvalidSchema() already redirected
+    // away on admin_init if there was no valid global schema.
+    if (!$global_schema || !isset($global_schema['fields'])) {
+      $this->renderSelectionRequiredNotice(
+        __('Manage Global Data', 'yaml-custom-fields'),
+        __('No global schema has been defined yet. Define one first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-cf-edit-global-schema'),
+        __('Define Global Schema', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $global_data = get_option('yaml_cf_global_data', []);

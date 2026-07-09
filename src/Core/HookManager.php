@@ -12,6 +12,9 @@ namespace YamlCF\Core;
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use YamlCF\Helpers\RequestHelper;
+
 class HookManager {
   private $plugin;
 
@@ -30,11 +33,10 @@ class HookManager {
    * @return void
    */
   public function registerHooks() {
-    $container = $this->plugin->getContainer();
-
     // Admin menu and assets
     add_action('admin_menu', [$this, 'registerAdminMenu']);
     add_action('admin_init', [$this, 'hideSubmenuItems']);
+    add_action('admin_init', [$this, 'redirectInvalidPageSelections']);
     add_action('admin_enqueue_scripts', [$this, 'enqueueAdminAssets']);
 
     // Menu customization
@@ -42,8 +44,8 @@ class HookManager {
     add_filter('parent_file', [$this, 'setParentFile']);
     add_filter('submenu_file', [$this, 'setSubmenuFile']);
 
-    // AJAX handlers
-    $this->registerAjaxHandlers();
+    // NOTE: AJAX handlers are registered by the legacy YAML_Custom_Fields
+    // class (yaml-custom-fields.php init_hooks()), not here.
 
     // Cache clearing
     add_action('switch_theme', [$this, 'clearTemplateCache']);
@@ -78,6 +80,51 @@ class HookManager {
   public function hideSubmenuItems() {
     $menuManager = $this->plugin->get('menu_manager');
     $menuManager->hideSubmenuItems();
+  }
+
+  /**
+   * Redirect away from pages that require a valid selection (a data object
+   * type, a global schema, a template) when none is present.
+   *
+   * This MUST run on admin_init, before admin-header.php sends any output.
+   * add_submenu_page callbacks (the page render methods) run too late for a
+   * redirect to work -- WordPress core already streamed the page <head> and
+   * nav menu by the time they execute, so wp_safe_redirect() calls made from
+   * inside a render() method silently fail and the response just stops,
+   * producing a blank content area. Centralizing the checks here, keyed off
+   * the requested page slug, keeps that timing constraint in one place
+   * instead of relying on every controller to know about it.
+   */
+  public function redirectInvalidPageSelections() {
+    $page = RequestHelper::getParam('page');
+
+    switch ($page) {
+      case 'yaml-cf-manage-data-object-entries':
+        $this->plugin->get('data_object_controller')->maybeRedirectInvalidEntries();
+        break;
+
+      case 'yaml-cf-manage-global-data':
+        $this->plugin->get('global_data_controller')->maybeRedirectInvalidSchema();
+        break;
+
+      case 'yaml-cf-edit-template-global':
+        $this->plugin->get('template_global_controller')->maybeRedirectMissingTemplate();
+        break;
+
+      case 'yaml-cf-manage-template-global':
+        $templateGlobalController = $this->plugin->get('template_global_controller');
+        $templateGlobalController->maybeRedirectMissingTemplate();
+        $templateGlobalController->maybeRedirectInvalidData();
+        break;
+
+      case 'yaml-cf-edit-schema':
+        $this->plugin->get('schema_editor_controller')->maybeRedirectMissingTemplate();
+        break;
+
+      case 'yaml-cf-edit-partial':
+        $this->plugin->get('partial_controller')->maybeRedirectInvalid();
+        break;
+    }
   }
 
   /**
@@ -118,14 +165,5 @@ class HookManager {
   public function clearTemplateCache() {
     $cacheManager = $this->plugin->get('cache_manager');
     $cacheManager->clearTemplateCache();
-  }
-
-  /**
-   * Register AJAX handlers
-   */
-  private function registerAjaxHandlers() {
-    // AJAX handlers will be registered here
-    // For now, the old class continues to handle AJAX
-    // TODO: Implement AJAX handler registration
   }
 }

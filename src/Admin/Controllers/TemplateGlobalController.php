@@ -22,14 +22,38 @@ class TemplateGlobalController extends AdminController {
   }
 
   /**
+   * Redirect away from template-global pages if no template is specified.
+   *
+   * Must run on admin_init (see HookManager::redirectInvalidPageSelections()),
+   * NOT from inside a render*() method: add_submenu_page callbacks run after
+   * admin-header.php has already sent output, so a redirect attempted there
+   * cannot succeed.
+   */
+  public function maybeRedirectMissingTemplate() {
+    $template = RequestHelper::getParam('template');
+    if (!$template) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-custom-fields'));
+      exit;
+    }
+  }
+
+  /**
    * Render schema editor for template global schema
    */
   public function renderSchemaEditor() {
     $this->checkPermission();
 
     $template = RequestHelper::getParam('template');
+    // Normally unreachable: maybeRedirectMissingTemplate() already redirected
+    // away on admin_init if no template was specified.
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      $this->renderSelectionRequiredNotice(
+        __('Edit Template Global Schema', 'yaml-custom-fields'),
+        __('No template was specified. Choose a template from the main page first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-custom-fields'),
+        __('Back to Templates', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
@@ -90,14 +114,20 @@ class TemplateGlobalController extends AdminController {
   }
 
   /**
-   * Render data manager for template global data
+   * Redirect away from the template-global data manager if the referenced
+   * template has no valid template-global schema.
+   *
+   * Must run on admin_init (see HookManager::redirectInvalidPageSelections()),
+   * NOT from inside renderDataManager() itself: add_submenu_page callbacks run
+   * after admin-header.php has already sent output, so a redirect attempted
+   * from within renderDataManager() cannot succeed and previously produced a
+   * blank page.
    */
-  public function renderDataManager() {
-    $this->checkPermission();
-
+  public function maybeRedirectInvalidData() {
     $template = RequestHelper::getParam('template');
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      // Handled by maybeRedirectMissingTemplate().
+      return;
     }
 
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
@@ -107,6 +137,42 @@ class TemplateGlobalController extends AdminController {
     if (!$template_global_schema || !isset($template_global_schema['fields'])) {
       wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-template-global-schema&template=' . urlencode($template)));
       exit;
+    }
+  }
+
+  /**
+   * Render data manager for template global data
+   */
+  public function renderDataManager() {
+    $this->checkPermission();
+
+    $template = RequestHelper::getParam('template');
+    // Normally unreachable: maybeRedirectMissingTemplate() already redirected
+    // away on admin_init if no template was specified.
+    if (!$template) {
+      $this->renderSelectionRequiredNotice(
+        __('Manage Template Global Data', 'yaml-custom-fields'),
+        __('No template was specified. Choose a template from the main page first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-custom-fields'),
+        __('Back to Templates', 'yaml-custom-fields')
+      );
+      return;
+    }
+
+    $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+    $template_global_schema_yaml = isset($template_global_schemas[$template]) ? $template_global_schemas[$template] : '';
+    $template_global_schema = $this->schemaStorage->parseSchema($template_global_schema_yaml);
+
+    // Normally unreachable: maybeRedirectInvalidData() already redirected away
+    // on admin_init if there was no valid schema for this template.
+    if (!$template_global_schema || !isset($template_global_schema['fields'])) {
+      $this->renderSelectionRequiredNotice(
+        __('Manage Template Global Data', 'yaml-custom-fields'),
+        __('No template global schema has been defined for this template yet. Define one first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-cf-edit-template-global-schema&template=' . urlencode($template)),
+        __('Define Template Global Schema', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $template_global_data_all = get_option('yaml_cf_template_global_data', []);

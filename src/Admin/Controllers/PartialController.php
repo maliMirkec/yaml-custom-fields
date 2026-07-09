@@ -21,6 +21,35 @@ class PartialController extends AdminController {
     $this->schemaStorage = $schemaStorage;
   }
 
+  /**
+   * Redirect away from the partial editor if no template is specified, if the
+   * template has no schema, or if that schema is invalid.
+   *
+   * Must run on admin_init (see HookManager::redirectInvalidPageSelections()),
+   * NOT from inside render() itself: add_submenu_page callbacks run after
+   * admin-header.php has already sent output, so a redirect attempted from
+   * within render() cannot succeed.
+   */
+  public function maybeRedirectInvalid() {
+    $template = RequestHelper::getParam('template');
+    if (!$template) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-custom-fields'));
+      exit;
+    }
+
+    $schemas = get_option('yaml_cf_schemas', []);
+    if (!isset($schemas[$template])) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template)));
+      exit;
+    }
+
+    $schema = $this->schemaStorage->parseSchema($schemas[$template]);
+    if (!$schema || !isset($schema['fields'])) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template)));
+      exit;
+    }
+  }
+
   public function render() {
     $this->checkPermission();
 
@@ -29,21 +58,41 @@ class PartialController extends AdminController {
     // WordPress core doesn't require nonces for authenticated GET requests to admin pages.
     // The checkPermission() call above verifies current_user_can('manage_options').
     $template = RequestHelper::getParam('template');
+    // Normally unreachable beyond this point: maybeRedirectInvalid() already
+    // redirected away on admin_init for any of these three cases.
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      $this->renderSelectionRequiredNotice(
+        __('Edit Partial', 'yaml-custom-fields'),
+        __('No template was specified. Choose a template from the main page first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-custom-fields'),
+        __('Back to Templates', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $schemas = get_option('yaml_cf_schemas', []);
 
     if (!isset($schemas[$template])) {
-      wp_die(esc_html__('No schema found for this template.', 'yaml-custom-fields'));
+      $this->renderSelectionRequiredNotice(
+        __('Edit Partial', 'yaml-custom-fields'),
+        __('No schema has been defined for this template yet. Define one first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template)),
+        __('Define Schema', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $schema_yaml = $schemas[$template];
     $schema = $this->schemaStorage->parseSchema($schema_yaml);
 
     if (!$schema || !isset($schema['fields'])) {
-      wp_die(esc_html__('Invalid schema for this template.', 'yaml-custom-fields'));
+      $this->renderSelectionRequiredNotice(
+        __('Edit Partial', 'yaml-custom-fields'),
+        __('The schema for this template is invalid. Please fix it before editing partial data.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template)),
+        __('Edit Schema', 'yaml-custom-fields')
+      );
+      return;
     }
 
     // Get partial data

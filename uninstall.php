@@ -25,11 +25,11 @@ delete_option( 'yaml_cf_data_object_types' );
 // Delete all data object entries (dynamic option names)
 // Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
 global $wpdb;
-$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'yaml_cf_data_object_entries_%'" );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'yaml_cf_data_object_entries_' ) . '%' ) );
 
 // Delete all post meta created by the plugin
 // Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
-$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_yaml_cf_%'" );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $wpdb->esc_like( '_yaml_cf_' ) . '%' ) );
 
 // For multisite, delete from all sites
 if ( is_multisite() ) {
@@ -55,11 +55,11 @@ if ( is_multisite() ) {
 
 		// Delete data object entries
 		// Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'yaml_cf_data_object_entries_%'" );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( 'yaml_cf_data_object_entries_' ) . '%' ) );
 
 		// Delete post meta
 		// Direct SQL is required here for bulk deletion during uninstall (documented exception in Rule #5)
-		$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE '_yaml_cf_%'" );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $wpdb->esc_like( '_yaml_cf_' ) . '%' ) );
 
 		restore_current_blog();
 	}

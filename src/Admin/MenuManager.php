@@ -286,17 +286,43 @@ class MenuManager {
 
   /**
    * Set parent file for menu highlighting
+   *
+   * Ensures the top-level "YAML CF" menu item stays highlighted while on any
+   * of this plugin's pages, including the hidden pages (edit schema, edit
+   * data object type, manage entries, etc.) that aren't shown in the menu.
    */
   public function setParentFile($parent_file) {
-    // TODO: Phase 14 - Implement parent file logic
+    $page = RequestHelper::getParam('page');
+    if ($page === 'yaml-custom-fields' || ($page && strpos($page, 'yaml-cf-') === 0)) {
+      return 'yaml-custom-fields';
+    }
     return $parent_file;
   }
 
   /**
    * Set submenu file for menu highlighting
+   *
+   * Hidden pages (accessed by direct URL, not shown in $submenu) have no
+   * matching submenu entry for WordPress to highlight by default. Point them
+   * at the closest visible parent so the left nav still reflects where the
+   * user is instead of highlighting nothing or the wrong item.
    */
   public function setSubmenuFile($submenu_file) {
-    // TODO: Phase 14 - Implement submenu file logic
+    $page = RequestHelper::getParam('page');
+
+    $hidden_page_parents = [
+      'yaml-cf-edit-schema' => 'yaml-custom-fields',
+      'yaml-cf-edit-partial' => 'yaml-custom-fields',
+      'yaml-cf-edit-data-object-type' => 'yaml-cf-data-objects',
+      'yaml-cf-manage-data-object-entries' => 'yaml-cf-data-objects',
+      'yaml-cf-edit-template-global' => 'yaml-custom-fields',
+      'yaml-cf-manage-template-global' => 'yaml-custom-fields',
+    ];
+
+    if (isset($hidden_page_parents[$page])) {
+      return $hidden_page_parents[$page];
+    }
+
     return $submenu_file;
   }
 

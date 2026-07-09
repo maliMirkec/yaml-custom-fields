@@ -166,10 +166,14 @@ class DataObjectController extends AdminController {
       $raw_form_data = isset($_POST['yaml_cf']) && is_array($_POST['yaml_cf']) ?
         map_deep(wp_unslash($_POST['yaml_cf']), 'sanitize_text_field') : [];
 
-      // Second pass: schema-based sanitization that properly handles all field types
-      $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema);
-
       $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
+      $old_entry_data = isset($entries[$entry_id_to_save]) ? $entries[$entry_id_to_save] : null;
+
+      // Second pass: schema-based sanitization that properly handles all field types
+      $plugin->reset_code_field_permission_denied_flag();
+      $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema, '', $old_entry_data);
+      $plugin->maybe_flag_code_field_permission_denied();
+
       $entries[$entry_id_to_save] = $entry_data;
       update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
 
@@ -235,6 +239,18 @@ class DataObjectController extends AdminController {
     $success_message = $this->successMessage;
     $error_message = $this->errorMessage;
 
+    // A type_id was requested but doesn't match any existing type (stale link,
+    // bad bookmark, deleted type). Don't silently fall through to an all-empty
+    // "new type" form with no explanation -- tell the user what happened.
+    if (!empty($type_id) && !$is_editing && !$error_message) {
+      $error_message = sprintf(
+        /* translators: %s: requested data object type slug */
+        __('Data object type "%s" was not found. It may have been deleted. You can create a new type below.', 'yaml-custom-fields'),
+        $type_id
+      );
+      $type_id = '';
+    }
+
     // Load template
     $this->loadTemplate('edit-data-object-type-page.php', compact(
       'type_id',
@@ -247,6 +263,25 @@ class DataObjectController extends AdminController {
   }
 
   /**
+   * Redirect away from the entries page if no valid data object type is selected.
+   *
+   * Must run on admin_init (see HookManager::redirectInvalidPageSelections()),
+   * NOT from inside renderEntries() itself: add_submenu_page callbacks run after
+   * admin-header.php has already sent output, so a redirect attempted from
+   * within renderEntries() cannot succeed -- it previously produced a blank
+   * page (headers-already-sent + exit, with no content ever rendered).
+   */
+  public function maybeRedirectInvalidEntries() {
+    $type_id = RequestHelper::getParam('type_id');
+    $data_object_types = get_option('yaml_cf_data_object_types', []);
+
+    if (!$type_id || !isset($data_object_types[$type_id])) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
+      exit;
+    }
+  }
+
+  /**
    * Render manage data object entries page
    */
   public function renderEntries() {
@@ -254,16 +289,19 @@ class DataObjectController extends AdminController {
 
     // Get type_id from URL
     $type_id = RequestHelper::getParam('type_id');
-    if (!$type_id) {
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
-      exit;
-    }
-
-    // Get data object types
     $data_object_types = get_option('yaml_cf_data_object_types', []);
-    if (!isset($data_object_types[$type_id])) {
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-data-objects'));
-      exit;
+
+    // Normally unreachable: maybeRedirectInvalidEntries() already redirected
+    // away on admin_init if there was no valid selection. Guarded here too so
+    // this never falls through to a blank page if reached some other way.
+    if (!$type_id || !isset($data_object_types[$type_id])) {
+      $this->renderSelectionRequiredNotice(
+        __('Manage Data Object Entries', 'yaml-custom-fields'),
+        __('No data object type selected. Choose a type from the Data Objects page to manage its entries.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-cf-data-objects'),
+        __('Back to Data Objects', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $type_name = $data_object_types[$type_id]['name'];

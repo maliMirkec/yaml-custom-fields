@@ -19,6 +19,22 @@ class SchemaEditorController extends AdminController {
     $this->templateCache = $templateCache;
   }
 
+  /**
+   * Redirect away from the schema editor if no template is specified.
+   *
+   * Must run on admin_init (see HookManager::redirectInvalidPageSelections()),
+   * NOT from inside render() itself: add_submenu_page callbacks run after
+   * admin-header.php has already sent output, so a redirect attempted from
+   * within render() cannot succeed.
+   */
+  public function maybeRedirectMissingTemplate() {
+    $template = RequestHelper::getParam('template');
+    if (!$template) {
+      wp_safe_redirect(admin_url('admin.php?page=yaml-custom-fields'));
+      exit;
+    }
+  }
+
   public function render() {
     $this->checkPermission();
 
@@ -27,8 +43,16 @@ class SchemaEditorController extends AdminController {
     // WordPress core doesn't require nonces for authenticated GET requests to admin pages.
     // The checkPermission() call above verifies current_user_can('manage_options').
     $template = RequestHelper::getParam('template');
+    // Normally unreachable: maybeRedirectMissingTemplate() already redirected
+    // away on admin_init if no template was specified.
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      $this->renderSelectionRequiredNotice(
+        __('Edit Schema', 'yaml-custom-fields'),
+        __('No template was specified. Choose a template from the main page first.', 'yaml-custom-fields'),
+        admin_url('admin.php?page=yaml-custom-fields'),
+        __('Back to Templates', 'yaml-custom-fields')
+      );
+      return;
     }
 
     $schemas = get_option('yaml_cf_schemas', []);

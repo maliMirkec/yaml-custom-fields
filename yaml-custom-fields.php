@@ -70,6 +70,14 @@ define('YAML_CF_PLUGIN_URL', plugin_dir_url(__FILE__));
 class YAML_Custom_Fields {
   private static $instance = null;
 
+  /**
+   * Set by sanitize_code_field() when a submitted 'code' field value was
+   * rejected because the saving user lacks the unfiltered_html capability.
+   * Callers of sanitize_field_data() should reset this to false beforehand
+   * and check it afterward to decide whether to surface a notice.
+   */
+  private $code_field_permission_denied = false;
+
   public static function get_instance() {
     if (null === self::$instance) {
       self::$instance = new self();
@@ -282,6 +290,45 @@ class YAML_Custom_Fields {
     add_action('wp_ajax_yaml_cf_import_page_data', [$this, 'ajax_import_page_data']);
     add_action('wp_ajax_yaml_cf_get_posts_with_data', [$this, 'ajax_get_posts_with_data']);
     add_action('wp_ajax_yaml_cf_import_data_objects', [$this, 'ajax_import_data_objects']);
+    add_action('admin_notices', [$this, 'render_code_field_denied_notice']);
+  }
+
+  /**
+   * Reset the code-field-permission-denied flag before a fresh
+   * sanitize_field_data() call. Public so callers outside this class (e.g.
+   * DataObjectController) can drive the same flow.
+   */
+  public function reset_code_field_permission_denied_flag() {
+    $this->code_field_permission_denied = false;
+  }
+
+  /**
+   * Set after a save request submits a 'code' field value and the saving
+   * user lacks unfiltered_html (see sanitize_code_field()). Persisted as a
+   * transient so it survives the redirect back to the edit screen. Public
+   * so callers outside this class (e.g. DataObjectController) can drive the
+   * same flow.
+   */
+  public function maybe_flag_code_field_permission_denied() {
+    if ($this->code_field_permission_denied) {
+      set_transient('yaml_cf_code_field_denied_' . get_current_user_id(), 1, 60);
+      $this->code_field_permission_denied = false;
+    }
+  }
+
+  /**
+   * Show a one-time admin notice when a save was blocked from overwriting a
+   * 'code' field because the current user lacks unfiltered_html.
+   */
+  public function render_code_field_denied_notice() {
+    $key = 'yaml_cf_code_field_denied_' . get_current_user_id();
+    if (!get_transient($key)) {
+      return;
+    }
+    delete_transient($key);
+    echo '<div class="notice notice-warning is-dismissible"><p>' .
+      esc_html__('YAML Custom Fields: one or more "code" fields were not saved because your account does not have permission to save raw code/HTML. The previous value was kept. Ask an administrator if you need this changed.', 'yaml-custom-fields') .
+      '</p></div>';
   }
 
 
@@ -839,7 +886,11 @@ class YAML_Custom_Fields {
       // Data will be sanitized by schema-aware sanitize_field_data()
       $posted_data = self::post_raw('yaml_cf', []);
       if (!empty($posted_data) && is_array($posted_data)) {
-        $field_data = $this->sanitize_field_data($posted_data, $schema);
+        $partial_data_all = get_option('yaml_cf_partial_data', []);
+        $old_data = isset($partial_data_all[$template]) ? $partial_data_all[$template] : null;
+        $this->code_field_permission_denied = false;
+        $field_data = $this->sanitize_field_data($posted_data, $schema, '', $old_data);
+        $this->maybe_flag_code_field_permission_denied();
       }
 
       $partial_data = get_option('yaml_cf_partial_data', []);
@@ -920,7 +971,10 @@ class YAML_Custom_Fields {
       // Data will be sanitized by schema-aware sanitize_field_data()
       $posted_data = self::post_raw('yaml_cf', []);
       if (!empty($posted_data) && is_array($posted_data)) {
-        $field_data = $this->sanitize_field_data($posted_data, $global_schema);
+        $old_data = get_option('yaml_cf_global_data', []);
+        $this->code_field_permission_denied = false;
+        $field_data = $this->sanitize_field_data($posted_data, $global_schema, '', $old_data);
+        $this->maybe_flag_code_field_permission_denied();
       }
 
       update_option('yaml_cf_global_data', $field_data);
@@ -1004,7 +1058,11 @@ class YAML_Custom_Fields {
       // Data will be sanitized by schema-aware sanitize_field_data()
       $posted_data = self::post_raw('yaml_cf', []);
       if (!empty($posted_data) && is_array($posted_data)) {
-        $field_data = $this->sanitize_field_data($posted_data, $template_global_schema);
+        $template_global_data_all = get_option('yaml_cf_template_global_data', []);
+        $old_data = isset($template_global_data_all[$template]) ? $template_global_data_all[$template] : null;
+        $this->code_field_permission_denied = false;
+        $field_data = $this->sanitize_field_data($posted_data, $template_global_schema, '', $old_data);
+        $this->maybe_flag_code_field_permission_denied();
       }
 
       $template_global_data = get_option('yaml_cf_template_global_data', []);
@@ -1024,7 +1082,15 @@ class YAML_Custom_Fields {
     }
   }
 
-  public function sanitize_field_data($data, $schema = null, $field_name = '') {
+  /**
+   * @param mixed $data Submitted field data to sanitize.
+   * @param array|null $schema Schema for the current data's parent.
+   * @param string $field_name Name of the field $data belongs to.
+   * @param mixed $old_data Previously-saved value at this same position, used to
+   *   preserve a 'code' field's existing content when the saving user lacks
+   *   unfiltered_html (see sanitize_code_field()).
+   */
+  public function sanitize_field_data($data, $schema = null, $field_name = '', $old_data = null) {
     if (is_array($data)) {
       $sanitized = [];
 
@@ -1058,7 +1124,8 @@ class YAML_Custom_Fields {
           }
         }
 
-        $sanitized[sanitize_text_field($key)] = $this->sanitize_field_data($value, $child_schema, $key);
+        $child_old_data = is_array($old_data) && isset($old_data[$key]) ? $old_data[$key] : null;
+        $sanitized[sanitize_text_field($key)] = $this->sanitize_field_data($value, $child_schema, $key, $child_old_data);
       }
 
       // For taxonomy and data_object fields with multiple=true, filter out empty strings
@@ -1081,7 +1148,7 @@ class YAML_Custom_Fields {
       }
       // Check if this is a code field
       if ($schema && $field_name && $this->is_code_field($schema, $field_name)) {
-        return $this->sanitize_code_field($data, $schema, $field_name);
+        return $this->sanitize_code_field($data, $schema, $field_name, $old_data);
       }
       // Check if this is a rich-text field - preserve safe HTML
       if ($schema && $field_name && $this->is_rich_text_field($schema, $field_name)) {
@@ -1213,9 +1280,22 @@ class YAML_Custom_Fields {
   // Marker prefix for encoded code fields
   const CODE_FIELD_MARKER = '__YAMLCF_B64__';
 
-  private function sanitize_code_field($code, $schema, $field_name) {
+  private function sanitize_code_field($code, $schema, $field_name, $old_data = null) {
     if (empty($code)) {
       return '';
+    }
+
+    // Code fields are stored and echoed verbatim (base64-encoded, not
+    // escaped) by design, so they carry the same trust level as raw
+    // unfiltered_html. WordPress reserves that trust for the
+    // unfiltered_html capability (Administrators only by default) --
+    // current_user_can('edit_post') is not sufficient, since Authors and
+    // reviewed Contributors have that but not unfiltered_html.
+    if (!current_user_can('unfiltered_html')) {
+      $this->code_field_permission_denied = true;
+      // Preserve whatever was previously saved rather than silently
+      // accepting or stripping the submitted content.
+      return is_string($old_data) ? $old_data : '';
     }
 
     // Base64 encode with marker prefix to identify code fields
@@ -1463,6 +1543,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
@@ -1510,6 +1591,7 @@ class YAML_Custom_Fields {
       wp_send_json_success();
     } catch (\Exception $e) {
       wp_send_json_error($e->getMessage());
+      return;
     }
   }
 
@@ -1518,6 +1600,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
@@ -1538,6 +1621,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
@@ -1556,6 +1640,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
@@ -1917,128 +2002,22 @@ class YAML_Custom_Fields {
     return \YamlCF\Helpers\MarkdownParser::parse($text);
   }
 
-  private function validate_yaml_schema($yaml, $template = null) {
-    try {
-      $parsed = Yaml::parse($yaml);
-
-      // Check if parsed successfully
-      if ($parsed === null) {
-        return [
-          'valid' => false,
-          'message' => 'Empty or invalid YAML content'
-        ];
-      }
-
-      // Check for required 'fields' key
-      if (!isset($parsed['fields']) || !is_array($parsed['fields'])) {
-        return [
-          'valid' => false,
-          'message' => 'Schema must contain a "fields" array'
-        ];
-      }
-
-      // Normalize info field shorthand for validation
-      $fields = $this->normalize_info_field_shorthand($parsed['fields']);
-
-      // Basic validation of field structure
-      foreach ($fields as $index => $field) {
-        if (!is_array($field)) {
-          return [
-            'valid' => false,
-            'message' => 'Field at index ' . $index . ' is not a valid array'
-          ];
-        }
-
-        if (!isset($field['name'])) {
-          return [
-            'valid' => false,
-            'message' => 'Field at index ' . $index . ' is missing required "name" property'
-          ];
-        }
-
-        if (!isset($field['type'])) {
-          return [
-            'valid' => false,
-            'message' => 'Field "' . $field['name'] . '" is missing required "type" property'
-          ];
-        }
-
-        // Validate info field template restrictions
-        if ($field['type'] === 'info' && $template !== null) {
-          if (!$this->is_template_allowed_for_info_field($template)) {
-            return [
-              'valid' => false,
-              'message' => 'Info fields are not allowed for template partials and archives. Current template: ' . $template
-            ];
-          }
-        }
-      }
-
-      return [
-        'valid' => true,
-        'message' => 'Schema is valid'
-      ];
-    } catch (ParseException $e) {
-      return [
-        'valid' => false,
-        'message' => 'YAML syntax error: ' . $e->getMessage()
-      ];
-    }
-  }
-
   /**
-   * Check if a template is allowed to use info fields
-   * Info fields are NOT allowed for partials and archives (global data templates)
+   * Validate a YAML schema string, returning a field-level error message on
+   * failure (e.g. "Field 'foo' is missing required 'type' property").
    *
-   * @param string $template The template name
-   * @return bool True if allowed, false otherwise
+   * Delegates to the new-architecture SchemaValidator (src/Schema/) rather
+   * than duplicating its logic here, since the two were previously
+   * independent, byte-for-byte-identical implementations of the same
+   * validation rules.
+   *
+   * @param string $yaml YAML schema string.
+   * @param string|null $template Template name, for info-field template restrictions.
+   * @return array{valid: bool, message: string}
    */
-  private function is_template_allowed_for_info_field($template) {
-    // Get just the basename if path is provided
-    $basename = basename($template);
-
-    // Partial/Archive patterns that should NOT have info fields
-    // These match the partial_patterns from get_theme_templates()
-    $disallowed_patterns = [
-      // Traditional partials
-      'header.php',
-      'footer.php',
-      'sidebar.php',
-      'header-*.php',
-      'footer-*.php',
-      'sidebar-*.php',
-      'content.php',
-      'content-*.php',
-      'comments.php',
-      'searchform.php',
-      // Archive/listing templates (global data)
-      'index.php',
-      'front-page.php',
-      'home.php',
-      'archive.php',
-      'archive-*.php',
-      'category.php',
-      'category-*.php',
-      'tag.php',
-      'tag-*.php',
-      'taxonomy.php',
-      'taxonomy-*.php',
-      'author.php',
-      'author-*.php',
-      'date.php',
-      'search.php',
-      '404.php',
-    ];
-
-    // Check if template matches any disallowed pattern
-    foreach ($disallowed_patterns as $pattern) {
-      if ($pattern === $basename || fnmatch($pattern, $basename)) {
-        return false; // This is a partial/archive, not allowed
-      }
-    }
-
-    // All other templates are allowed (page.php, single.php, custom page templates, etc.)
-    return true;
+  private function validate_yaml_schema($yaml, $template = null) {
+    $validator = \YamlCF\Core\Plugin::getInstance()->get('schema_validator');
+    return $validator->validate($yaml, $template);
   }
 
   public function render_schema_fields($fields, $saved_data, $prefix = '', $context = null) {
@@ -2487,9 +2466,9 @@ class YAML_Custom_Fields {
         case 'image':
           echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
           echo '<div class="yaml-cf-media-buttons">';
-          echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">Upload Image</button>';
+          echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">' . esc_html__('Upload Image', 'yaml-custom-fields') . '</button>';
           if ($field_value) {
-            echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">Clear</button>';
+            echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">' . esc_html__('Clear', 'yaml-custom-fields') . '</button>';
           }
           echo '</div>';
           if ($field_value) {
@@ -2513,21 +2492,21 @@ class YAML_Custom_Fields {
               $this->render_file_list_item($field_name, $file_id);
             }
             echo '</div>';
-            echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($field_name) . '">Add File(s)</button>';
+            echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($field_name) . '">' . esc_html__('Add File(s)', 'yaml-custom-fields') . '</button>';
             echo '</div>';
           } else {
             echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
             echo '<div class="yaml-cf-media-buttons">';
-            echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">Upload File</button>';
+            echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">' . esc_html__('Upload File', 'yaml-custom-fields') . '</button>';
             if ($field_value) {
-              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">Clear</button>';
+              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">' . esc_html__('Clear', 'yaml-custom-fields') . '</button>';
             }
             echo '</div>';
             if ($field_value) {
               // Field value is now attachment ID, get the filename
-              $file_path = get_attached_file($field_value);
-              if ($file_path) {
-                echo '<div class="yaml-cf-file-name">' . esc_html(basename($file_path)) . '</div>';
+              $file_name = $this->get_attachment_display_name($field_value);
+              if ($file_name) {
+                echo '<div class="yaml-cf-file-name">' . esc_html($file_name) . '</div>';
               }
             }
           }
@@ -2581,7 +2560,7 @@ class YAML_Custom_Fields {
                 }
               }
               echo '</select>';
-              echo '<button type="button" class="button yaml-cf-add-block">Add Block</button>';
+              echo '<button type="button" class="button yaml-cf-add-block">' . esc_html__('Add Block', 'yaml-custom-fields') . '</button>';
               echo '</div>';
             }
           }
@@ -2622,11 +2601,31 @@ class YAML_Custom_Fields {
     }
   }
 
+  /**
+   * Get an attachment's display filename, gated on the current user actually
+   * being allowed to read that attachment.
+   *
+   * Any numeric attachment ID stored in a 'file'/'image' field was previously
+   * shown to whoever could edit the referencing post, with no check that
+   * they're also allowed to see *that specific attachment* -- e.g. a private
+   * attachment uploaded by another user. current_user_can('read_post', ...)
+   * is the same check WordPress core uses to gate attachment visibility.
+   *
+   * @param int|string $attachment_id Attachment post ID.
+   * @return string Basename of the attached file, or '' if none/not permitted.
+   */
+  private function get_attachment_display_name($attachment_id) {
+    if (!$attachment_id || !current_user_can('read_post', $attachment_id)) {
+      return '';
+    }
+    $file_path = get_attached_file($attachment_id);
+    return $file_path ? basename($file_path) : '';
+  }
+
   private function render_file_list_item($field_name, $file_id) {
     echo '<div class="yaml-cf-file-list-item">';
     echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . '][]" value="' . esc_attr($file_id) . '" />';
-    $file_path = $file_id ? get_attached_file($file_id) : false;
-    echo '<div class="yaml-cf-file-name">' . ($file_path ? esc_html(basename($file_path)) : '') . '</div>';
+    echo '<div class="yaml-cf-file-name">' . esc_html($this->get_attachment_display_name($file_id)) . '</div>';
     echo '<button type="button" class="button button-small yaml-cf-remove-file-list-item">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
     echo '</div>';
   }
@@ -2920,9 +2919,9 @@ class YAML_Custom_Fields {
           echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . esc_attr($disabled_attr) . ' />';
           if (!$readonly) {
             echo '<div class="yaml-cf-media-buttons">';
-            echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($block_field_id) . '">Upload Image</button>';
+            echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($block_field_id) . '">' . esc_html__('Upload Image', 'yaml-custom-fields') . '</button>';
             if ($block_field_value) {
-              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">' . esc_html__('Clear', 'yaml-custom-fields') . '</button>';
             }
             echo '</div>';
           }
@@ -2946,23 +2945,23 @@ class YAML_Custom_Fields {
             }
             echo '</div>';
             if (!$readonly) {
-              echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($block_field_name_path) . '">Add File(s)</button>';
+              echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($block_field_name_path) . '">' . esc_html__('Add File(s)', 'yaml-custom-fields') . '</button>';
             }
             echo '</div>';
           } else {
             echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . esc_attr($disabled_attr) . ' />';
             if (!$readonly) {
               echo '<div class="yaml-cf-media-buttons">';
-              echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">Upload File</button>';
+              echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">' . esc_html__('Upload File', 'yaml-custom-fields') . '</button>';
               if ($block_field_value) {
-                echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+                echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">' . esc_html__('Clear', 'yaml-custom-fields') . '</button>';
               }
               echo '</div>';
             }
             if ($block_field_value) {
-              $file_path = get_attached_file($block_field_value);
-              if ($file_path) {
-                echo '<div class="yaml-cf-file-name">' . esc_html(basename($file_path)) . '</div>';
+              $file_name = $this->get_attachment_display_name($block_field_value);
+              if ($file_name) {
+                echo '<div class="yaml-cf-file-name">' . esc_html($file_name) . '</div>';
               }
             }
           }
@@ -3057,7 +3056,10 @@ class YAML_Custom_Fields {
         $schema = $this->parse_yaml_schema($schemas[$template]);
       }
 
-      $sanitized_data = $this->sanitize_field_data($posted_data, $schema);
+      $old_data = get_post_meta($post_id, '_yaml_cf_data', true);
+      $this->code_field_permission_denied = false;
+      $sanitized_data = $this->sanitize_field_data($posted_data, $schema, '', $old_data);
+      $this->maybe_flag_code_field_permission_denied();
 
       // Update post meta using WordPress API (handles serialization and caching)
       update_post_meta($post_id, '_yaml_cf_data', $sanitized_data);
@@ -3086,6 +3088,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
@@ -3116,6 +3119,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $template = isset($_POST['template']) ? sanitize_text_field(wp_unslash($_POST['template'])) : '';
@@ -3145,6 +3149,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     // Gather all settings
@@ -3167,33 +3172,69 @@ class YAML_Custom_Fields {
     wp_send_json_success($export_data);
   }
 
+  /**
+   * Recursively sanitize a decoded JSON import payload.
+   *
+   * Import endpoints are restricted to manage_options users, but the JSON
+   * file itself could come from anywhere (a downloaded backup, another
+   * site), so decoded values are still run through wp_kses_post() rather
+   * than trusted verbatim. wp_kses_post() preserves the safe HTML that
+   * rich-text field values and already base64-encoded 'code' field values
+   * are made of (neither contains disallowed tags), while stripping
+   * <script> and other dangerous tags -- unlike the previous approach of
+   * running sanitize_textarea_field() (which strips ALL tags via
+   * wp_strip_all_tags()) over the *raw JSON string before decoding it*,
+   * which corrupted -- or outright broke the syntax of -- any exported
+   * rich-text HTML content.
+   *
+   * @param mixed $value Decoded JSON value (string, array, or scalar).
+   * @return mixed Sanitized value.
+   */
+  private function sanitize_imported_data($value) {
+    if (is_array($value)) {
+      return array_map([$this, 'sanitize_imported_data'], $value);
+    }
+    if (is_string($value)) {
+      return wp_kses_post($value);
+    }
+    return $value;
+  }
+
   public function ajax_import_settings() {
     check_ajax_referer('yaml_cf_nonce', 'nonce');
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     if (!isset($_POST['data']) || !is_string($_POST['data'])) {
       wp_send_json_error('No data provided');
+      return;
     }
 
-    // Sanitize and decode JSON data
-    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
-    $import_data = json_decode($json_data, true);
+    // Decode JSON first, then sanitize the decoded structure. Sanitizing the
+    // raw JSON string before decoding corrupts (or outright breaks the
+    // syntax of) any exported rich-text field content.
+    $import_data = json_decode(wp_unslash($_POST['data']), true);
 
     // Check for JSON decode errors
     if (json_last_error() !== JSON_ERROR_NONE) {
       wp_send_json_error('Invalid JSON: ' . json_last_error_msg());
+      return;
     }
+
+    $import_data = $this->sanitize_imported_data($import_data);
 
     // Validate import data
     if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
       wp_send_json_error('Invalid import file format');
+      return;
     }
 
     if (!isset($import_data['settings'])) {
       wp_send_json_error('No settings found in import file');
+      return;
     }
 
     $settings = $import_data['settings'];
@@ -3276,6 +3317,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     // Get all posts and pages that have custom field data
@@ -3328,6 +3370,7 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     $post_ids = isset($_POST['post_ids']) ? array_map('intval', wp_unslash($_POST['post_ids'])) : [];
@@ -3335,6 +3378,7 @@ class YAML_Custom_Fields {
 
     if (empty($post_ids)) {
       wp_send_json_error('No posts selected');
+      return;
     }
 
     $export_data = [
@@ -3387,24 +3431,31 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     if (!isset($_POST['data']) || !is_string($_POST['data'])) {
       wp_send_json_error('No data provided');
+      return;
     }
 
-    // Sanitize and decode JSON data
-    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
-    $import_data = json_decode($json_data, true);
+    // Decode JSON first, then sanitize the decoded structure. Sanitizing the
+    // raw JSON string before decoding corrupts (or outright breaks the
+    // syntax of) any exported rich-text field content.
+    $import_data = json_decode(wp_unslash($_POST['data']), true);
 
     // Check for JSON decode errors
     if (json_last_error() !== JSON_ERROR_NONE) {
       wp_send_json_error('Invalid JSON: ' . json_last_error_msg());
+      return;
     }
+
+    $import_data = $this->sanitize_imported_data($import_data);
 
     // Validate import data
     if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
       wp_send_json_error('Invalid import file format');
+      return;
     }
 
     // Handle both single-post and multi-post formats
@@ -3419,6 +3470,7 @@ class YAML_Custom_Fields {
       $match_by = isset($import_data['match_by']) ? $import_data['match_by'] : 'slug';
     } else {
       wp_send_json_error('No posts found in import file');
+      return;
     }
 
     $imported = 0;
@@ -3689,32 +3741,41 @@ class YAML_Custom_Fields {
 
     if (!current_user_can('manage_options')) {
       wp_send_json_error('Permission denied');
+      return;
     }
 
     if (!isset($_POST['data']) || !is_string($_POST['data'])) {
       wp_send_json_error('No data provided');
+      return;
     }
 
-    // Sanitize and decode JSON data
-    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
-    $import_data = json_decode($json_data, true);
+    // Decode JSON first, then sanitize the decoded structure. Sanitizing the
+    // raw JSON string before decoding corrupts (or outright breaks the
+    // syntax of) any exported rich-text field content.
+    $import_data = json_decode(wp_unslash($_POST['data']), true);
 
     // Check for JSON decode errors
     if (json_last_error() !== JSON_ERROR_NONE) {
       wp_send_json_error('Invalid JSON: ' . json_last_error_msg());
+      return;
     }
+
+    $import_data = $this->sanitize_imported_data($import_data);
 
     // Validate import data
     if (!$import_data || !isset($import_data['plugin']) || $import_data['plugin'] !== 'yaml-custom-fields') {
       wp_send_json_error('Invalid import file format');
+      return;
     }
 
     if (!isset($import_data['type']) || $import_data['type'] !== 'data_objects') {
       wp_send_json_error('Invalid import file type. Expected data_objects export file.');
+      return;
     }
 
     if (!isset($import_data['types']) || !is_array($import_data['types'])) {
       wp_send_json_error('No data object types found in import file');
+      return;
     }
 
     $types_imported = 0;

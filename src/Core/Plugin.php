@@ -104,30 +104,9 @@ class Plugin {
       return new \YamlCF\Template\TemplateNameFormatter();
     });
 
-    // Field Rendering
-    $this->container->register('field_renderer', function($c) {
-      return new \YamlCF\Rendering\FieldRenderer();
-    });
-
     // Form Handling
-    $this->container->register('nonce_verifier', function($c) {
-      return new \YamlCF\Form\NonceVerifier();
-    });
-
-    $this->container->register('data_sanitizer', function($c) {
-      return new \YamlCF\Form\DataSanitizer();
-    });
-
     $this->container->register('attachment_validator', function($c) {
       return new \YamlCF\Form\AttachmentValidator();
-    });
-
-    $this->container->register('form_handler', function($c) {
-      return new \YamlCF\Form\FormHandler(
-        $c->get('nonce_verifier'),
-        $c->get('data_sanitizer'),
-        $c->get('attachment_validator')
-      );
     });
 
     // Cache Management
@@ -247,46 +226,6 @@ class Plugin {
       return new \YamlCF\Admin\Controllers\DocsController();
     });
 
-    // Public API Accessors
-    $this->container->register('field_accessor', function($c) {
-      return new \YamlCF\PublicAPI\FieldAccessor(
-        $c->get('post_data_repository'),
-        $c->get('template_resolver'),
-        $c->get('schema_storage')
-      );
-    });
-
-    $this->container->register('global_field_accessor', function($c) {
-      return new \YamlCF\PublicAPI\GlobalFieldAccessor(
-        $c->get('global_data_repository'),
-        $c->get('schema_storage')
-      );
-    });
-
-    $this->container->register('image_accessor', function($c) {
-      return new \YamlCF\PublicAPI\ImageAccessor(
-        $c->get('field_accessor')
-      );
-    });
-
-    $this->container->register('file_accessor', function($c) {
-      return new \YamlCF\PublicAPI\FileAccessor(
-        $c->get('field_accessor')
-      );
-    });
-
-    $this->container->register('taxonomy_accessor', function($c) {
-      return new \YamlCF\PublicAPI\TaxonomyAccessor(
-        $c->get('field_accessor')
-      );
-    });
-
-    $this->container->register('data_object_accessor', function($c) {
-      return new \YamlCF\PublicAPI\DataObjectAccessor(
-        $c->get('field_accessor'),
-        $c->get('data_object_repository')
-      );
-    });
   }
 
   /**
