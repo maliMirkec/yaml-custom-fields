@@ -148,6 +148,7 @@ Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-f
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"
+* **FIX: Import JSON Parsing** - Fixed "Invalid JSON: Syntax error" when importing settings, page data, or data objects whose field values contain HTML/rich-text content, by removing an errant sanitize_textarea_field() call that corrupted the JSON payload before parsing
 
 = 1.2.8 =
 * **NEW: Multiple File Uploads** - File fields now support `list: true` to attach multiple files, with a dedicated admin UI for adding and removing files

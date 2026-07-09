@@ -3178,8 +3178,11 @@ class YAML_Custom_Fields {
       wp_send_json_error('No data provided');
     }
 
-    // Sanitize and decode JSON data
-    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
+    // Decode JSON data. sanitize_textarea_field() must NOT be used here: it strips
+    // HTML tags on sight of "<", which corrupts JSON payloads whose field values
+    // legitimately contain HTML/rich-text content. Field values are sanitized
+    // where they're actually used below.
+    $json_data = wp_unslash($_POST['data']);
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
@@ -3393,8 +3396,11 @@ class YAML_Custom_Fields {
       wp_send_json_error('No data provided');
     }
 
-    // Sanitize and decode JSON data
-    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
+    // Decode JSON data. sanitize_textarea_field() must NOT be used here: it strips
+    // HTML tags on sight of "<", which corrupts JSON payloads whose field values
+    // legitimately contain HTML/rich-text content. Field values are sanitized
+    // where they're actually used below.
+    $json_data = wp_unslash($_POST['data']);
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
@@ -3695,8 +3701,11 @@ class YAML_Custom_Fields {
       wp_send_json_error('No data provided');
     }
 
-    // Sanitize and decode JSON data
-    $json_data = sanitize_textarea_field(wp_unslash($_POST['data']));
+    // Decode JSON data. sanitize_textarea_field() must NOT be used here: it strips
+    // HTML tags on sight of "<", which corrupts JSON payloads whose field values
+    // legitimately contain HTML/rich-text content. Field values are sanitized
+    // where they're actually used below.
+    $json_data = wp_unslash($_POST['data']);
     $import_data = json_decode($json_data, true);
 
     // Check for JSON decode errors
