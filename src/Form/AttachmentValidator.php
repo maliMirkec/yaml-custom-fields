@@ -77,6 +77,15 @@ class AttachmentValidator {
               }
               $nested_missing = $this->validateAttachments($item, $item_path, $item_schema);
               $missing = array_merge($missing, $nested_missing);
+            } elseif (in_array($field_schema['type'], ['image', 'file'], true) && is_numeric($item) && intval($item) > 0) {
+              // List of scalar attachment IDs (e.g. a file field with list: true)
+              $attachment = get_post(intval($item));
+              if (!$attachment || $attachment->post_type !== 'attachment') {
+                $missing[] = [
+                  'field' => $item_path,
+                  'id' => intval($item)
+                ];
+              }
             }
           }
         } else {

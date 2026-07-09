@@ -40,6 +40,9 @@
       // Clear Media
       $(document).off('click' + ns, '.yaml-cf-clear-media').on('click' + ns, '.yaml-cf-clear-media', this.clearMedia);
 
+      // File List Controls
+      $(document).off('click' + ns, '.yaml-cf-remove-file-list-item').on('click' + ns, '.yaml-cf-remove-file-list-item', this.removeFileListItem);
+
       // Reset All Data
       $(document).off('click' + ns, '.yaml-cf-reset-data').on('click' + ns, '.yaml-cf-reset-data', this.resetAllData);
 
@@ -1012,6 +1015,58 @@
 
         mediaUploader.open();
       });
+
+      // File List Upload (file field with list: true)
+      $(document).on('click', '.yaml-cf-add-file-list-item', function (e) {
+        e.preventDefault();
+
+        const $button = $(this);
+        const targetName = $button.data('target-name');
+        const $list = $button.siblings('.yaml-cf-file-list-items');
+
+        const mediaUploader = wp.media({
+          title: 'Select File(s)',
+          button: {
+            text: 'Add File(s)',
+          },
+          multiple: true,
+        });
+
+        mediaUploader.on('select', function () {
+          const attachments = mediaUploader
+            .state()
+            .get('selection')
+            .toJSON();
+
+          attachments.forEach(function (attachment) {
+            const $item = $('<div>', { class: 'yaml-cf-file-list-item' });
+            $('<input>', {
+              type: 'hidden',
+              name: 'yaml_cf[' + targetName + '][]',
+              value: attachment.id,
+            }).appendTo($item);
+            $('<div>', {
+              class: 'yaml-cf-file-name',
+              text: attachment.filename,
+            }).appendTo($item);
+            $('<button>', {
+              type: 'button',
+              class: 'button button-small yaml-cf-remove-file-list-item',
+              text: 'Remove',
+            }).appendTo($item);
+            $list.append($item);
+          });
+        });
+
+        mediaUploader.open();
+      });
+    },
+
+    removeFileListItem: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      $(this).closest('.yaml-cf-file-list-item').remove();
     },
 
     clearMedia: function (e) {

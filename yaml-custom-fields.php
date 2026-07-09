@@ -1064,7 +1064,8 @@ class YAML_Custom_Fields {
       // For taxonomy and data_object fields with multiple=true, filter out empty strings
       // (These come from the hidden field used to ensure the field is always submitted)
       $is_data_object = $field_def && isset($field_def['type']) && $field_def['type'] === 'data_object';
-      if (($is_taxonomy || $is_data_object) && $is_multiple) {
+      $is_file_list = $field_def && isset($field_def['type']) && $field_def['type'] === 'file' && isset($field_def['list']) && $field_def['list'];
+      if ((($is_taxonomy || $is_data_object) && $is_multiple) || $is_file_list) {
         $sanitized = array_filter($sanitized, function($value) {
           return $value !== '';
         });
@@ -2116,7 +2117,13 @@ class YAML_Custom_Fields {
           }
         }
 
-        $code_snippet = $function_name . "('" . esc_js($field['name']) . "'" . $post_id_param . $extra_params . ")";
+        $is_file_list_field = ($field['type'] === 'file') && isset($field['list']) && $field['list'];
+
+        if ($is_file_list_field) {
+          $code_snippet = "\$files = ycf_get_file('" . esc_js($field['name']) . "'" . $post_id_param . ");\nif (!empty(\$files)) {\n  foreach (\$files as \$file) {\n    echo '<a href=\"' . esc_url(\$file['url']) . '\">' . esc_html(\$file['filename']) . '</a>';\n  }\n}";
+        } else {
+          $code_snippet = $function_name . "('" . esc_js($field['name']) . "'" . $post_id_param . $extra_params . ")";
+        }
         $popover_id = 'snippet-' . sanitize_html_class($field_id);
       }
 
@@ -2495,18 +2502,33 @@ class YAML_Custom_Fields {
           break;
 
         case 'file':
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
-          echo '<div class="yaml-cf-media-buttons">';
-          echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">Upload File</button>';
-          if ($field_value) {
-            echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">Clear</button>';
-          }
-          echo '</div>';
-          if ($field_value) {
-            // Field value is now attachment ID, get the filename
-            $file_path = get_attached_file($field_value);
-            if ($file_path) {
-              echo '<div class="yaml-cf-file-name">' . esc_html(basename($file_path)) . '</div>';
+          $is_file_list = isset($field['list']) && $field['list'];
+
+          if ($is_file_list) {
+            $file_ids = is_array($field_value) ? $field_value : [];
+            echo '<input type="hidden" class="yaml-cf-file-list-placeholder" name="yaml_cf[' . esc_attr($field_name) . '][]" value="" />';
+            echo '<div class="yaml-cf-file-list" data-field-name="' . esc_attr($field_name) . '">';
+            echo '<div class="yaml-cf-file-list-items">';
+            foreach ($file_ids as $file_id) {
+              $this->render_file_list_item($field_name, $file_id);
+            }
+            echo '</div>';
+            echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($field_name) . '">Add File(s)</button>';
+            echo '</div>';
+          } else {
+            echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
+            echo '<div class="yaml-cf-media-buttons">';
+            echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">Upload File</button>';
+            if ($field_value) {
+              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">Clear</button>';
+            }
+            echo '</div>';
+            if ($field_value) {
+              // Field value is now attachment ID, get the filename
+              $file_path = get_attached_file($field_value);
+              if ($file_path) {
+                echo '<div class="yaml-cf-file-name">' . esc_html(basename($file_path)) . '</div>';
+              }
             }
           }
           break;
@@ -2600,6 +2622,15 @@ class YAML_Custom_Fields {
     }
   }
 
+  private function render_file_list_item($field_name, $file_id) {
+    echo '<div class="yaml-cf-file-list-item">';
+    echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . '][]" value="' . esc_attr($file_id) . '" />';
+    $file_path = $file_id ? get_attached_file($file_id) : false;
+    echo '<div class="yaml-cf-file-name">' . ($file_path ? esc_html(basename($file_path)) : '') . '</div>';
+    echo '<button type="button" class="button button-small yaml-cf-remove-file-list-item">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+    echo '</div>';
+  }
+
   private function render_block_item($field, $blocks, $block_data, $index, $block_key, $context = null) {
     $block_type = isset($block_data[$block_key]) ? $block_data[$block_key] : '';
     $block_def = null;
@@ -2668,7 +2699,13 @@ class YAML_Custom_Fields {
         } elseif ($block_field_type === 'data_object') {
           $function_name = 'ycf_get_data_object';
         }
-        $block_snippet = $function_name . "('" . esc_js($block_field['name']) . "', null, " . $extra_snippet_params . "\$block)";
+        $is_block_file_list_field = ($block_field_type === 'file') && isset($block_field['list']) && $block_field['list'];
+
+        if ($is_block_file_list_field) {
+          $block_snippet = "\$files = ycf_get_file('" . esc_js($block_field['name']) . "', null, \$block);\nif (!empty(\$files)) {\n  foreach (\$files as \$file) {\n    echo '<a href=\"' . esc_url(\$file['url']) . '\">' . esc_html(\$file['filename']) . '</a>';\n  }\n}";
+        } else {
+          $block_snippet = $function_name . "('" . esc_js($block_field['name']) . "', null, " . $extra_snippet_params . "\$block)";
+        }
         $block_popover_id = 'snippet-' . sanitize_html_class($block_field_id);
 
         echo '<div class="yaml-cf-field">';
@@ -2896,19 +2933,37 @@ class YAML_Custom_Fields {
             }
           }
         } elseif ($block_field_type === 'file') {
-          echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . esc_attr($disabled_attr) . ' />';
-          if (!$readonly) {
-            echo '<div class="yaml-cf-media-buttons">';
-            echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">Upload File</button>';
-            if ($block_field_value) {
-              echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+          $block_field_name_path = $field['name'] . '][' . $index . '][' . $block_field['name'];
+          $is_block_file_list = isset($block_field['list']) && $block_field['list'];
+
+          if ($is_block_file_list) {
+            $block_file_ids = is_array($block_field_value) ? $block_field_value : [];
+            echo '<input type="hidden" class="yaml-cf-file-list-placeholder" name="yaml_cf[' . esc_attr($block_field_name_path) . '][]" value=""' . esc_attr($disabled_attr) . ' />';
+            echo '<div class="yaml-cf-file-list" data-field-name="' . esc_attr($block_field_name_path) . '">';
+            echo '<div class="yaml-cf-file-list-items">';
+            foreach ($block_file_ids as $block_file_id) {
+              $this->render_file_list_item($block_field_name_path, $block_file_id);
             }
             echo '</div>';
-          }
-          if ($block_field_value) {
-            $file_path = get_attached_file($block_field_value);
-            if ($file_path) {
-              echo '<div class="yaml-cf-file-name">' . esc_html(basename($file_path)) . '</div>';
+            if (!$readonly) {
+              echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($block_field_name_path) . '">Add File(s)</button>';
+            }
+            echo '</div>';
+          } else {
+            echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . esc_attr($disabled_attr) . ' />';
+            if (!$readonly) {
+              echo '<div class="yaml-cf-media-buttons">';
+              echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($block_field_id) . '">Upload File</button>';
+              if ($block_field_value) {
+                echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($block_field_id) . '">Clear</button>';
+              }
+              echo '</div>';
+            }
+            if ($block_field_value) {
+              $file_path = get_attached_file($block_field_value);
+              if ($file_path) {
+                echo '<div class="yaml-cf-file-name">' . esc_html(basename($file_path)) . '</div>';
+              }
             }
           }
         } elseif ($block_field_type === 'string') {
@@ -4178,7 +4233,7 @@ if (!function_exists('ycf_get_image')) {
  * @param string $field_name The name of the file field
  * @param int|string|null $post_id Optional. Post ID or 'partial:filename' for partials. Defaults to current post.
  * @param array|null $context_data Optional. Array data to search in (useful for nested blocks). Defaults to null.
- * @return array|null Array with 'id', 'url', 'path', 'filename', 'filesize', 'mime_type', 'title' keys or null if not found
+ * @return array|null Array with 'id', 'url', 'path', 'filename', 'filesize', 'mime_type', 'title' keys, an array of such arrays if the field has list: true, or null if not found
  *
  * Usage Examples:
  *
@@ -4204,30 +4259,66 @@ if (!function_exists('ycf_get_image')) {
  *
  * Partial Template:
  *   $terms = yaml_cf_get_file('terms_pdf', 'partial:footer.php');
+ *
+ * Multiple Files (file field with list: true):
+ *   $audio_files = yaml_cf_get_file('audio', null, $block);
+ *   if ($audio_files && is_array($audio_files)) {
+ *     foreach ($audio_files as $audio) {
+ *       echo '<audio controls src="' . esc_url($audio['url']) . '"></audio>';
+ *     }
+ *   }
  */
 function yaml_cf_get_file($field_name, $post_id = null, $context_data = null) {
-  $attachment_id = yaml_cf_get_field($field_name, $post_id, $context_data);
+  $attachment_ids = yaml_cf_get_field($field_name, $post_id, $context_data);
 
-  if (!$attachment_id || !is_numeric($attachment_id)) {
+  if (!$attachment_ids) {
     return null;
   }
 
-  $file_path = get_attached_file($attachment_id);
-  $file_url = wp_get_attachment_url($attachment_id);
-
-  if (!$file_path || !$file_url) {
-    return null;
+  // Handle a list of file IDs (file field with list: true)
+  if (is_array($attachment_ids)) {
+    $files = [];
+    foreach ($attachment_ids as $attachment_id) {
+      $file_data = yaml_cf_resolve_file_data($attachment_id);
+      if ($file_data) {
+        $files[] = $file_data;
+      }
+    }
+    return !empty($files) ? $files : null;
   }
 
-  return [
-    'id' => $attachment_id,
-    'url' => $file_url,
-    'path' => $file_path,
-    'filename' => basename($file_path),
-    'filesize' => filesize($file_path),
-    'mime_type' => get_post_mime_type($attachment_id),
-    'title' => get_the_title($attachment_id),
-  ];
+  return yaml_cf_resolve_file_data($attachment_ids);
+}
+
+if (!function_exists('yaml_cf_resolve_file_data')) {
+  /**
+   * Build the file-info array for a single attachment ID
+   *
+   * @param mixed $attachment_id Attachment ID
+   * @return array|null Array with 'id', 'url', 'path', 'filename', 'filesize', 'mime_type', 'title' keys or null if not found
+   */
+  function yaml_cf_resolve_file_data($attachment_id) {
+    if (!$attachment_id || !is_numeric($attachment_id)) {
+      return null;
+    }
+
+    $file_path = get_attached_file($attachment_id);
+    $file_url = wp_get_attachment_url($attachment_id);
+
+    if (!$file_path || !$file_url) {
+      return null;
+    }
+
+    return [
+      'id' => $attachment_id,
+      'url' => $file_url,
+      'path' => $file_path,
+      'filename' => basename($file_path),
+      'filesize' => filesize($file_path),
+      'mime_type' => get_post_mime_type($attachment_id),
+      'title' => get_the_title($attachment_id),
+    ];
+  }
 }
 
 if (!function_exists('ycf_get_file')) {

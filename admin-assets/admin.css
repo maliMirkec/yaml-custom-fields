@@ -15,6 +15,10 @@
   vertical-align: middle;
 }
 
+.wp-core-ui .yaml-cf-admin-container .button .dashicons {
+  line-height: 1;
+}
+
 /* Header with Logo */
 .yaml-cf-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -325,6 +329,23 @@
   border: 1px solid #ddd;
   border-radius: 3px;
   display: inline-block;
+}
+
+/* File List (file field with list: true) */
+.yaml-cf-file-list-items {
+  margin-bottom: 10px;
+}
+
+.yaml-cf-file-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.yaml-cf-file-list-item .yaml-cf-file-name {
+  margin-top: 0;
+  flex-grow: 1;
 }
 
 /* Reset Data Button */

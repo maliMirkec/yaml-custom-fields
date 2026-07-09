@@ -860,6 +860,24 @@ foreach ($all_universities as $entry_id => $university) {
 
 <p>Returns the attachment ID. Use <code>ycf_get_file()</code> helper function to get full file data.</p>
 
+<p>Add <code>list: true</code> to allow multiple files to be attached to the field:</p>
+
+<pre><code>- name: audio
+  label: Audio
+  type: file
+  list: true</code></pre>
+
+<p>When <code>list: true</code> is set, <code>ycf_get_file()</code> returns an array of file-data arrays instead of a single one:</p>
+
+<pre><code>&lt;?php
+$audio_files = ycf_get_file('audio', null);
+if (!empty($audio_files)) {
+  foreach ($audio_files as $audio) {
+    echo '&lt;audio controls src="' . esc_url($audio['url']) . '"&gt;&lt;/audio&gt;';
+  }
+}
+?&gt;</code></pre>
+
 <h3>Object</h3>
 
 <p>Nested group of fields.</p>
