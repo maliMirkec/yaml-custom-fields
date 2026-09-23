@@ -22,6 +22,14 @@ if (!defined('ABSPATH')) {
  *   exists bool    Only set for a file: this site already has it
  */
 class BundleCatalog {
+  /**
+   * Schemas bigger than this are listed without being parsed
+   *
+   * The preview only needs a field count, and a file from elsewhere should not
+   * get to spend the whole request inside the YAML parser.
+   */
+  const MAX_PARSE_BYTES = 131072;
+
   private $parser;
   private $nameFormatter;
 
@@ -102,6 +110,7 @@ class BundleCatalog {
     }
 
     $match_by = (isset($data['match_by']) && $data['match_by'] === 'id') ? 'id' : 'slug';
+    $found = $this->findPosts($match_by, $entries);
 
     $items = [];
     foreach ($entries as $index => $entry) {
@@ -114,16 +123,16 @@ class BundleCatalog {
       $title = isset($entry['title']) && $entry['title'] !== '' ? $entry['title'] : $slug;
       $key = $id > 0 ? (string) $id : 'i' . $index;
 
-      $target = $this->findPost($match_by, $id, $slug, isset($entry['type']) ? $entry['type'] : 'post');
+      $lookup = $this->lookupKey($match_by, $entry);
+      $exists = $lookup !== '' && isset($found[$lookup]);
 
       $items[] = [
         'id' => 'post:' . $key,
         'group' => 'posts',
         'label' => $title !== '' ? $title : __('(no title)', 'yaml-custom-fields'),
-        /* translators: %s: post slug */
-        'meta' => $slug !== '' ? sprintf(__('/%s', 'yaml-custom-fields'), $slug) : '',
-        'exists' => $target !== null,
-        'missing' => $target === null,
+        'meta' => $slug !== '' ? '/' . $slug : '',
+        'exists' => $exists,
+        'missing' => !$exists,
       ];
     }
 
@@ -131,32 +140,93 @@ class BundleCatalog {
   }
 
   /**
-   * Find the post an entry would land on, the same way the importer does
+   * The key an entry is looked up under: its ID, or its post type and slug
+   *
+   * Matching follows the importer (sanitize_title() on the slug, sanitize_key()
+   * on the type), so the preview says what the import will actually do.
    *
    * @param string $match_by 'id' or 'slug'
-   * @param int $id Source post ID
-   * @param string $slug Source slug
-   * @param string $type Source post type
-   * @return \WP_Post|null
+   * @param array $entry Import entry
+   * @return string Lookup key, empty when the entry cannot be matched at all
    */
-  private function findPost($match_by, $id, $slug, $type) {
-    if ($match_by === 'id' && $id > 0) {
-      $post = get_post($id);
-      return $post ?: null;
+  private function lookupKey($match_by, $entry) {
+    if ($match_by === 'id') {
+      $id = isset($entry['id']) ? absint($entry['id']) : 0;
+      return $id > 0 ? 'id:' . $id : '';
     }
 
+    $slug = isset($entry['slug']) && is_string($entry['slug']) ? sanitize_title($entry['slug']) : '';
     if ($slug === '') {
-      return null;
+      return '';
     }
 
-    $found = get_posts([
-      'name' => $slug,
-      'post_type' => $type ?: 'any',
-      'post_status' => 'any',
-      'numberposts' => 1,
-    ]);
+    $type = isset($entry['type']) && is_string($entry['type']) ? sanitize_key($entry['type']) : 'post';
+    return ($type === '' ? 'post' : $type) . ':' . $slug;
+  }
 
-    return !empty($found) ? $found[0] : null;
+  /**
+   * Look up every entry's target in as few queries as possible
+   *
+   * One query for all the IDs, or one per post type for the slugs. A file
+   * holding thousands of entries must not turn into thousands of queries.
+   *
+   * @param string $match_by 'id' or 'slug'
+   * @param array $entries Import entries
+   * @return array Lookup keys that exist on this site
+   */
+  private function findPosts($match_by, $entries) {
+    $ids = [];
+    $slugs = [];
+
+    foreach ($entries as $entry) {
+      if (!is_array($entry)) {
+        continue;
+      }
+      $key = $this->lookupKey($match_by, $entry);
+      if ($key === '') {
+        continue;
+      }
+      list($prefix, $value) = explode(':', $key, 2);
+      if ($match_by === 'id') {
+        $ids[(int) $value] = true;
+      } else {
+        $slugs[$prefix][$value] = true;
+      }
+    }
+
+    $found = [];
+
+    if (!empty($ids)) {
+      // Every registered type, not 'any': the importer matches an ID with get_post(),
+      // which also finds types left out of 'any' such as attachments
+      foreach ($this->queryPosts(['post__in' => array_keys($ids), 'post_type' => array_values(get_post_types())]) as $post) {
+        $found['id:' . $post->ID] = true;
+      }
+    }
+
+    foreach ($slugs as $type => $names) {
+      foreach ($this->queryPosts(['post_name__in' => array_keys($names), 'post_type' => $type]) as $post) {
+        $found[$type . ':' . $post->post_name] = true;
+      }
+    }
+
+    return $found;
+  }
+
+  /**
+   * Run one post lookup, asking for no more than the fields this needs
+   *
+   * @param array $args Query arguments
+   * @return \WP_Post[]
+   */
+  private function queryPosts($args) {
+    return get_posts(array_merge([
+      'post_status' => 'any',
+      'numberposts' => -1,
+      'no_found_rows' => true,
+      'update_post_meta_cache' => false,
+      'update_post_term_cache' => false,
+    ], $args));
   }
 
   /**
@@ -418,6 +488,10 @@ class BundleCatalog {
   private function fieldCountLabel($yaml) {
     if (!is_string($yaml) || trim($yaml) === '') {
       return '';
+    }
+
+    if (strlen($yaml) > self::MAX_PARSE_BYTES) {
+      return __('schema', 'yaml-custom-fields');
     }
 
     $parsed = $this->parser->parse($yaml);

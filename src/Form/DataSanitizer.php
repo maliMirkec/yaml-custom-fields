@@ -19,6 +19,32 @@ class DataSanitizer {
   const CODE_FIELD_MARKER = '__YAMLCF_B64__';
 
   /**
+   * Whether code fields may keep raw markup for users with unfiltered_html
+   */
+  private $trustCurrentUser;
+
+  /**
+   * @param bool $trustCurrentUser False to filter code fields whatever the user may post
+   */
+  public function __construct($trustCurrentUser = true) {
+    $this->trustCurrentUser = (bool) $trustCurrentUser;
+  }
+
+  /**
+   * A sanitizer for values that did not come from this user's own typing
+   *
+   * Content out of an import file is written by whoever made the file, so the
+   * importing user's unfiltered_html does not vouch for it.
+   *
+   * @return self
+   */
+  public function forUntrustedSource() {
+    $clone = clone $this;
+    $clone->trustCurrentUser = false;
+    return $clone;
+  }
+
+  /**
    * Sanitize field data
    *
    * Field definitions are resolved level by level: top-level keys are looked up in
@@ -41,7 +67,9 @@ class DataSanitizer {
   /**
    * Sanitize code field
    *
-   * Users with unfiltered_html keep their code as-is (same model as the core Custom HTML block).
+   * Users with unfiltered_html keep their code as-is (same model as the core Custom HTML block),
+   * but only for what they typed themselves: a sanitizer made by forUntrustedSource() filters
+   * every code field, so an import file cannot carry raw markup in on an admin's permissions.
    * Everyone else gets wp_kses_post() for markup, or dangerous-pattern removal for CSS.
    *
    * @param string $code Code content
@@ -53,7 +81,7 @@ class DataSanitizer {
       return '';
     }
 
-    if (current_user_can('unfiltered_html')) {
+    if ($this->trustCurrentUser && current_user_can('unfiltered_html')) {
       return $code;
     }
 

@@ -162,7 +162,9 @@ class BundleImporter {
       return 0;
     }
 
-    return $count;
+    // What the importer actually wrote, which is less than what was ticked when
+    // a schema failed validation; older importers do not report it
+    return isset($result['imported']) ? (int) $result['imported'] : $count;
   }
 
   /**

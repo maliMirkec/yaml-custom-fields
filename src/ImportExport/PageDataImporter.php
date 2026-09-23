@@ -21,7 +21,8 @@ class PageDataImporter {
   private $cacheManager;
 
   public function __construct($sanitizer = null, $attachmentValidator = null, $parser = null, $templateResolver = null, $cacheManager = null) {
-    $this->sanitizer = $sanitizer ?: new \YamlCF\Form\DataSanitizer();
+    // Values here come out of an import file, never from this user's own typing
+    $this->sanitizer = ($sanitizer ?: new \YamlCF\Form\DataSanitizer())->forUntrustedSource();
     $this->attachmentValidator = $attachmentValidator ?: new \YamlCF\Form\AttachmentValidator();
     $this->parser = $parser ?: new \YamlCF\Schema\SchemaParser();
     $this->templateResolver = $templateResolver ?: new \YamlCF\Template\TemplateResolver();

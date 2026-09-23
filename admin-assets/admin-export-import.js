@@ -16,6 +16,12 @@ jQuery(document).ready(function ($) {
     return $('<div>').text(value === undefined || value === null ? '' : String(value)).html();
   }
 
+  // Text escaping leaves quotes alone, so it cannot be used inside an attribute:
+  // names and ids in an import file are whatever the file says they are.
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function showSpinner($message) {
     $message.empty().append($('<span>').addClass('spinner is-active yaml-cf-spinner-inline'));
   }
@@ -437,7 +443,7 @@ jQuery(document).ready(function ($) {
   function leafHtml(row, group) {
     const missing = group === 'posts' && row.missing;
     let html = '<label class="yaml-cf-pick-row' + (missing ? ' is-missing' : '') + '">';
-    html += '<input type="checkbox" class="yaml-cf-pick" value="' + escapeHtml(row.id) + '"' +
+    html += '<input type="checkbox" class="yaml-cf-pick" value="' + escapeAttr(row.id) + '"' +
       (missing ? ' disabled' : ' checked') + ' />';
     html += '<span class="yaml-cf-pick-label">' + escapeHtml(row.label) + '</span>';
     if (row.meta) {
@@ -456,7 +462,7 @@ jQuery(document).ready(function ($) {
     const overwrites = children.filter(function (c) { return c.exists; }).length;
 
     let html = '<div class="yaml-cf-pick-node"><div class="yaml-cf-pick-row is-branch">';
-    html += '<input type="checkbox" class="yaml-cf-pick-branch" checked aria-label="' + escapeHtml(node.label) + '" />';
+    html += '<input type="checkbox" class="yaml-cf-pick-branch" checked aria-label="' + escapeAttr(node.label) + '" />';
     html += '<span class="yaml-cf-pick-label">' + escapeHtml(node.label) + '</span>';
     if (node.summary) {
       html += '<span class="yaml-cf-pick-meta">' + escapeHtml(node.summary) + '</span>';
@@ -481,7 +487,7 @@ jQuery(document).ready(function ($) {
   }
 
   function groupHtml(group, rows) {
-    let html = '<div class="yaml-cf-pick-group" data-group="' + escapeHtml(group) + '">';
+    let html = '<div class="yaml-cf-pick-group" data-group="' + escapeAttr(group) + '">';
     html += '<label class="yaml-cf-pick-row is-group">';
     html += '<input type="checkbox" class="yaml-cf-pick-all" checked />';
     html += '<span class="yaml-cf-pick-label">' + escapeHtml(GROUP_TITLES[group]) + '</span>';
@@ -629,7 +635,7 @@ jQuery(document).ready(function ($) {
     }
 
     html += '<p class="yaml-cf-spaced-top">';
-    html += '<a href="' + escapeHtml(yamlCF.admin_url + 'admin.php?page=yaml-cf-data-validation') + '" class="button">';
+    html += '<a href="' + escapeAttr(yamlCF.admin_url + 'admin.php?page=yaml-cf-data-validation') + '" class="button">';
     html += escapeHtml(__('Check images and files', 'yaml-custom-fields')) + '</a></p>';
 
     $('#yaml-cf-import-results-content').html(html);

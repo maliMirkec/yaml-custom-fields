@@ -326,6 +326,32 @@ if (!function_exists('sanitize_file_name')) {
 	}
 }
 
+if (!function_exists('get_post_types')) {
+	function get_post_types($args = [], $output = 'names', $operator = 'and') {
+		return isset($GLOBALS['yaml_cf_test_post_types'])
+			? $GLOBALS['yaml_cf_test_post_types']
+			: ['post' => 'post', 'page' => 'page'];
+	}
+}
+
+if (!function_exists('sanitize_title')) {
+	function yaml_cf_test_sanitize_title($title) {
+		$title = strtolower(remove_accents((string) $title));
+		$title = preg_replace('/[^a-z0-9_\-]/', '-', $title);
+		return trim(preg_replace('/-+/', '-', $title), '-');
+	}
+	// Alias to WordPress core function name for mocking
+	function sanitize_title($title) {
+		return yaml_cf_test_sanitize_title($title);
+	}
+}
+
+if (!function_exists('remove_accents')) {
+	function remove_accents($string) {
+		return $string;
+	}
+}
+
 if (!function_exists('get_posts')) {
 	function yaml_cf_test_get_posts($args = []) {
 		return isset($GLOBALS['yaml_cf_test_posts']) ? $GLOBALS['yaml_cf_test_posts'] : [];

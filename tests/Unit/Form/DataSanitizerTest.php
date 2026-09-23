@@ -333,6 +333,34 @@ class DataSanitizerTest extends TestCase {
 	}
 
 	/**
+	 * Test code fields out of an import file are filtered even for unfiltered_html users
+	 */
+	public function testCodeFieldFromUntrustedSourceStripsScriptForUnfilteredHtmlUsers() {
+		$GLOBALS['yaml_cf_test_user_caps'] = ['unfiltered_html' => true];
+		$schema = $this->schema([['name' => 'embed', 'type' => 'code']]);
+		$code = '<script>track();</script><div>Form</div>';
+
+		$result = $this->sanitizer->forUntrustedSource()->sanitize(['embed' => $code], $schema);
+
+		$this->assertNotEquals($this->encoded($code), $result['embed']);
+		$this->assertStringNotContains('<script>', base64_decode(substr($result['embed'], strlen(DataSanitizer::CODE_FIELD_MARKER))));
+	}
+
+	/**
+	 * Test asking for an untrusted sanitizer leaves the original one trusting
+	 */
+	public function testForUntrustedSourceDoesNotChangeTheOriginal() {
+		$GLOBALS['yaml_cf_test_user_caps'] = ['unfiltered_html' => true];
+		$schema = $this->schema([['name' => 'embed', 'type' => 'code']]);
+		$code = '<script>track();</script>';
+
+		$this->sanitizer->forUntrustedSource();
+		$result = $this->sanitizer->sanitize(['embed' => $code], $schema);
+
+		$this->assertEquals($this->encoded($code), $result['embed']);
+	}
+
+	/**
 	 * Test code fields are kses-filtered for users without unfiltered_html
 	 */
 	public function testCodeFieldStripsScriptWithoutUnfilteredHtml() {

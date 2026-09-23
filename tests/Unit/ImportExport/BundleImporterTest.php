@@ -15,11 +15,20 @@ use YamlCF\ImportExport\BundleImporter;
 class RecordingSettingsImporter {
   public $received = null;
   public $merge = null;
+  /**
+   * What the importer reports as written; null leaves the key out, the way an
+   * older importer would
+   */
+  public $imported = null;
 
   public function import($data, $merge = false) {
     $this->received = $data;
     $this->merge = $merge;
-    return ['success' => true, 'message' => 'ok', 'errors' => []];
+    $result = ['success' => true, 'message' => 'ok', 'errors' => []];
+    if ($this->imported !== null) {
+      $result['imported'] = $this->imported;
+    }
+    return $result;
   }
 }
 
@@ -202,6 +211,35 @@ class BundleImporterTest extends TestCase {
 
     $this->assertCount(1, $this->posts->received['posts']);
     $this->assertEquals('solo', $this->posts->received['posts'][0]['slug']);
+  }
+
+  /**
+   * Test the count follows what the settings importer really wrote
+   *
+   * Ticking four setup pieces and having one rejected must not be reported as four.
+   */
+  public function testSettingsCountFollowsWhatWasWritten() {
+    $this->settings->imported = 3;
+
+    $result = $this->importer->import($this->bundle(), [
+      'schema:page.php',
+      'schema:single.php',
+      'global_schema',
+      'global_data',
+    ]);
+
+    $this->assertEquals(3, $result['imported']);
+  }
+
+  /**
+   * Test an importer that reports no count still counts what was ticked
+   */
+  public function testSettingsCountFallsBackToTheTickedItems() {
+    $this->settings->imported = null;
+
+    $result = $this->importer->import($this->bundle(), ['schema:page.php', 'global_schema']);
+
+    $this->assertEquals(2, $result['imported']);
   }
 
   /**

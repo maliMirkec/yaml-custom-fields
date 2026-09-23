@@ -21,7 +21,8 @@ class DataObjectImporter {
 
   public function __construct($attachmentValidator = null, $sanitizer = null, $validator = null, $parser = null) {
     $this->attachmentValidator = $attachmentValidator ?: new \YamlCF\Form\AttachmentValidator();
-    $this->sanitizer = $sanitizer ?: new \YamlCF\Form\DataSanitizer();
+    // Values here come out of an import file, never from this user's own typing
+    $this->sanitizer = ($sanitizer ?: new \YamlCF\Form\DataSanitizer())->forUntrustedSource();
     $this->validator = $validator ?: new \YamlCF\Schema\SchemaValidator();
     $this->parser = $parser ?: new \YamlCF\Schema\SchemaParser();
   }

@@ -20,7 +20,8 @@ class SettingsImporter {
   private $cacheManager;
 
   public function __construct($sanitizer = null, $validator = null, $parser = null, $cacheManager = null) {
-    $this->sanitizer = $sanitizer ?: new \YamlCF\Form\DataSanitizer();
+    // Values here come out of an import file, never from this user's own typing
+    $this->sanitizer = ($sanitizer ?: new \YamlCF\Form\DataSanitizer())->forUntrustedSource();
     $this->validator = $validator ?: new \YamlCF\Schema\SchemaValidator();
     $this->parser = $parser ?: new \YamlCF\Schema\SchemaParser();
     $this->cacheManager = $cacheManager ?: new \YamlCF\Cache\CacheManager();
@@ -47,16 +48,18 @@ class SettingsImporter {
    *
    * @param array $data Decoded import file
    * @param bool $merge Merge with existing settings instead of replacing them
-   * @return array ['success' => bool, 'message' => string, 'errors' => string[]]
+   * @return array ['success' => bool, 'message' => string, 'errors' => string[], 'imported' => int]
    */
   public function import($data, $merge = false) {
     $validation = $this->validate($data);
     if (!$validation['valid']) {
-      return ['success' => false, 'message' => $validation['message'], 'errors' => []];
+      return ['success' => false, 'message' => $validation['message'], 'errors' => [], 'imported' => 0];
     }
 
     $settings = $data['settings'];
     $errors = [];
+    // Counts what was really written, so a caller never reports a skipped schema as imported
+    $imported = 0;
 
     // Template settings (template name => enabled flag)
     if (isset($settings['template_settings']) && is_array($settings['template_settings'])) {
@@ -68,14 +71,15 @@ class SettingsImporter {
         $template_settings = array_merge((array) get_option('yaml_cf_template_settings', []), $template_settings);
       }
       update_option('yaml_cf_template_settings', $template_settings);
+      $imported++;
     }
 
     if (isset($settings['schemas']) && is_array($settings['schemas'])) {
-      $this->importSchemaMap($settings['schemas'], 'yaml_cf_schemas', $merge, $errors);
+      $imported += $this->importSchemaMap($settings['schemas'], 'yaml_cf_schemas', $merge, $errors);
     }
 
     if (isset($settings['template_global_schemas']) && is_array($settings['template_global_schemas'])) {
-      $this->importSchemaMap($settings['template_global_schemas'], 'yaml_cf_template_global_schemas', $merge, $errors);
+      $imported += $this->importSchemaMap($settings['template_global_schemas'], 'yaml_cf_template_global_schemas', $merge, $errors);
     }
 
     if (isset($settings['global_schema']) && is_string($settings['global_schema'])) {
@@ -83,6 +87,7 @@ class SettingsImporter {
       $validation_result = $global_schema === '' ? ['valid' => true] : $this->validator->validate($global_schema);
       if ($validation_result['valid']) {
         update_option('yaml_cf_global_schema', $global_schema);
+        $imported++;
       } else {
         /* translators: %s: schema validation error */
         $errors[] = sprintf(__('Skipped the site details schema: %s', 'yaml-custom-fields'), $validation_result['message']);
@@ -91,11 +96,11 @@ class SettingsImporter {
 
     // Data is sanitized against the schemas now in effect on this site
     if (isset($settings['partial_data']) && is_array($settings['partial_data'])) {
-      $this->importDataMap($settings['partial_data'], 'yaml_cf_partial_data', (array) get_option('yaml_cf_schemas', []), $merge);
+      $imported += $this->importDataMap($settings['partial_data'], 'yaml_cf_partial_data', (array) get_option('yaml_cf_schemas', []), $merge);
     }
 
     if (isset($settings['template_global_data']) && is_array($settings['template_global_data'])) {
-      $this->importDataMap($settings['template_global_data'], 'yaml_cf_template_global_data', (array) get_option('yaml_cf_template_global_schemas', []), $merge);
+      $imported += $this->importDataMap($settings['template_global_data'], 'yaml_cf_template_global_data', (array) get_option('yaml_cf_template_global_schemas', []), $merge);
     }
 
     if (isset($settings['global_data']) && is_array($settings['global_data'])) {
@@ -104,6 +109,7 @@ class SettingsImporter {
         $global_data = array_merge((array) get_option('yaml_cf_global_data', []), $global_data);
       }
       update_option('yaml_cf_global_data', $global_data);
+      $imported++;
     }
 
     $this->cacheManager->clearTemplateCache();
@@ -116,6 +122,7 @@ class SettingsImporter {
         /* translators: %s: list of import errors */
         : sprintf(__('Settings imported, but some parts were skipped: %s', 'yaml-custom-fields'), implode('; ', $errors)),
       'errors' => $errors,
+      'imported' => $imported,
     ];
   }
 
@@ -126,6 +133,7 @@ class SettingsImporter {
    * @param string $option Option name
    * @param bool $merge Merge with existing schemas
    * @param array $errors Collected error messages
+   * @return int Number of schemas written
    */
   private function importSchemaMap($schemas, $option, $merge, &$errors) {
     $result = [];
@@ -147,10 +155,13 @@ class SettingsImporter {
       }
       $result[$template] = $yaml;
     }
+    $written = count($result);
     if ($merge) {
       $result = array_merge((array) get_option($option, []), $result);
     }
     update_option($option, $result);
+
+    return $written;
   }
 
   /**
@@ -160,6 +171,7 @@ class SettingsImporter {
    * @param string $option Option name
    * @param array $schema_map YAML schemas keyed by template
    * @param bool $merge Merge with existing data
+   * @return int Number of entries written
    */
   private function importDataMap($data_map, $option, $schema_map, $merge) {
     $result = [];
@@ -168,10 +180,13 @@ class SettingsImporter {
       $schema = !empty($schema_map[$template]) ? $this->parse($schema_map[$template]) : null;
       $result[$template] = $this->sanitizer->sanitize(is_array($data) ? $data : [], $schema);
     }
+    $written = count($result);
     if ($merge) {
       $result = array_merge((array) get_option($option, []), $result);
     }
     update_option($option, $result);
+
+    return $written;
   }
 
   /**
