@@ -522,55 +522,6 @@
   border-color: #d58512;
 }
 
-/* Success/Error Messages */
-#yaml-cf-notifications {
-  position: fixed;
-  top: 32px;
-  right: 20px;
-  z-index: 999998;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 350px;
-}
-
-.yaml-cf-message {
-  padding: 12px 15px;
-  border-radius: 3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  min-width: 250px;
-  animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.yaml-cf-message.success {
-  background: #d7f4d7;
-  border-left: 4px solid #46b450;
-  color: #2c662d;
-}
-
-.yaml-cf-message.error {
-  background: #fbeaea;
-  border-left: 4px solid #dc3232;
-  color: #761919;
-}
-
-.yaml-cf-message.warning {
-  background: #fff3cd;
-  border-left: 4px solid #f0ad4e;
-  color: #856404;
-}
-
 /* Documentation Page */
 .yaml-cf-docs-content {
   background: #fff;
@@ -852,17 +803,6 @@
     font-size: 14px;
   }
 
-  #yaml-cf-notifications {
-    top: 46px;
-    right: 10px;
-    left: 10px;
-    max-width: none;
-  }
-
-  .yaml-cf-message {
-    min-width: auto;
-  }
-
   .yaml-cf-docs-content {
     padding: 20px;
   }
@@ -915,6 +855,13 @@
 }
 
 /* Global Fields - Readonly Styles */
+.yaml-cf-readonly-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
 .yaml-cf-readonly input[type="text"],
 .yaml-cf-readonly input[type="number"],
 .yaml-cf-readonly input[type="date"],
@@ -1244,4 +1191,2009 @@
 
 .yaml-cf-stat-box:hover {
   transform: translateY(-2px);
+}
+
+/* Shared admin utilities (replace inline styles) */
+.yaml-cf-card-wide {
+  max-width: 100%;
+  margin-top: 20px;
+}
+
+.yaml-cf-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.yaml-cf-card-header h2 {
+  margin: 0;
+}
+
+.yaml-cf-notice-spaced {
+  margin-top: 20px;
+}
+
+.yaml-cf-muted {
+  color: #646970;
+}
+
+.yaml-cf-muted-small {
+  color: #646970;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.yaml-cf-status-bad {
+  color: #d63638;
+}
+
+.yaml-cf-status-good {
+  color: #00a32a;
+}
+
+/* Data Validation Page: summary and table */
+.yaml-cf-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.yaml-cf-stat-box {
+  padding: 20px;
+  background: #f0f0f1;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.yaml-cf-stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #2271b1;
+}
+
+.yaml-cf-stat-value.is-bad {
+  color: #d63638;
+}
+
+.yaml-cf-stat-value.is-good {
+  color: #00a32a;
+}
+
+.yaml-cf-stat-label {
+  margin-top: 5px;
+  color: #646970;
+}
+
+.yaml-cf-help-list {
+  margin-left: 20px;
+  margin-top: 10px;
+}
+
+.yaml-cf-col-type {
+  width: 60px;
+}
+
+.yaml-cf-col-status {
+  width: 100px;
+}
+
+.yaml-cf-col-issues {
+  width: 120px;
+}
+
+.yaml-cf-col-actions {
+  width: 80px;
+}
+
+.yaml-cf-type-icon {
+  color: #2271b1;
+}
+
+.yaml-cf-summary-toggle {
+  cursor: pointer;
+  color: #2271b1;
+}
+
+.yaml-cf-missing-list {
+  margin: 10px 0 0 20px;
+  font-size: 12px;
+}
+
+.yaml-cf-hidden {
+  display: none;
+}
+
+.yaml-cf-spaced-top {
+  margin-top: 20px;
+}
+
+.yaml-cf-spaced-bottom {
+  margin-bottom: 20px;
+}
+
+.yaml-cf-section-gap {
+  margin-top: 40px;
+}
+
+.yaml-cf-button-row {
+  margin: 20px 0;
+}
+
+.yaml-cf-button-row .button + .button {
+  margin-left: 10px;
+}
+
+.yaml-cf-description-spaced {
+  margin-top: 10px;
+}
+
+.yaml-cf-inline-message {
+  margin-left: 15px;
+}
+
+.yaml-cf-file-input {
+  margin-bottom: 10px;
+}
+
+.yaml-cf-empty-state {
+  padding: 40px;
+  text-align: center;
+}
+
+.yaml-cf-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.yaml-cf-loading .spinner {
+  float: none;
+  margin: 0 auto;
+}
+
+.yaml-cf-panel {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+/* Callout boxes (info / warning) */
+.yaml-cf-callout {
+  padding: 12px;
+  border-left: 4px solid #17a2b8;
+  background: #d1ecf1;
+}
+
+.yaml-cf-callout.is-warning {
+  border-left-color: #ffc107;
+  background: #fff3cd;
+}
+
+.yaml-cf-callout p,
+.yaml-cf-callout ul {
+  margin: 0;
+}
+
+/* Export page: match-by radios, pagination, results */
+.yaml-cf-radio-label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.yaml-cf-radio-label input {
+  margin-right: 5px;
+}
+
+.yaml-cf-radio-hint {
+  margin-left: 5px;
+  color: #666;
+}
+
+#yaml-cf-posts-pagination .paging-input {
+  margin: 0 8px;
+}
+
+.yaml-cf-spinner-inline {
+  float: none;
+}
+
+.yaml-cf-message-success {
+  color: #008a20;
+}
+
+.yaml-cf-message-error {
+  color: #d63638;
+}
+
+.yaml-cf-error-list {
+  color: #d63638;
+}
+
+.yaml-cf-debug-details {
+  margin-top: 15px;
+}
+
+.yaml-cf-debug-details summary {
+  cursor: pointer;
+}
+
+.yaml-cf-debug-table {
+  margin-top: 10px;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.yaml-cf-debug-table th,
+.yaml-cf-debug-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+/* Classes used by admin.js (replace inline styles) */
+.yaml-cf-checkmark {
+  color: #46b450;
+}
+
+.yaml-cf-richtext-notice {
+  padding: 10px;
+  background: #fff3cd;
+  border: 1px solid #f0ad4e;
+  border-radius: 3px;
+}
+
+.yaml-cf-image-preview-img {
+  max-width: 200px;
+  display: block;
+  margin-top: 10px;
+}
+
+/* Post editor meta box (replace inline styles) */
+#yaml-cf-meta-box.postbox {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.yaml-cf-notice-tight {
+  margin: 10px 0;
+}
+
+.yaml-cf-meta-box-header {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.yaml-cf-meta-box-header p {
+  margin: 0;
+}
+
+.yaml-cf-inline-block {
+  display: inline-block;
+}
+
+.yaml-cf-link-label {
+  cursor: pointer;
+  color: #2271b1;
+  text-decoration: underline;
+}
+
+.yaml-cf-reset-data {
+  color: #d63638;
+}
+
+.yaml-cf-template-global-only-fields,
+.yaml-cf-global-fields {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #2271b1;
+}
+
+.yaml-cf-section-intro {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f0f6fc;
+  border-left: 4px solid #2271b1;
+}
+
+.yaml-cf-section-intro h3 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+}
+
+.yaml-cf-section-intro p {
+  margin: 0;
+  font-size: 13px;
+  color: #646970;
+}
+
+.yaml-cf-dual-field {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.yaml-cf-dual-field-title {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+}
+
+.yaml-cf-template-global-part,
+.yaml-cf-local-part {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.yaml-cf-part-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.yaml-cf-part-title {
+  font-size: 13px;
+}
+
+.yaml-cf-part-title.is-global {
+  color: #2271b1;
+}
+
+.yaml-cf-part-title.is-local {
+  color: #046b99;
+}
+
+.yaml-cf-field-toggle {
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #46b450;
+  border-radius: 3px;
+}
+
+.yaml-cf-field-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.yaml-cf-field-toggle label span {
+  font-weight: 500;
+}
+
+.yaml-cf-field-heading {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+}
+
+.yaml-cf-taxonomy-checkboxes,
+.yaml-cf-data-object-checkboxes {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+  background: #fff;
+}
+
+.yaml-cf-taxonomy-checkboxes label,
+.yaml-cf-data-object-checkboxes label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.yaml-cf-checkbox-empty {
+  margin: 0;
+  color: #666;
+}
+
+.yaml-cf-snippet-code-block {
+  white-space: pre-wrap;
+}
+
+.yaml-cf-multi-select {
+  height: 150px;
+}
+
+/* Admin page templates (replace inline styles) */
+.yaml-cf-button-gap {
+  margin-left: 10px;
+}
+
+.yaml-cf-surface {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.yaml-cf-code-editor {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  width: 100%;
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+
+.yaml-cf-inline-form {
+  display: inline;
+}
+
+.yaml-cf-checkmark-spaced {
+  margin-top: 3px;
+  margin-left: 10px;
+}
+
+.yaml-cf-status-warn {
+  color: #dba617;
+}
+
+.yaml-cf-global-schema-section {
+  background: #f9f9f9;
+  padding: 20px;
+  border-left: 4px solid #2271b1;
+  margin: 30px 0;
+}
+
+.yaml-cf-examples-spaced {
+  margin-top: 30px;
+}
+
+.yaml-cf-relative {
+  position: relative;
+}
+
+.yaml-cf-copy-corner {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.yaml-cf-docs-screenshot {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+
+/* ==========================================================================
+   Brand design system (colours from the plugin banner and icon)
+   ========================================================================== */
+:root {
+  --ycf-indigo: #667eea;
+  --ycf-purple: #764ba2;
+  --ycf-purple-dark: #5b3a86;   /* text/borders on white: 8.6:1 */
+  --ycf-purple-hover: #653d8f;
+  --ycf-mint: #12e09f;
+  --ycf-mint-soft: #dcfaef;
+  --ycf-mint-text: #04533a;     /* on mint-soft: 8.9:1 */
+  --ycf-ink: #121212;
+  --ycf-lavender: #f7f5fc;
+  --ycf-line: #e2e0ea;
+  --ycf-muted: #50575e;
+  --ycf-gradient: linear-gradient(135deg, var(--ycf-indigo) 0%, var(--ycf-purple) 100%);
+  --ycf-shadow: 0 1px 2px rgba(18, 18, 18, 0.04), 0 1px 1px rgba(18, 18, 18, 0.03);
+  --ycf-focus: 0 0 0 2px #fff, 0 0 0 4px var(--ycf-indigo);
+}
+
+/* Header */
+.yaml-cf-header {
+  border-radius: 12px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.yaml-cf-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--ycf-mint);
+}
+
+.yaml-cf-header + .wp-header-end {
+  margin: 0;
+}
+
+/* Buttons on plugin screens */
+.wp-core-ui .yaml-cf-admin-container .button-primary {
+  background: var(--ycf-purple);
+  border-color: var(--ycf-purple-hover);
+  color: #fff;
+}
+
+.wp-core-ui .yaml-cf-admin-container .button-primary:hover,
+.wp-core-ui .yaml-cf-admin-container .button-primary:focus {
+  background: var(--ycf-purple-hover);
+  border-color: var(--ycf-purple-dark);
+  color: #fff;
+}
+
+.wp-core-ui .yaml-cf-admin-container .button:not(.button-primary):not(.button-link) {
+  color: var(--ycf-purple-dark);
+  border-color: #a48cc7;
+}
+
+.wp-core-ui .yaml-cf-admin-container .button:not(.button-primary):not(.button-link):hover {
+  background: var(--ycf-lavender);
+  border-color: var(--ycf-purple);
+  color: var(--ycf-purple-dark);
+}
+
+.wp-core-ui .yaml-cf-admin-container .button:focus,
+.yaml-cf-admin-container a:focus {
+  box-shadow: var(--ycf-focus);
+  outline: 2px solid transparent;
+}
+
+.wp-core-ui .yaml-cf-admin-container .button-link.yaml-cf-link-button {
+  color: var(--ycf-purple-dark);
+  text-decoration: underline;
+  padding: 0 4px;
+}
+
+/* Hints and counters */
+.yaml-cf-hint {
+  color: var(--ycf-muted);
+  font-size: 13px;
+}
+
+.yaml-cf-count {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--ycf-lavender);
+  color: var(--ycf-purple-dark);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  vertical-align: middle;
+}
+
+/* Status badges */
+.yaml-cf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.yaml-cf-badge .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-left: -3px;
+}
+
+.yaml-cf-badge.is-ready {
+  background: var(--ycf-mint-soft);
+  color: var(--ycf-mint-text);
+  box-shadow: inset 0 0 0 1px #9cefd0;
+}
+
+.yaml-cf-badge.is-empty {
+  background: #f0f0f1;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-badge.is-warning {
+  background: #fcf0e1;
+  color: #8a4b00;
+  box-shadow: inset 0 0 0 1px #f0c58a;
+}
+
+/* Cards and sections */
+.yaml-cf-card,
+.yaml-cf-onboarding,
+.yaml-cf-reference {
+  background: #fff;
+  border: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  box-shadow: var(--ycf-shadow);
+  margin-bottom: 32px;
+}
+
+.yaml-cf-card {
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.yaml-cf-global-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--ycf-gradient);
+}
+
+.yaml-cf-card-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.yaml-cf-card-title-row h2,
+.yaml-cf-section-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  color: var(--ycf-ink);
+}
+
+.yaml-cf-card-title-row h2 .dashicons {
+  color: var(--ycf-purple);
+}
+
+.yaml-cf-card-text {
+  color: var(--ycf-muted);
+  max-width: 72ch;
+  margin: 10px 0 16px;
+  font-size: 14px;
+}
+
+.yaml-cf-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.yaml-cf-section {
+  margin-bottom: 32px;
+}
+
+.yaml-cf-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 12px;
+}
+
+.yaml-cf-section-text {
+  margin: 6px 0 0;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-section-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.yaml-cf-empty {
+  background: #fff;
+  border: 1px dashed #c3c4c7;
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-empty p {
+  margin: 0;
+}
+
+/* First-run steps */
+.yaml-cf-onboarding {
+  padding: 24px;
+}
+
+.yaml-cf-onboarding h2 {
+  margin: 0 0 18px;
+  font-size: 18px;
+}
+
+.yaml-cf-steps {
+  counter-reset: yaml-cf-step;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.yaml-cf-steps li {
+  counter-increment: yaml-cf-step;
+  position: relative;
+  margin: 0;
+  padding-left: 46px;
+}
+
+.yaml-cf-steps li::before {
+  content: counter(yaml-cf-step);
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ycf-mint);
+  color: var(--ycf-ink);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yaml-cf-steps strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--ycf-ink);
+}
+
+.yaml-cf-steps span {
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-onboarding-more {
+  margin: 18px 0 0;
+}
+
+/* Dashboard tables */
+.yaml-cf-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  box-shadow: var(--ycf-shadow);
+  overflow: hidden;
+}
+
+.yaml-cf-table th {
+  background: var(--ycf-lavender);
+  color: #3c434a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ycf-line);
+  vertical-align: bottom;
+}
+
+.yaml-cf-th-help {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0eef5;
+  vertical-align: middle;
+}
+
+.yaml-cf-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.yaml-cf-table tbody tr:hover td {
+  background: #fcfbff;
+}
+
+.yaml-cf-col-toggle {
+  width: 130px;
+}
+
+.yaml-cf-cell-template strong {
+  display: block;
+  color: var(--ycf-ink);
+  font-size: 14px;
+}
+
+.yaml-cf-file {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  color: var(--ycf-muted);
+  font-size: 12px;
+}
+
+.yaml-cf-row.is-disabled .yaml-cf-cell-template strong {
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-row.is-disabled .yaml-cf-when-enabled,
+.yaml-cf-row.is-enabled .yaml-cf-when-disabled {
+  display: none;
+}
+
+.yaml-cf-cell-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* On/off switch */
+.yaml-cf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+}
+
+.yaml-cf-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.yaml-cf-toggle-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: #8c8f94;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.yaml-cf-toggle-track::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.yaml-cf-toggle input:checked + .yaml-cf-toggle-track {
+  background: var(--ycf-gradient);
+}
+
+.yaml-cf-toggle input:checked + .yaml-cf-toggle-track::before {
+  transform: translateX(18px);
+}
+
+.yaml-cf-toggle input:focus-visible + .yaml-cf-toggle-track {
+  box-shadow: var(--ycf-focus);
+}
+
+.yaml-cf-toggle input:disabled + .yaml-cf-toggle-track {
+  opacity: 0.6;
+}
+
+.yaml-cf-toggle-state {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ycf-muted);
+  min-width: 2em;
+}
+
+.yaml-cf-toggle input:checked ~ .yaml-cf-toggle-state {
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-toggle input:checked ~ .yaml-cf-toggle-state .is-off,
+.yaml-cf-toggle input:not(:checked) ~ .yaml-cf-toggle-state .is-on {
+  display: none;
+}
+
+/* Schema reference (collapsible) */
+.yaml-cf-reference summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.yaml-cf-reference summary::-webkit-details-marker {
+  display: none;
+}
+
+.yaml-cf-reference summary .dashicons {
+  color: var(--ycf-purple);
+}
+
+.yaml-cf-reference summary::after {
+  content: '\f347';
+  font-family: dashicons;
+  margin-left: auto;
+  color: var(--ycf-muted);
+  transition: transform 0.2s;
+}
+
+.yaml-cf-reference[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.yaml-cf-reference summary:focus-visible {
+  box-shadow: var(--ycf-focus);
+  outline: 2px solid transparent;
+  border-radius: 12px;
+}
+
+.yaml-cf-reference-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 0 20px 20px;
+}
+
+.yaml-cf-reference .yaml-cf-schema-examples {
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  background: none;
+}
+
+.yaml-cf-reference h3 {
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.yaml-cf-field-types {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 14px;
+  margin: 0;
+}
+
+.yaml-cf-field-types dt {
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-field-types dd {
+  margin: 0;
+  color: var(--ycf-muted);
+}
+
+/* Queued notices (NotificationManager) */
+.yaml-cf-notice .yaml-cf-notice-details {
+  margin: 0 0 10px 18px;
+  list-style: disc;
+}
+
+/* Toasts (instant feedback, YamlCF.showMessage) */
+#yaml-cf-notifications {
+  position: fixed;
+  top: 46px;
+  right: 20px;
+  z-index: 999998;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 40px));
+  max-width: none;
+}
+
+.yaml-cf-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 10px 12px 14px;
+  background: #fff;
+  color: #1d2327;
+  border-radius: 10px;
+  border-left: 4px solid var(--ycf-indigo);
+  box-shadow: 0 8px 24px rgba(18, 18, 18, 0.14), 0 0 0 1px rgba(18, 18, 18, 0.06);
+  animation: yamlCfToastIn 0.2s ease-out;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.yaml-cf-toast.is-leaving {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.yaml-cf-toast > .dashicons {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.yaml-cf-toast-text {
+  flex: 1;
+  line-height: 1.5;
+}
+
+.yaml-cf-toast.is-success {
+  border-left-color: var(--ycf-mint);
+}
+
+.yaml-cf-toast.is-success > .dashicons {
+  color: #07875c;
+}
+
+.yaml-cf-toast.is-error {
+  border-left-color: #d63638;
+}
+
+.yaml-cf-toast.is-error > .dashicons {
+  color: #d63638;
+}
+
+.yaml-cf-toast.is-warning {
+  border-left-color: #dba617;
+}
+
+.yaml-cf-toast.is-warning > .dashicons {
+  color: #996800;
+}
+
+.yaml-cf-toast.is-info > .dashicons {
+  color: var(--ycf-purple);
+}
+
+.yaml-cf-toast-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ycf-muted);
+  cursor: pointer;
+}
+
+.yaml-cf-toast-close:hover {
+  background: #f0f0f1;
+  color: var(--ycf-ink);
+}
+
+.yaml-cf-toast-close:focus-visible {
+  box-shadow: var(--ycf-focus);
+  outline: 2px solid transparent;
+}
+
+@keyframes yamlCfToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yaml-cf-toast,
+  .yaml-cf-toggle-track,
+  .yaml-cf-toggle-track::before,
+  .yaml-cf-reference summary::after {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Small screens: stack table rows as cards */
+@media screen and (max-width: 782px) {
+  .yaml-cf-reference-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .yaml-cf-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .yaml-cf-table,
+  .yaml-cf-table tbody,
+  .yaml-cf-table tr,
+  .yaml-cf-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .yaml-cf-table tr {
+    border-bottom: 1px solid var(--ycf-line);
+    padding: 8px 0;
+  }
+
+  .yaml-cf-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .yaml-cf-table td {
+    border-bottom: 0;
+    padding: 8px 16px;
+  }
+
+  .yaml-cf-table td:not(.yaml-cf-cell-template)::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ycf-muted);
+  }
+
+  #yaml-cf-notifications {
+    top: 56px;
+    right: 10px;
+    width: calc(100vw - 20px);
+  }
+}
+
+/* Other plugin list tables (data objects, entries, export, validation) share the dashboard look */
+.yaml-cf-admin-container .wp-list-table {
+  border: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  box-shadow: var(--ycf-shadow);
+  overflow: hidden;
+}
+
+.yaml-cf-admin-container .wp-list-table thead th,
+.yaml-cf-admin-container .wp-list-table thead td {
+  background: var(--ycf-lavender);
+  border-bottom: 1px solid var(--ycf-line);
+  font-weight: 600;
+}
+
+.yaml-cf-admin-container .wp-list-table.striped > tbody > :nth-child(odd) {
+  background: #fff;
+}
+
+.yaml-cf-admin-container .wp-list-table tbody tr:hover {
+  background: #fcfbff;
+}
+
+.yaml-cf-admin-container .wp-list-table td {
+  vertical-align: middle;
+}
+
+.yaml-cf-admin-container .yaml-cf-filter-btn.active {
+  background: var(--ycf-purple);
+  border-color: var(--ycf-purple-hover);
+  color: #fff;
+}
+
+/* Documentation page (plain-language layout) */
+.yaml-cf-docs-lead {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 70ch;
+}
+
+.yaml-cf-docs-toc {
+  background: var(--ycf-lavender);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 20px 0 28px;
+}
+
+.yaml-cf-docs-toc ul {
+  columns: 2 220px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.yaml-cf-docs-toc a {
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-docs-glossary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 20px;
+  max-width: 80ch;
+}
+
+.yaml-cf-docs-glossary dt {
+  font-weight: 600;
+  color: var(--ycf-ink);
+}
+
+.yaml-cf-docs-glossary dd {
+  margin: 0;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-docs-content .yaml-cf-docs-table {
+  max-width: 800px;
+  margin: 12px 0;
+}
+
+.yaml-cf-docs-developers {
+  margin-top: 32px;
+  border: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  padding: 0 20px;
+}
+
+.yaml-cf-docs-developers summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.yaml-cf-docs-developers summary::-webkit-details-marker {
+  display: none;
+}
+
+.yaml-cf-docs-developers summary h2 {
+  display: inline-block;
+  margin: 16px 0;
+}
+
+.yaml-cf-docs-developers summary:focus-visible {
+  box-shadow: var(--ycf-focus);
+  outline: 2px solid transparent;
+}
+
+@media screen and (max-width: 782px) {
+  .yaml-cf-docs-glossary {
+    grid-template-columns: 1fr;
+  }
+
+  .yaml-cf-docs-glossary dd {
+    margin-bottom: 8px;
+  }
+}
+
+/*
+ * Notices on plugin screens: WordPress prints them above the page and then moves them
+ * below the header (.wp-header-end) with JavaScript. Hide them until they have moved,
+ * so they do not flash above the header and jump.
+ */
+.yaml-cf-screen #wpbody-content > .notice,
+.yaml-cf-screen #wpbody-content > div.updated,
+.yaml-cf-screen #wpbody-content > div.error {
+  display: none;
+}
+
+/*
+ * One container style for every plugin screen.
+ * Outer cards: 12px corners. Things inside cards (callouts, panels, code, inputs): 8px.
+ */
+.yaml-cf-admin-container .yaml-cf-intro,
+.yaml-cf-admin-container .yaml-cf-surface,
+.yaml-cf-admin-container .yaml-cf-schema-examples,
+.yaml-cf-admin-container .card,
+.yaml-cf-admin-container .yaml-cf-docs-content {
+  background: #fff;
+  border: 1px solid var(--ycf-line);
+  border-left: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  box-shadow: var(--ycf-shadow);
+}
+
+.yaml-cf-admin-container .yaml-cf-intro {
+  padding: 16px 20px;
+}
+
+.yaml-cf-admin-container .yaml-cf-schema-examples {
+  padding: 20px 24px;
+}
+
+.yaml-cf-admin-container .card {
+  padding: 20px 24px;
+}
+
+.yaml-cf-admin-container .yaml-cf-reference .yaml-cf-schema-examples {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.yaml-cf-admin-container .yaml-cf-callout,
+.yaml-cf-admin-container .yaml-cf-panel,
+.yaml-cf-admin-container pre,
+.yaml-cf-admin-container .yaml-cf-code-editor,
+.yaml-cf-admin-container .yaml-cf-stat-box,
+.yaml-cf-admin-container .notice.inline {
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+   Post editor box and content screens: fields
+   ========================================================================== */
+
+/* Toolbar at the top of the Custom fields box */
+#yaml-cf-meta-box .inside {
+  padding: 0 16px 16px;
+  margin-top: 0;
+}
+
+.yaml-cf-meta-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 -16px 8px;
+  padding: 12px 16px;
+  background: var(--ycf-lavender);
+  border-bottom: 1px solid var(--ycf-line);
+}
+
+.yaml-cf-meta-box-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.yaml-cf-template-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-template-chip .dashicons {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.yaml-cf-meta-box-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wp-core-ui .yaml-cf-meta-box-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+}
+
+.wp-core-ui .yaml-cf-meta-box-actions .button .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.wp-core-ui .yaml-cf-meta-box-actions .yaml-cf-reset-data {
+  color: #b32d2e;
+  border-color: #e0a3a3;
+}
+
+.wp-core-ui .yaml-cf-meta-box-actions .yaml-cf-reset-data:hover {
+  background: #fcf0f1;
+  color: #8a2424;
+  border-color: #b32d2e;
+}
+
+/* One field */
+.yaml-cf-fields .yaml-cf-field,
+#yaml-cf-meta-box .yaml-cf-field {
+  margin: 0;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0eef5;
+}
+
+.yaml-cf-fields .yaml-cf-field:last-child,
+#yaml-cf-meta-box .yaml-cf-field:last-child {
+  border-bottom: 0;
+}
+
+.yaml-cf-field > label,
+.yaml-cf-field > .yaml-cf-field-label,
+.yaml-cf-field > .yaml-cf-field-heading {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ycf-ink);
+}
+
+.yaml-cf-field .yaml-cf-field-help {
+  display: block;
+  margin: -2px 0 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ycf-muted);
+  max-width: 640px;
+}
+
+/* Inputs */
+.yaml-cf-field input[type='text'],
+.yaml-cf-field input[type='number'],
+.yaml-cf-field input[type='date'],
+.yaml-cf-field input[type='datetime-local'],
+.yaml-cf-field select,
+.yaml-cf-field textarea {
+  width: 100%;
+  max-width: 640px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #c3c4c7;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.yaml-cf-field input[type='number'] {
+  max-width: 200px;
+}
+
+.yaml-cf-field input[type='date'],
+.yaml-cf-field input[type='datetime-local'] {
+  max-width: 260px;
+}
+
+.yaml-cf-field select[multiple] {
+  padding: 4px;
+}
+
+.yaml-cf-field input[type='text']:focus,
+.yaml-cf-field input[type='number']:focus,
+.yaml-cf-field input[type='date']:focus,
+.yaml-cf-field input[type='datetime-local']:focus,
+.yaml-cf-field select:focus,
+.yaml-cf-field textarea:focus {
+  border-color: var(--ycf-purple);
+  box-shadow: 0 0 0 1px var(--ycf-purple);
+  outline: 2px solid transparent;
+}
+
+.yaml-cf-field textarea.code {
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+  font-size: 13px;
+  background: #fcfbff;
+}
+
+/* Yes/no: the tick box sits next to its label */
+.yaml-cf-field[data-type='boolean'] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+}
+
+.yaml-cf-field[data-type='boolean'] > input[type='checkbox'] {
+  grid-row: 1;
+  grid-column: 1;
+  margin: 0;
+}
+
+.yaml-cf-field[data-type='boolean'] > label {
+  grid-row: 1;
+  grid-column: 2;
+  margin: 0;
+  cursor: pointer;
+}
+
+.yaml-cf-field[data-type='boolean'] > :not(label):not(input) {
+  grid-column: 1 / -1;
+}
+
+.yaml-cf-field[data-type='boolean'] > p.yaml-cf-field-help {
+  margin-top: 4px;
+}
+
+/* Images and files */
+.yaml-cf-media-buttons {
+  gap: 8px;
+}
+
+.wp-core-ui .yaml-cf-field .yaml-cf-clear-media,
+.wp-core-ui .yaml-cf-field .yaml-cf-remove-file-list-item {
+  color: #b32d2e;
+  border-color: #e0a3a3;
+  background: #fff;
+}
+
+.wp-core-ui .yaml-cf-field .yaml-cf-clear-media:hover,
+.wp-core-ui .yaml-cf-field .yaml-cf-remove-file-list-item:hover {
+  background: #fcf0f1;
+  color: #8a2424;
+  border-color: #b32d2e;
+}
+
+.yaml-cf-image-preview img,
+.yaml-cf-image-preview-img {
+  max-width: 220px;
+  height: auto;
+  padding: 0;
+  border: 1px solid var(--ycf-line);
+  border-radius: 8px;
+  background: var(--ycf-lavender);
+}
+
+.yaml-cf-file-name {
+  border-radius: 6px;
+  border-color: var(--ycf-line);
+  background: var(--ycf-lavender);
+}
+
+/* Groups (object fields) */
+.yaml-cf-object {
+  margin: 4px 0 0;
+  padding: 4px 16px;
+  border-left: 3px solid var(--ycf-purple);
+  border-radius: 0 8px 8px 0;
+  background: #fcfbff;
+}
+
+/* Sections (block fields) */
+.yaml-cf-block-container {
+  padding: 16px;
+  border: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  background: var(--ycf-lavender);
+}
+
+.yaml-cf-block-list {
+  counter-reset: yaml-cf-section;
+  margin-bottom: 12px;
+}
+
+.yaml-cf-block-item {
+  counter-increment: yaml-cf-section;
+  margin-bottom: 10px;
+  padding: 0;
+  border: 1px solid var(--ycf-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--ycf-shadow);
+}
+
+.yaml-cf-block-header {
+  margin: 0;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid #f0eef5;
+}
+
+.yaml-cf-block-header strong::before {
+  content: counter(yaml-cf-section) '. ';
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-block-fields {
+  margin: 0;
+  padding: 0 16px;
+}
+
+.wp-core-ui .yaml-cf-block-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  border-color: transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ycf-muted);
+}
+
+.wp-core-ui .yaml-cf-block-actions .button:hover {
+  background: var(--ycf-lavender);
+  color: var(--ycf-purple-dark);
+  border-color: transparent;
+}
+
+.wp-core-ui .yaml-cf-block-actions .yaml-cf-remove-block {
+  color: #b32d2e;
+}
+
+.wp-core-ui .yaml-cf-block-actions .yaml-cf-remove-block:hover {
+  background: #fcf0f1;
+  color: #8a2424;
+}
+
+.yaml-cf-block-controls {
+  gap: 8px;
+}
+
+.yaml-cf-block-controls .yaml-cf-block-type-select {
+  max-width: 280px;
+  min-height: 32px;
+  border-radius: 8px;
+}
+
+/* "Copy code" (administrators only) */
+.yaml-cf-copy-snippet {
+  color: var(--ycf-purple-dark);
+  opacity: 0.8;
+}
+
+.yaml-cf-copy-snippet:hover,
+.yaml-cf-copy-snippet:focus {
+  opacity: 1;
+  color: var(--ycf-purple);
+}
+
+/* Shared value / this page only */
+.yaml-cf-dual-field {
+  padding: 16px;
+  border: 1px solid var(--ycf-line);
+  border-radius: 12px;
+  background: var(--ycf-lavender);
+}
+
+.yaml-cf-template-global-part,
+.yaml-cf-local-part,
+.yaml-cf-field-toggle {
+  border-radius: 8px;
+  border-color: var(--ycf-line);
+}
+
+.yaml-cf-field-toggle {
+  border-color: #9cefd0;
+  background: var(--ycf-mint-soft);
+}
+
+.yaml-cf-part-title.is-global {
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-part-title.is-local {
+  color: #04533a;
+}
+
+.yaml-cf-section-intro {
+  border-left-color: var(--ycf-purple);
+  border-radius: 0 8px 8px 0;
+  background: var(--ycf-lavender);
+}
+
+.yaml-cf-template-global-only-fields,
+.yaml-cf-global-fields {
+  border-top: 1px solid var(--ycf-line);
+}
+
+@media screen and (max-width: 782px) {
+  .yaml-cf-meta-box-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Buttons: small rounded corners on plugin screens and in the post editor box */
+.wp-core-ui .yaml-cf-admin-container .button,
+.wp-core-ui #yaml-cf-meta-box .button {
+  border-radius: 6px;
+}
+
+/*
+ * Inputs and dropdowns share one height (36px) on plugin screens and in the post editor box.
+ * Multi-line fields (textareas, multi-selects) keep their own height.
+ */
+.yaml-cf-admin-container input[type='text'],
+.yaml-cf-admin-container input[type='number'],
+.yaml-cf-admin-container input[type='date'],
+.yaml-cf-admin-container input[type='datetime-local'],
+.yaml-cf-admin-container input[type='email'],
+.yaml-cf-admin-container input[type='url'],
+.yaml-cf-admin-container input[type='search'],
+.yaml-cf-admin-container select:not([multiple]),
+#yaml-cf-meta-box input[type='text'],
+#yaml-cf-meta-box input[type='number'],
+#yaml-cf-meta-box input[type='date'],
+#yaml-cf-meta-box input[type='datetime-local'],
+#yaml-cf-meta-box select:not([multiple]) {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.5;
+  border-radius: 8px;
+  vertical-align: middle;
+}
+
+.yaml-cf-admin-container input[type='text'],
+.yaml-cf-admin-container input[type='number'],
+.yaml-cf-admin-container input[type='date'],
+.yaml-cf-admin-container input[type='datetime-local'],
+.yaml-cf-admin-container input[type='email'],
+.yaml-cf-admin-container input[type='url'],
+.yaml-cf-admin-container input[type='search'],
+#yaml-cf-meta-box input[type='text'],
+#yaml-cf-meta-box input[type='number'],
+#yaml-cf-meta-box input[type='date'],
+#yaml-cf-meta-box input[type='datetime-local'] {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Leave room for the dropdown arrow */
+.yaml-cf-admin-container select:not([multiple]),
+#yaml-cf-meta-box select:not([multiple]) {
+  padding-left: 10px;
+  padding-right: 28px;
+}
+
+/* Buttons that sit next to an input or dropdown match its height */
+.wp-core-ui .yaml-cf-block-controls .button,
+.wp-core-ui .yaml-cf-media-buttons .button,
+.wp-core-ui .yaml-cf-file-list .yaml-cf-add-file-list-item {
+  min-height: 36px;
+  line-height: 34px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Field grid
+ *
+ * Short fields - a line of text, a number, a date, a dropdown - sit side by
+ * side on wide screens so a long schema stops being an endless single column.
+ * Anything that needs room (editors, code, media, groups, blocks, tick-box
+ * lists) keeps the whole row.
+ *
+ * Below the breakpoints nothing changes: one field per row, as before.
+ * ------------------------------------------------------------------------ */
+@media screen and (min-width: 1100px) {
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 32px;
+    align-items: start;
+  }
+
+  /* Rows no longer line up, so the underlines would go ragged. Fields are
+     separated by space instead. */
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field {
+    min-width: 0;
+    border-bottom: 0;
+    padding: 12px 0;
+  }
+
+  /* Field types that need the whole row */
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:is(
+    [data-type='text'],
+    [data-type='rich-text'],
+    [data-type='code'],
+    [data-type='file'],
+    [data-type='object'],
+    [data-type='block'],
+    [data-type='info']
+  ) {
+    grid-column: 1 / -1;
+  }
+
+  /* Tick-box lists and multi-selects grow tall - give them the row too */
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:has(
+    :is(.yaml-cf-taxonomy-checkboxes, .yaml-cf-data-object-checkboxes, select[multiple])
+  ) {
+    grid-column: 1 / -1;
+  }
+
+  /* Headings, notes and shared-vs-this-page pairs break the row */
+  .yaml-cf-admin-container .yaml-cf-fields > :not(.yaml-cf-field) {
+    grid-column: 1 / -1;
+  }
+
+  /* Inputs fill their column instead of stopping at the old fixed width */
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field :is(input[type='text'], select:not([multiple])) {
+    max-width: 100%;
+  }
+
+  /* Text boxes, editors and code take the whole row they sit on */
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:is([data-type='text'], [data-type='code']) :is(textarea, .yaml-cf-code-editor),
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field[data-type='rich-text'] .wp-editor-container {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* The meta box shares the post screen with the sidebar, so it needs more room
+   on the page before it can split. */
+@media screen and (min-width: 1400px) {
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 32px;
+    align-items: start;
+  }
+
+  /* Rows no longer line up, so the underlines would go ragged. Fields are
+     separated by space instead. */
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field {
+    min-width: 0;
+    border-bottom: 0;
+    padding: 12px 0;
+  }
+
+  /* Field types that need the whole row */
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:is(
+    [data-type='text'],
+    [data-type='rich-text'],
+    [data-type='code'],
+    [data-type='file'],
+    [data-type='object'],
+    [data-type='block'],
+    [data-type='info']
+  ) {
+    grid-column: 1 / -1;
+  }
+
+  /* Tick-box lists and multi-selects grow tall - give them the row too */
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:has(
+    :is(.yaml-cf-taxonomy-checkboxes, .yaml-cf-data-object-checkboxes, select[multiple])
+  ) {
+    grid-column: 1 / -1;
+  }
+
+  /* Headings, notes and shared-vs-this-page pairs break the row */
+  #yaml-cf-meta-box .yaml-cf-fields > :not(.yaml-cf-field) {
+    grid-column: 1 / -1;
+  }
+
+  /* Inputs fill their column instead of stopping at the old fixed width */
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field :is(input[type='text'], select:not([multiple])) {
+    max-width: 100%;
+  }
+
+  /* Text boxes, editors and code take the whole row they sit on */
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:is([data-type='text'], [data-type='code']) :is(textarea, .yaml-cf-code-editor),
+  #yaml-cf-meta-box :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field[data-type='rich-text'] .wp-editor-container {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* Very wide screens: three columns on the full-width admin screens only */
+@media screen and (min-width: 1650px) {
+  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Section breaks
+ *
+ * "- section: Contact details" in the schema groups the fields that follow it.
+ * The heading is plain text with a rule under it - no panel, no tint - so the
+ * groups read as structure rather than as boxes inside boxes.
+ *
+ * NOTE: .yaml-cf-section is taken - it is the dashboard's page sections.
+ * ------------------------------------------------------------------------ */
+.yaml-cf-field-group {
+  margin-top: 32px;
+}
+
+/* The first group opens the form and needs no gap above it */
+.yaml-cf-field-group:first-child {
+  margin-top: 0;
+}
+
+.yaml-cf-field-group-intro {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ycf-line);
+}
+
+/*
+ * One heading style for anything that introduces a group of fields: a section
+ * break, the fallback rule inside a block, and a repeating block's own title.
+ */
+.yaml-cf-field-group-intro h3,
+.yaml-cf-field-group-fallback-title,
+.yaml-cf-block-heading {
+  display: block;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ycf-ink);
+}
+
+/* The block heading carries its own rule; a section's sits on the intro block
+   so it spans the description too. */
+.yaml-cf-block-heading {
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--ycf-line);
+}
+
+.yaml-cf-field-group-intro p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ycf-muted);
+}
+
+/* A break with no heading is just a rule with room around it */
+.yaml-cf-field-group.is-untitled {
+  margin-top: 28px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ycf-line);
+}
+
+/*
+ * "- break:" draws nothing. Each group is its own block, so the fields after it
+ * start a new row while the spacing stays the same as between any two rows.
+ */
+.yaml-cf-field-group.is-break {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* Fallback for a break that never became a wrapper (inside a block) */
+.yaml-cf-field-group-rule {
+  margin: 20px 0 12px;
+  border: 0;
+  border-top: 1px solid var(--ycf-line);
+}
+
+.yaml-cf-field-group-fallback-title {
+  margin-bottom: 4px;
+}
+
+.yaml-cf-field-group-fallback-description {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ycf-muted);
+}
+
+/* Help panel: the note under the field-type list */
+.yaml-cf-reference-subhead {
+  margin: 18px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.yaml-cf-reference-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ycf-muted);
+}
+
+/* The editor box wears the same icon as the sidebar menu */
+#yaml-cf-meta-box .postbox-header .hndle {
+  display: flex;
+  align-items: center;
+  /* Core spreads the handle's children apart; keep the icon next to the text */
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: left;
+}
+
+#yaml-cf-meta-box .yaml-cf-box-icon {
+  color: var(--ycf-purple);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
 }

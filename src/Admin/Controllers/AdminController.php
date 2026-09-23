@@ -18,7 +18,7 @@ abstract class AdminController {
    */
   protected function checkPermission($capability = 'manage_options') {
     if (!current_user_can($capability)) {
-      wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'yaml-custom-fields'));
+      wp_die(esc_html__('This page needs administrator permissions.', 'yaml-custom-fields'));
     }
   }
 
@@ -38,7 +38,7 @@ abstract class AdminController {
     if (file_exists($template_path)) {
       include $template_path;
     } else {
-      wp_die(esc_html__('Template file not found.', 'yaml-custom-fields'));
+      wp_die(esc_html__('This screen could not be loaded. Try reinstalling the plugin.', 'yaml-custom-fields'));
     }
   }
 

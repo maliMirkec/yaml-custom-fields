@@ -15,16 +15,77 @@ if (!defined('ABSPATH')) {
 class AttachmentValidator {
   /**
    * Validate and clean attachment data
-   * TODO: Phase 14 - Complete implementation
+   *
+   * Numeric values in image/file fields that no longer point to an existing post are
+   * replaced with ''. Without a schema every numeric value is checked (conservative).
    *
    * @param mixed $data Data to validate
-   * @param array|null $schema Schema
+   * @param array|null $schema Parsed schema with a 'fields' array
    * @param string $parent_key Parent key for nested data
    * @return mixed Cleaned data
    */
   public function validateAndClean($data, $schema = null, $parent_key = '') {
-    // Placeholder - will be fully implemented in Phase 14
+    if (!is_array($data)) {
+      return $data;
+    }
+
+    $has_schema = is_array($schema) && isset($schema['fields']) && is_array($schema['fields']);
+    $attachment_fields = [];
+    if ($has_schema) {
+      $this->buildAttachmentFieldMap($schema['fields'], $attachment_fields);
+    }
+
+    foreach ($data as $key => $value) {
+      $field_path = $parent_key !== '' ? $parent_key . '.' . $key : (string) $key;
+
+      if (is_array($value)) {
+        $data[$key] = $this->validateAndClean($value, $schema, $field_path);
+      } elseif (is_numeric($value) && intval($value) > 0) {
+        // If a schema is available but has no image/file fields, nothing is cleared
+        $is_attachment_field = !$has_schema || in_array((string) $key, $attachment_fields, true) || in_array($field_path, $attachment_fields, true);
+
+        // Keep IDs of existing posts (attachments or otherwise); clear IDs that no longer exist
+        if ($is_attachment_field && !get_post(intval($value))) {
+          $data[$key] = '';
+        }
+      }
+    }
+
     return $data;
+  }
+
+  /**
+   * Collect names and dotted paths of image/file fields, including nested object and block fields
+   *
+   * @param array $fields Schema fields
+   * @param array $attachment_fields Collected names/paths
+   * @param string $prefix Path prefix
+   */
+  private function buildAttachmentFieldMap($fields, &$attachment_fields, $prefix = '') {
+    foreach ($fields as $field) {
+      if (!is_array($field) || !isset($field['name'])) {
+        continue;
+      }
+
+      $field_path = $prefix !== '' ? $prefix . '.' . $field['name'] : (string) $field['name'];
+
+      if (isset($field['type']) && in_array($field['type'], ['image', 'file'], true)) {
+        $attachment_fields[] = (string) $field['name'];
+        $attachment_fields[] = $field_path;
+      }
+
+      if (isset($field['blocks']) && is_array($field['blocks'])) {
+        foreach ($field['blocks'] as $block) {
+          if (is_array($block) && isset($block['fields']) && is_array($block['fields'])) {
+            $this->buildAttachmentFieldMap($block['fields'], $attachment_fields, $field_path);
+          }
+        }
+      }
+
+      if (isset($field['fields']) && is_array($field['fields'])) {
+        $this->buildAttachmentFieldMap($field['fields'], $attachment_fields, $field_path);
+      }
+    }
   }
 
   /**

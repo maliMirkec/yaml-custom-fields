@@ -2,7 +2,7 @@
 
 /**
  * Notification Manager
- * Manages admin notifications using transients instead of URL parameters
+ * One place for user feedback after a request (save, import, errors)
  */
 
 namespace YamlCF\Core;
@@ -12,104 +12,149 @@ namespace YamlCF\Core;
 if (!defined('ABSPATH')) {
     exit;
 }
+
+/**
+ * Queues notices for the current user and shows them as standard WordPress admin notices
+ * on the next page load (or later in the same request, before admin_notices runs).
+ *
+ * Usage before a redirect:
+ *   $notifications->success(__('Schema saved.', 'yaml-custom-fields'));
+ *   $notifications->error($message, ['title' => __('Schema not saved', 'yaml-custom-fields')]);
+ *
+ * Instant feedback for AJAX actions is shown by YamlCF.showMessage() in admin.js, which uses the same visual style.
+ */
 class NotificationManager {
+  const TYPES = ['success', 'error', 'warning', 'info'];
+
   /**
-   * Get transient key for current user
+   * Transient key for the current user's queue
    *
-   * @return string Transient key
+   * @return string
    */
   private function getTransientKey() {
-    return 'yaml_cf_notification_' . get_current_user_id();
+    return 'yaml_cf_notices_' . get_current_user_id();
   }
 
   /**
-   * Add a notification message
+   * Queue a notice
    *
-   * @param string $message Notification message
-   * @param string $type Notification type (success, error, warning, info)
-   * @return bool Success
+   * @param string $message Message text
+   * @param string $type success|error|warning|info
+   * @param array $args {
+   *   @type string   $title   Optional bold lead-in
+   *   @type string[] $details Optional list of detail lines
+   * }
+   * @return bool
    */
-  public function add($message, $type = 'success') {
-    $notification = [
-      'message' => $message,
-      'type' => $type,
-      'timestamp' => time()
+  public function add($message, $type = 'success', $args = []) {
+    $notice = [
+      'message' => (string) $message,
+      'type' => in_array($type, self::TYPES, true) ? $type : 'info',
+      'title' => isset($args['title']) ? (string) $args['title'] : '',
+      'details' => isset($args['details']) ? array_values(array_map('strval', (array) $args['details'])) : [],
     ];
 
-    return set_transient($this->getTransientKey(), $notification, 60); // 60 seconds expiration
+    $notices = $this->peek();
+    if (in_array($notice, $notices, true)) {
+      return true;
+    }
+    $notices[] = $notice;
+
+    return set_transient($this->getTransientKey(), $notices, 5 * MINUTE_IN_SECONDS);
   }
 
   /**
-   * Get notification and delete it (one-time display)
+   * Get queued notices without removing them
    *
-   * @return array|false Notification array or false if none
+   * @return array[] Notices
+   */
+  public function peek() {
+    $notices = get_transient($this->getTransientKey());
+    return is_array($notices) ? array_values(array_filter($notices, 'is_array')) : [];
+  }
+
+  /**
+   * Get queued notices and clear the queue
+   *
+   * @return array[] Notices
+   */
+  public function pull() {
+    $notices = $this->peek();
+    $this->clear();
+    return $notices;
+  }
+
+  /**
+   * Backward compatible alias of pull() (returns the first notice or false)
+   *
+   * @deprecated Use pull()
+   * @return array|false
    */
   public function get() {
-    $notification = get_transient($this->getTransientKey());
-
-    if ($notification !== false) {
-      // Delete immediately after reading
-      delete_transient($this->getTransientKey());
-    }
-
-    return $notification;
+    $notices = $this->pull();
+    return empty($notices) ? false : $notices[0];
   }
 
-  /**
-   * Check if there's a pending notification
-   *
-   * @return bool True if notification exists
-   */
   public function has() {
-    return get_transient($this->getTransientKey()) !== false;
+    return !empty($this->peek());
   }
 
-  /**
-   * Clear any pending notifications
-   *
-   * @return bool Success
-   */
   public function clear() {
     return delete_transient($this->getTransientKey());
   }
 
-  /**
-   * Add a success notification
-   *
-   * @param string $message Message
-   * @return bool Success
-   */
-  public function success($message) {
-    return $this->add($message, 'success');
+  public function success($message, $args = []) {
+    return $this->add($message, 'success', $args);
+  }
+
+  public function error($message, $args = []) {
+    return $this->add($message, 'error', $args);
+  }
+
+  public function warning($message, $args = []) {
+    return $this->add($message, 'warning', $args);
+  }
+
+  public function info($message, $args = []) {
+    return $this->add($message, 'info', $args);
   }
 
   /**
-   * Add an error notification
+   * Print queued notices (hooked to admin_notices)
    *
-   * @param string $message Message
-   * @return bool Success
+   * WordPress moves notices below the element with class "wp-header-end", which plugin
+   * pages place right after their branded header.
    */
-  public function error($message) {
-    return $this->add($message, 'error');
+  public function renderAdminNotices() {
+    foreach ($this->pull() as $notice) {
+      $this->renderNotice($notice);
+    }
   }
 
   /**
-   * Add a warning notification
+   * Print one notice
    *
-   * @param string $message Message
-   * @return bool Success
+   * @param array $notice Notice from the queue
    */
-  public function warning($message) {
-    return $this->add($message, 'warning');
-  }
+  public function renderNotice($notice) {
+    $type = in_array($notice['type'], self::TYPES, true) ? $notice['type'] : 'info';
+    // Errors interrupt screen readers; everything else is announced politely
+    $role = $type === 'error' ? 'alert' : 'status';
 
-  /**
-   * Add an info notification
-   *
-   * @param string $message Message
-   * @return bool Success
-   */
-  public function info($message) {
-    return $this->add($message, 'info');
+    echo '<div class="notice notice-' . esc_attr($type) . ' is-dismissible yaml-cf-notice" role="' . esc_attr($role) . '">';
+    echo '<p>';
+    if ($notice['title'] !== '') {
+      echo '<strong>' . esc_html($notice['title']) . '</strong> ';
+    }
+    echo esc_html($notice['message']);
+    echo '</p>';
+    if (!empty($notice['details'])) {
+      echo '<ul class="yaml-cf-notice-details">';
+      foreach ($notice['details'] as $detail) {
+        echo '<li>' . esc_html($detail) . '</li>';
+      }
+      echo '</ul>';
+    }
+    echo '</div>';
   }
 }

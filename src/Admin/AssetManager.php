@@ -58,16 +58,18 @@ class AssetManager {
     wp_enqueue_media();
 
     wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.css', [], YAML_CF_VERSION);
-    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery'], YAML_CF_VERSION, true);
+    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery', 'wp-i18n'], YAML_CF_VERSION, true);
+    $this->setScriptTranslations('yaml-cf-admin');
 
     // Enqueue page initialization script (replaces inline scripts in templates)
     wp_enqueue_script(
       'yaml-cf-admin-page-init',
       YAML_CF_PLUGIN_URL . 'admin-assets/admin-page-init.js',
-      ['jquery', 'yaml-cf-admin'],
+      ['jquery', 'wp-i18n', 'yaml-cf-admin'],
       YAML_CF_VERSION,
       true
     );
+    $this->setScriptTranslations('yaml-cf-admin-page-init');
 
     // Get current template and schema for post edit screens
     $schema_data = null;
@@ -147,26 +149,38 @@ class AssetManager {
       wp_enqueue_script(
         'yaml-cf-validation',
         YAML_CF_PLUGIN_URL . 'admin-assets/admin-validation.js',
-        ['jquery'],
+        ['jquery', 'wp-i18n'],
         YAML_CF_VERSION,
         true
       );
+      $this->setScriptTranslations('yaml-cf-validation');
     }
 
     if ($current_page === 'yaml-cf-export-data') {
       wp_enqueue_script(
         'yaml-cf-export-import',
         YAML_CF_PLUGIN_URL . 'admin-assets/admin-export-import.js',
-        ['jquery', 'yaml-cf-admin'],
+        ['jquery', 'wp-i18n', 'yaml-cf-admin'],
         YAML_CF_VERSION,
         true
       );
+      $this->setScriptTranslations('yaml-cf-export-import');
     }
 
     // Localize page config if set by controller
     if (!empty($this->page_config)) {
       wp_localize_script('yaml-cf-admin-page-init', 'yamlCFPageInit', $this->page_config);
     }
+  }
+
+  /**
+   * Load JavaScript translations (wp.i18n) for a script handle
+   * Uses language packs from translate.wordpress.org, or JSON files in /languages for local development.
+   *
+   * @param string $handle Script handle
+   */
+  private function setScriptTranslations($handle) {
+    wp_set_script_translations($handle, 'yaml-custom-fields', YAML_CF_PLUGIN_DIR . 'languages');
   }
 
   /**

@@ -14,6 +14,26 @@ class DataSanitizerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->sanitizer = new DataSanitizer();
+		$GLOBALS['yaml_cf_test_user_caps'] = [];
+	}
+
+	protected function tearDown(): void {
+		$GLOBALS['yaml_cf_test_user_caps'] = [];
+		parent::tearDown();
+	}
+
+	/**
+	 * Build a schema node from field definitions
+	 */
+	private function schema(array $fields) {
+		return ['fields' => $fields];
+	}
+
+	/**
+	 * Encode a value the way code fields are stored
+	 */
+	private function encoded($code) {
+		return DataSanitizer::CODE_FIELD_MARKER . base64_encode($code);
 	}
 
 	/**
@@ -119,7 +139,7 @@ class DataSanitizerTest extends TestCase {
 	}
 
 	/**
-	 * Test sanitizes with schema parameter (currently ignored)
+	 * Test sanitizes with a schema node that has no fields
 	 */
 	public function testSanitizesWithSchemaParameter() {
 		$schema = [
@@ -132,7 +152,7 @@ class DataSanitizerTest extends TestCase {
 	}
 
 	/**
-	 * Test sanitizes with field_name parameter (currently ignored)
+	 * Test sanitizes with a field name missing from the schema
 	 */
 	public function testSanitizesWithFieldNameParameter() {
 		$result = $this->sanitizer->sanitize('Test Value', null, 'my_field');
@@ -272,5 +292,210 @@ class DataSanitizerTest extends TestCase {
 		$this->assertCount(3, $result['items']);
 		$this->assertEquals('Item 1', $result['items'][0]['title']);
 		$this->assertEquals('Desc 3', $result['items'][2]['description']);
+	}
+
+	/**
+	 * Test a marker-prefixed value in a non-code field is not stored as encoded code
+	 */
+	public function testMarkerPrefixInStringFieldIsStripped() {
+		$schema = $this->schema([['name' => 'title', 'type' => 'string']]);
+		$payload = $this->encoded('<script>alert(1)</script>');
+
+		$result = $this->sanitizer->sanitize(['title' => $payload], $schema);
+
+		$this->assertStringNotContains(DataSanitizer::CODE_FIELD_MARKER, $result['title']);
+		$this->assertStringNotContains('<script>', $result['title']);
+	}
+
+	/**
+	 * Test a repeated marker prefix is fully removed from non-code fields
+	 */
+	public function testRepeatedMarkerPrefixIsStripped() {
+		$schema = $this->schema([['name' => 'title', 'type' => 'string']]);
+		$value = DataSanitizer::CODE_FIELD_MARKER . DataSanitizer::CODE_FIELD_MARKER . 'abc';
+
+		$result = $this->sanitizer->sanitize(['title' => $value], $schema);
+
+		$this->assertEquals('abc', $result['title']);
+	}
+
+	/**
+	 * Test code fields keep raw code for users with unfiltered_html
+	 */
+	public function testCodeFieldKeepsScriptForUnfilteredHtmlUsers() {
+		$GLOBALS['yaml_cf_test_user_caps'] = ['unfiltered_html' => true];
+		$schema = $this->schema([['name' => 'embed', 'type' => 'code']]);
+		$code = '<script>track();</script><div>Form</div>';
+
+		$result = $this->sanitizer->sanitize(['embed' => $code], $schema);
+
+		$this->assertEquals($this->encoded($code), $result['embed']);
+	}
+
+	/**
+	 * Test code fields are kses-filtered for users without unfiltered_html
+	 */
+	public function testCodeFieldStripsScriptWithoutUnfilteredHtml() {
+		$schema = $this->schema([['name' => 'embed', 'type' => 'code']]);
+
+		$result = $this->sanitizer->sanitize(['embed' => '<script>steal();</script><div>Form</div>'], $schema);
+
+		$this->assertEquals($this->encoded('<div>Form</div>'), $result['embed']);
+	}
+
+	/**
+	 * Test already-encoded code values (e.g. from an export file) are decoded and re-sanitized
+	 */
+	public function testEncodedCodeValueIsResanitized() {
+		$schema = $this->schema([['name' => 'embed', 'type' => 'code']]);
+
+		$result = $this->sanitizer->sanitize(['embed' => $this->encoded('<script>x()</script><p>ok</p>')], $schema);
+
+		$this->assertEquals($this->encoded('<p>ok</p>'), $result['embed']);
+	}
+
+	/**
+	 * Test CSS code fields lose dangerous patterns for users without unfiltered_html
+	 */
+	public function testCssCodeFieldRemovesDangerousPatterns() {
+		$schema = $this->schema([['name' => 'css', 'type' => 'code', 'options' => ['language' => 'css']]]);
+
+		$result = $this->sanitizer->sanitize(['css' => "body { background: url(javascript:alert(1)); }\n@import url(x.css);"], $schema);
+		$decoded = base64_decode(substr($result['css'], strlen(DataSanitizer::CODE_FIELD_MARKER)));
+
+		$this->assertStringNotContains('javascript:', $decoded);
+		$this->assertStringNotContains('@import', $decoded);
+		$this->assertStringContains('body {', $decoded);
+	}
+
+	/**
+	 * Test empty code fields are stored as empty strings
+	 */
+	public function testEmptyCodeFieldIsEmptyString() {
+		$schema = $this->schema([['name' => 'embed', 'type' => 'code']]);
+
+		$result = $this->sanitizer->sanitize(['embed' => ''], $schema);
+
+		$this->assertSame('', $result['embed']);
+	}
+
+	/**
+	 * Test a top-level string field is not treated as code because a nested field shares its name
+	 */
+	public function testNestedCodeFieldNameDoesNotAffectTopLevelField() {
+		$schema = $this->schema([
+			['name' => 'content', 'type' => 'string'],
+			['name' => 'section', 'type' => 'object', 'fields' => [
+				['name' => 'content', 'type' => 'code'],
+			]],
+		]);
+
+		$result = $this->sanitizer->sanitize([
+			'content' => '<b>Title</b>',
+			'section' => ['content' => '<div>Code</div>'],
+		], $schema);
+
+		$this->assertEquals('Title', $result['content']);
+		$this->assertEquals($this->encoded('<div>Code</div>'), $result['section']['content']);
+	}
+
+	/**
+	 * Test rich-text fields keep safe HTML
+	 */
+	public function testRichTextKeepsSafeHtml() {
+		$schema = $this->schema([['name' => 'body', 'type' => 'rich-text']]);
+
+		$result = $this->sanitizer->sanitize(['body' => '<p><strong>Hi</strong></p><script>x()</script>'], $schema);
+
+		$this->assertEquals('<p><strong>Hi</strong></p>', $result['body']);
+	}
+
+	/**
+	 * Test block list items are sanitized with their own block schema
+	 */
+	public function testBlockListUsesBlockSchema() {
+		$schema = $this->schema([
+			['name' => 'sections', 'type' => 'block', 'list' => true, 'blocks' => [
+				['name' => 'hero', 'fields' => [
+					['name' => 'title', 'type' => 'string'],
+					['name' => 'body', 'type' => 'rich-text'],
+				]],
+				['name' => 'embed', 'fields' => [
+					['name' => 'html', 'type' => 'code'],
+				]],
+			]],
+		]);
+
+		$result = $this->sanitizer->sanitize(['sections' => [
+			['type' => 'hero', 'title' => '<i>Hello</i>', 'body' => '<p>Text</p>'],
+			['type' => 'embed', 'html' => '<div>Widget</div>'],
+		]], $schema);
+
+		$this->assertEquals('hero', $result['sections'][0]['type']);
+		$this->assertEquals('Hello', $result['sections'][0]['title']);
+		$this->assertEquals('<p>Text</p>', $result['sections'][0]['body']);
+		$this->assertEquals($this->encoded('<div>Widget</div>'), $result['sections'][1]['html']);
+	}
+
+	/**
+	 * Test block items with an unknown block type are sanitized as plain text
+	 */
+	public function testUnknownBlockTypeIsPlainText() {
+		$schema = $this->schema([
+			['name' => 'sections', 'type' => 'block', 'list' => true, 'blocks' => [
+				['name' => 'embed', 'fields' => [['name' => 'html', 'type' => 'code']]],
+			]],
+		]);
+
+		$result = $this->sanitizer->sanitize(['sections' => [
+			['type' => 'other', 'html' => '<div>Widget</div>'],
+		]], $schema);
+
+		$this->assertEquals('Widget', $result['sections'][0]['html']);
+	}
+
+	/**
+	 * Test empty placeholders are removed from multiple taxonomy and file list fields
+	 */
+	public function testMultipleFieldsDropEmptyPlaceholders() {
+		$schema = $this->schema([
+			['name' => 'cats', 'type' => 'taxonomy', 'multiple' => true],
+			['name' => 'docs', 'type' => 'file', 'list' => true],
+			['name' => 'partners', 'type' => 'data_object', 'list' => true],
+		]);
+
+		$result = $this->sanitizer->sanitize([
+			'cats' => ['', '4', '7'],
+			'docs' => ['', '12'],
+			'partners' => ['', 'entry_1'],
+		], $schema);
+
+		$this->assertSame(['4', '7'], $result['cats']);
+		$this->assertSame(['12'], $result['docs']);
+		$this->assertSame(['entry_1'], $result['partners']);
+	}
+
+	/**
+	 * Test list items never become code even if they carry the marker
+	 */
+	public function testListItemsAreNeverCode() {
+		$schema = $this->schema([['name' => 'tags', 'type' => 'select', 'multiple' => true]]);
+
+		$result = $this->sanitizer->sanitize(['tags' => [$this->encoded('<b>x</b>')]], $schema);
+
+		$this->assertStringNotContains(DataSanitizer::CODE_FIELD_MARKER, $result['tags'][0]);
+	}
+
+	/**
+	 * Test getFieldDefinition only matches direct fields
+	 */
+	public function testGetFieldDefinitionMatchesDirectFieldsOnly() {
+		$schema = $this->schema([
+			['name' => 'section', 'type' => 'object', 'fields' => [['name' => 'inner', 'type' => 'code']]],
+		]);
+
+		$this->assertNull($this->sanitizer->getFieldDefinition($schema, 'inner'));
+		$this->assertEquals('object', $this->sanitizer->getFieldDefinition($schema, 'section')['type']);
+		$this->assertNull($this->sanitizer->getFieldDefinition(null, 'section'));
 	}
 }

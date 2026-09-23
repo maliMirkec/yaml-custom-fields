@@ -235,4 +235,155 @@ class FieldNormalizerTest extends TestCase {
 		$this->assertStringContains('Line 1', $result[0]['text']);
 		$this->assertStringContains('Line 3', $result[0]['text']);
 	}
+
+	/**
+	 * Test normalizes section field shorthand
+	 */
+	public function testNormalizesSectionFieldShorthand() {
+		$fields = [
+			['section' => 'Contact details']
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$this->assertCount(1, $result);
+		$this->assertEquals('section', $result[0]['type']);
+		$this->assertEquals('section_0', $result[0]['name']);
+		$this->assertEquals('Contact details', $result[0]['label']);
+	}
+
+	/**
+	 * Test a bare section break gets no label
+	 */
+	public function testNormalizesBareSectionShorthand() {
+		$fields = [
+			['section' => null]
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$this->assertEquals('section', $result[0]['type']);
+		$this->assertEquals('section_0', $result[0]['name']);
+		$this->assertArrayNotHasKey('label', $result[0]);
+	}
+
+	/**
+	 * Test long form sections are given a name so they validate
+	 */
+	public function testLongFormSectionGetsName() {
+		$fields = [
+			['type' => 'section', 'label' => 'Opening hours', 'description' => 'Footer only']
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$this->assertEquals('section_0', $result[0]['name']);
+		$this->assertEquals('Opening hours', $result[0]['label']);
+		$this->assertEquals('Footer only', $result[0]['description']);
+	}
+
+	/**
+	 * Test regular fields are left untouched by section normalizing
+	 */
+	public function testSectionNormalizingLeavesRegularFieldsAlone() {
+		$fields = [
+			['name' => 'title', 'type' => 'string'],
+			['name' => 'body', 'type' => 'text'],
+		];
+
+		$this->assertEquals($fields, $this->normalizer->normalizeSectionFields($fields));
+	}
+
+	/**
+	 * Test normalizeAll handles info boxes and section breaks together
+	 */
+	public function testNormalizeAllHandlesBothShorthands() {
+		$fields = [
+			['info' => 'Heads up'],
+			['section' => 'Contact details'],
+			['name' => 'email', 'type' => 'string'],
+		];
+
+		$result = $this->normalizer->normalizeAll($fields);
+
+		$this->assertEquals('info', $result[0]['type']);
+		$this->assertEquals('section', $result[1]['type']);
+		$this->assertEquals('Contact details', $result[1]['label']);
+		$this->assertEquals('email', $result[2]['name']);
+	}
+
+	/**
+	 * Test a row break becomes a section that draws nothing
+	 */
+	public function testNormalizesBreakShorthand() {
+		$fields = [
+			['break' => true]
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$this->assertCount(1, $result);
+		$this->assertEquals('section', $result[0]['type']);
+		$this->assertEquals('section_0', $result[0]['name']);
+		$this->assertTrue($result[0]['break']);
+		$this->assertArrayNotHasKey('label', $result[0]);
+	}
+
+	/**
+	 * Test the long form "type: break" normalizes the same way
+	 */
+	public function testNormalizesLongFormBreak() {
+		$fields = [
+			['type' => 'break']
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$this->assertEquals('section', $result[0]['type']);
+		$this->assertTrue($result[0]['break']);
+	}
+
+	/**
+	 * Test breaks and sections share one counter so names stay unique
+	 */
+	public function testBreaksAndSectionsShareNameCounter() {
+		$fields = [
+			['section' => 'First'],
+			['break' => true],
+			['section' => 'Second'],
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$names = array_column($result, 'name');
+		$this->assertEquals($names, array_unique($names));
+		$this->assertEquals(['section_0', 'section_1', 'section_2'], $names);
+	}
+
+	/**
+	 * Test a bare "- break:" still works alongside "- break: true"
+	 */
+	public function testNormalizesBareBreak() {
+		$result = $this->normalizer->normalizeSectionFields([['break' => null]]);
+
+		$this->assertCount(1, $result);
+		$this->assertTrue($result[0]['break']);
+	}
+
+	/**
+	 * Test "break: false" asks for nothing and leaves no field behind
+	 */
+	public function testBreakFalseIsDropped() {
+		$fields = [
+			['name' => 'title', 'type' => 'string'],
+			['break' => false],
+			['name' => 'body', 'type' => 'text'],
+		];
+
+		$result = $this->normalizer->normalizeSectionFields($fields);
+
+		$this->assertCount(2, $result);
+		$this->assertEquals('title', $result[0]['name']);
+		$this->assertEquals('body', $result[1]['name']);
+	}
 }

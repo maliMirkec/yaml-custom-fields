@@ -7,6 +7,14 @@
 (function($) {
   'use strict';
 
+  const { __ } = wp.i18n;
+
+  function showMessage(message, type, persistent) {
+    if (typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
+      YamlCF.showMessage(message, type, persistent);
+    }
+  }
+
   // Wait for DOM ready
   $(document).ready(function() {
     // Check if page data exists
@@ -17,18 +25,18 @@
     var pageData = yamlCFPageInit;
 
     // Display success message if provided
-    if (pageData.successMessage && typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-      YamlCF.showMessage(pageData.successMessage, 'success');
+    if (pageData.successMessage) {
+      showMessage(pageData.successMessage, 'success');
     }
 
     // Display error message if provided
-    if (pageData.errorMessage && typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-      YamlCF.showMessage(pageData.errorMessage, 'error', true);
+    if (pageData.errorMessage) {
+      showMessage(pageData.errorMessage, 'error', true);
     }
 
     // Display notification if provided (for admin page)
-    if (pageData.notification && typeof yamlCF !== 'undefined' && yamlCF.showMessage) {
-      yamlCF.showMessage(pageData.notification.message, pageData.notification.type);
+    if (pageData.notification) {
+      showMessage(pageData.notification.message, pageData.notification.type);
     }
 
     // Initialize form change tracking if configured
@@ -44,11 +52,13 @@
         e.preventDefault();
         var $btn = $(this);
         var originalHtml = $btn.html();
-        var i18n = pageData.i18n || {};
+        var refreshFailed = __('The list could not be refreshed. Please try again.', 'yaml-custom-fields');
 
         // Disable button and show loading state
-        var refreshingText = i18n.refreshing || 'Refreshing...';
-        $btn.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> ' + refreshingText);
+        $btn.prop('disabled', true).empty().append(
+          $('<span>').addClass('dashicons dashicons-update spin'),
+          document.createTextNode(' ' + __('Refreshing…', 'yaml-custom-fields'))
+        );
 
         $.ajax({
           url: ajaxurl,
@@ -63,18 +73,12 @@
               window.location.reload();
             } else {
               $btn.prop('disabled', false).html(originalHtml);
-              if (typeof yamlCF !== 'undefined' && yamlCF.showMessage) {
-                var errorMsg = response.data || i18n.refreshFailed || 'Failed to refresh template list';
-                yamlCF.showMessage(errorMsg, 'error');
-              }
+              showMessage(response.data || refreshFailed, 'error');
             }
           },
           error: function() {
             $btn.prop('disabled', false).html(originalHtml);
-            if (typeof yamlCF !== 'undefined' && yamlCF.showMessage) {
-              var errorMsg = i18n.refreshFailed || 'Failed to refresh template list';
-              yamlCF.showMessage(errorMsg, 'error');
-            }
+            showMessage(refreshFailed, 'error');
           }
         });
       });

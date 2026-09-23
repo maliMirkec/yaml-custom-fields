@@ -12,87 +12,76 @@ if (!defined('ABSPATH')) {
 /**
  * Controller for data validation page
  * Handles: attachment validation, missing attachment detection
+ *
+ * Imported posts are validated one page at a time, so the page stays fast on large sites.
  */
 class ValidationController extends AdminController {
-  private $attachmentValidator;
-  private $validationResults = null;
-  private $totalPosts = 0;
-  private $postsWithIssues = 0;
-  private $totalMissingAttachments = 0;
+  const PER_PAGE = 50;
 
-  public function __construct($attachmentValidator) {
+  private $attachmentValidator;
+  private $postRepository;
+
+  public function __construct($attachmentValidator, $postRepository = null) {
     $this->attachmentValidator = $attachmentValidator;
+    $this->postRepository = $postRepository ?: new \YamlCF\Data\Repositories\PostDataRepository();
   }
 
   /**
-   * Handle validation processing
-   * This runs on admin_init, before any output
+   * Kept for backward compatibility with the admin_init hook in the main plugin file.
+   * Validation now runs while rendering, for the requested page only.
    */
   public function handleValidation() {
-    // Only run on the validation page
-    if (RequestHelper::getParam('page') !== 'yaml-cf-data-validation') {
-      return;
-    }
+  }
 
-    // Get all posts with custom field data and validate them
-    // Try to get from cache first
-    $cache_key = 'yaml_cf_validation_posts';
-    $posts = wp_cache_get($cache_key, 'yaml-custom-fields');
+  /**
+   * Validate one page of imported posts
+   *
+   * @param int $paged Page number
+   * @return array Template variables
+   */
+  private function validatePage($paged) {
+    $query = $this->postRepository->queryPostsWithData([
+      'paged' => $paged,
+      'per_page' => self::PER_PAGE,
+      'require_imported' => true,
+    ]);
 
-    if (false === $posts) {
-      // Query all posts without meta_key to avoid slow query warnings
-      // Filter in PHP using metadata_exists() which uses WordPress's cached get_post_meta()
-      $all_posts = get_posts([
-        'post_type' => ['page', 'post'],
-        'post_status' => ['publish', 'draft', 'pending', 'private'],
-        'posts_per_page' => -1,
-        'orderby' => ['post_type' => 'ASC', 'title' => 'ASC'],
-        'fields' => 'all',
-        'no_found_rows' => true,
-        'update_post_term_cache' => false,
-      ]);
+    $results = [];
+    $posts_with_issues = 0;
+    $total_missing = 0;
 
-      // Filter to only include posts with both required meta keys
-      // This is faster than meta_query because WordPress caches post meta
-      $posts = [];
-      foreach ($all_posts as $post) {
-        // Check if post has both required meta keys
-        if (metadata_exists('post', $post->ID, '_yaml_cf_imported') &&
-            metadata_exists('post', $post->ID, '_yaml_cf_data')) {
-          $posts[] = $post;
-        }
-      }
-
-      // Cache for 5 minutes
-      wp_cache_set($cache_key, $posts, 'yaml-custom-fields', 300);
-    }
-
-    $this->validationResults = [];
-    $this->totalPosts = count($posts);
-    $this->postsWithIssues = 0;
-    $this->totalMissingAttachments = 0;
-
-    foreach ($posts as $post) {
+    foreach ($query['posts'] as $post) {
       $data = get_post_meta($post->ID, '_yaml_cf_data', true);
       if (empty($data)) {
         continue;
       }
 
-      // Get the schema for this post
+      // The stored schema is the full parsed schema; the validator expects its field list
       $schema = get_post_meta($post->ID, '_yaml_cf_schema', true);
+      $fields = is_array($schema) && isset($schema['fields']) && is_array($schema['fields']) ? $schema['fields'] : null;
 
-      $missing_attachments = $this->attachmentValidator->validateAttachments($data, '', $schema);
-
-      if (!empty($missing_attachments)) {
-        $this->postsWithIssues++;
-        $this->totalMissingAttachments += count($missing_attachments);
+      $missing = $this->attachmentValidator->validateAttachments($data, '', $fields);
+      if (!empty($missing)) {
+        $posts_with_issues++;
+        $total_missing += count($missing);
       }
 
-      $this->validationResults[] = [
+      $results[] = [
         'post' => $post,
-        'missing_attachments' => $missing_attachments
+        'missing_attachments' => $missing,
       ];
     }
+
+    return [
+      'validation_results' => $results,
+      'total_posts' => $query['total'],
+      'page_posts' => count($results),
+      'posts_with_issues' => $posts_with_issues,
+      'total_missing_attachments' => $total_missing,
+      'paged' => $query['paged'],
+      'total_pages' => $query['total_pages'],
+      'per_page' => self::PER_PAGE,
+    ];
   }
 
   /**
@@ -100,11 +89,8 @@ class ValidationController extends AdminController {
    */
   public function render() {
     $this->checkPermission();
-    $this->loadTemplate('data-validation-page.php', [
-      'validation_results' => $this->validationResults,
-      'total_posts' => $this->totalPosts,
-      'posts_with_issues' => $this->postsWithIssues,
-      'total_missing_attachments' => $this->totalMissingAttachments,
-    ]);
+
+    $paged = max(1, RequestHelper::getParamInt('paged', 1));
+    $this->loadTemplate('data-validation-page.php', $this->validatePage($paged));
   }
 }

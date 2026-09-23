@@ -29,7 +29,7 @@ class SchemaValidatorTest extends TestCase {
 
 		$this->assertIsArray($result);
 		$this->assertTrue($result['valid']);
-		$this->assertEquals('Schema is valid', $result['message']);
+		$this->assertEquals('The schema looks good.', $result['message']);
 	}
 
 	/**
@@ -40,7 +40,7 @@ class SchemaValidatorTest extends TestCase {
 
 		$this->assertIsArray($result);
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('Empty or invalid', $result['message']);
+		$this->assertStringContains('The schema is empty', $result['message']);
 	}
 
 	/**
@@ -93,7 +93,7 @@ class SchemaValidatorTest extends TestCase {
 		$result = $this->validator->validate($yaml);
 
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('syntax error', $result['message']);
+		$this->assertStringContains('typing mistake', $result['message']);
 	}
 
 	/**
@@ -125,7 +125,7 @@ class SchemaValidatorTest extends TestCase {
 		$result = $this->validator->validate($yaml);
 
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('not a valid array', $result['message']);
+		$this->assertStringContains('is not written correctly', $result['message']);
 	}
 
 	/**
@@ -198,7 +198,7 @@ class SchemaValidatorTest extends TestCase {
 		$result = $this->validator->validate($yaml, 'header.php');
 
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('Info fields are not allowed', $result['message']);
+		$this->assertStringContains('Info boxes only work on page and post templates', $result['message']);
 		$this->assertStringContains('header.php', $result['message']);
 	}
 
@@ -214,7 +214,7 @@ class SchemaValidatorTest extends TestCase {
 		$result = $this->validator->validate($yaml, 'footer.php');
 
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('Info fields are not allowed', $result['message']);
+		$this->assertStringContains('Info boxes only work on page and post templates', $result['message']);
 	}
 
 	/**
@@ -229,7 +229,7 @@ class SchemaValidatorTest extends TestCase {
 		$result = $this->validator->validate($yaml, 'archive.php');
 
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('Info fields are not allowed', $result['message']);
+		$this->assertStringContains('Info boxes only work on page and post templates', $result['message']);
 	}
 
 	/**
@@ -304,6 +304,39 @@ class SchemaValidatorTest extends TestCase {
 		$result = $this->validator->validate($yaml, 'sidebar.php');
 
 		$this->assertFalse($result['valid']);
-		$this->assertStringContains('Info fields are not allowed', $result['message']);
+		$this->assertStringContains('Info boxes only work on page and post templates', $result['message']);
+	}
+
+	/**
+	 * Test a schema with section breaks validates
+	 */
+	public function testAcceptsSectionShorthand() {
+		$yaml = "fields:\n" .
+			"  - section: Page basics\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"  - section:\n" .
+			"  - name: body\n" .
+			"    type: text\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
+	}
+
+	/**
+	 * Test a long form section without a name still validates
+	 */
+	public function testAcceptsLongFormSectionWithoutName() {
+		$yaml = "fields:\n" .
+			"  - type: section\n" .
+			"    label: Opening hours\n" .
+			"    description: Shown in the footer\n" .
+			"  - name: hours\n" .
+			"    type: text\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
 	}
 }

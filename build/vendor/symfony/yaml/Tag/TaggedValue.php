@@ -23,11 +23,11 @@ final class TaggedValue
         $this->tag = $tag;
         $this->value = $value;
     }
-    public function getTag() : string
+    public function getTag(): string
     {
         return $this->tag;
     }
-    public function getValue() : mixed
+    public function getValue(): mixed
     {
         return $this->value;
     }

@@ -23,9 +23,25 @@
 		<exclude-pattern>uninstall.php</exclude-pattern>
 	</rule>
 
-	<!-- File uploads: tmp_name is validated by WordPress core wp_handle_upload() -->
+	<!-- Posts with YAML CF data are found with a paginated meta_key EXISTS query (indexed column);
+	     the alternative is loading every post and filtering in PHP -->
+	<rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_query">
+		<exclude-pattern>src/Data/Repositories/PostDataRepository.php</exclude-pattern>
+	</rule>
+
+	<!-- File uploads: tmp_name is PHP's temporary path, checked with is_uploaded_file() before it is read -->
 	<rule ref="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized">
 		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+	</rule>
+
+	<!-- RequestHelper is the single place that reads request superglobals. Callers verify the nonce
+	     before reading POST data, and postRaw() values are sanitized per field type by
+	     YamlCF\Form\DataSanitizer against the schema. -->
+	<rule ref="WordPress.Security.NonceVerification">
+		<exclude-pattern>src/Helpers/RequestHelper.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized">
+		<exclude-pattern>src/Helpers/RequestHelper.php</exclude-pattern>
 	</rule>
 
 	<!-- Minimum supported PHP version -->

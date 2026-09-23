@@ -2,6 +2,9 @@
 /**
  * Documentation Content (HTML)
  * File: templates/docs-content.php
+ *
+ * Plain language, neutral tone: describe what things are and what happens.
+ * Developer details are at the end, in "For developers".
  */
 
 if (!defined('ABSPATH')) {
@@ -9,575 +12,166 @@ if (!defined('ABSPATH')) {
 }
 ?>
 
-<p>A WordPress plugin for managing YAML frontmatter schemas in theme templates and partials. YAML Custom Fields allows you to define structured content schemas with an intuitive interface and ACF-like template functions.</p>
+<p class="yaml-cf-docs-lead">YAML Custom Fields adds custom fields to pages. A field is a box to fill in, like "Headline" or "Team photo". The website then shows that content in the right place.</p>
 
-<blockquote>Vibe-coded with Claude.</blockquote>
+<nav class="yaml-cf-docs-toc" aria-label="On this page">
+  <strong>On this page</strong>
+  <ul>
+    <li><a href="#words">What the words mean</a></li>
+    <li><a href="#writers">Filling in fields</a></li>
+    <li><a href="#setup">Setting up fields</a></li>
+    <li><a href="#field-types">Field types</a></li>
+    <li><a href="#site-parts">Site parts: header, footer and more</a></li>
+    <li><a href="#shared">Shared fields</a></li>
+    <li><a href="#site-details">Site details</a></li>
+    <li><a href="#lists">Reusable lists</a></li>
+    <li><a href="#theme">Showing fields on the website</a></li>
+    <li><a href="#moving">Backups and moving to another website</a></li>
+    <li><a href="#problems">When something does not work</a></li>
+    <li><a href="#safety">Safety</a></li>
+    <li><a href="#developers">For developers</a></li>
+  </ul>
+</nav>
 
-<h2>Features</h2>
+<h2 id="words">What the words mean</h2>
 
+<dl class="yaml-cf-docs-glossary">
+  <dt>Field</dt>
+  <dd>A box to fill in. For example, a title, a photo or a date.</dd>
+
+  <dt>Template</dt>
+  <dd>A layout file in the theme. It decides how a page looks. A "Homepage" template, for example.</dd>
+
+  <dt>Schema</dt>
+  <dd>A short list of the fields a template gets. It is written in YAML, a simple text format. Each field has a name, a label and a type.</dd>
+
+  <dt>Site parts</dt>
+  <dd>Parts that repeat on many pages, like the header and the footer. Also pages that list posts, like a blog or a category page.</dd>
+
+  <dt>Shared fields</dt>
+  <dd>Fields with one value for every page that uses the same template. Filled in once.</dd>
+
+  <dt>Site details</dt>
+  <dd>Details used across the whole website, like a phone number. Filled in once, under Site details.</dd>
+
+  <dt>Reusable list</dt>
+  <dd>A list filled in once, like the team members. Pages can pick items from it.</dd>
+</dl>
+
+<h2 id="writers">Filling in fields</h2>
+
+<ol>
+  <li>Open a page or post, or create a new one.</li>
+  <li>Check the page template on the right. The fields depend on it.</li>
+  <li>Scroll down to the <strong>Custom fields</strong> box, below the title.</li>
+  <li>Fill in the fields.</li>
+  <li>Click <strong>Update</strong> or <strong>Publish</strong> to save.</li>
+</ol>
+
+<p><strong>Good to know:</strong> the fields appear in the classic editor. On a site that uses the block editor, the Classic Editor plugin brings them back.</p>
+
+<h3>Images and files</h3>
+<p><strong>Choose image</strong> and <strong>Choose file</strong> open the media library. <strong>Remove</strong> empties the field.</p>
+
+<h3>Sections</h3>
+<p>Some pages are built from sections, like a banner, a text block or a gallery. <strong>Add section</strong> adds one. The arrows change the order. The trash icon removes a section.</p>
+
+<h3>Shared values</h3>
+<p>Some fields show two boxes. The top box holds the <strong>shared value</strong>, the same on every page with this template. The second box is for <strong>this page only</strong>.</p>
+<p>The tick box <strong>Use the shared value on this page</strong> switches between them.</p>
+
+<h3>Saving a copy of the fields</h3>
+<p>Three links sit at the top of the Custom fields box:</p>
 <ul>
-  <li>🎨 <strong>Define YAML schemas</strong> for page templates and template partials</li>
-  <li>📝 <strong>15+ field types</strong> including string, rich-text, images, blocks, taxonomies, post types, data objects, and more</li>
-  <li>🔧 <strong>Beautiful admin interface</strong> with branded header and intuitive controls</li>
-  <li>🎯 <strong>Three-level data hierarchy:</strong>
-    <ul>
-      <li>Per-page data for individual customization (stored in post meta)</li>
-      <li>Per-template global data shared across all posts using the same template</li>
-      <li>Site-wide global data for partials like headers and footers</li>
-    </ul>
-  </li>
-  <li>🔀 <strong>Per-field global/local toggle</strong> - Each field can independently use template global data or page-specific data</li>
-  <li>👀 <strong>Visual dual-field interface</strong> - See both template global and page-specific values side-by-side</li>
-  <li>📦 <strong>Data Objects</strong> - Manage structured, reusable data (universities, companies, team members, etc.)</li>
-  <li>🚀 <strong>Simple template functions</strong> with ACF-like syntax and auto-merge behavior</li>
-  <li>🗑️ <strong>Clear buttons</strong> for image and file fields</li>
-  <li>🔄 <strong>Reset all data</strong> button with confirmation</li>
-  <li>🔒 <strong>Administrator-only access</strong> for security</li>
-  <li>🧹 <strong>Clean uninstall</strong> removes all database records</li>
-  <li>⚡ <strong>WordPress Coding Standards compliant</strong> with optimized performance</li>
+  <li><strong>Export fields</strong> saves this page's fields to a file.</li>
+  <li><strong>Import fields</strong> fills the fields from such a file, replacing what is there now.</li>
+  <li><strong>Empty all fields</strong> clears every field on this page. The change is saved with Update.</li>
 </ul>
 
-<h2>Screenshots</h2>
+<h2 id="setup">Setting up fields</h2>
 
-<h3>1. Main Admin Page</h3>
-<p><img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/screenshot-1.png'); ?>" alt="Main YAML Custom Fields admin page" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0;" /></p>
-<p><em>Main admin page showing page templates and template partials with enable/disable toggles</em></p>
+<p>This part is for whoever sets up the website. It is done once per template.</p>
 
-<h3>2. Schema Editor - Page Templates</h3>
-<p><img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/screenshot-2.png'); ?>" alt="Schema editor for page templates" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0;" /></p>
-<p><em>Schema editor for main page templates with YAML syntax for defining custom fields</em></p>
+<h3>Step 1: Switch on a template</h3>
+<p>Open <strong>YAML Custom Fields</strong> in the menu on the left, find the template in the table and switch it <strong>On</strong>.</p>
 
-<h3>3. Schema Editor - Partial Templates</h3>
-<p><img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/screenshot-3.png'); ?>" alt="Schema editor for partials" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0;" /></p>
-<p><em>Schema editor for partial templates (headers, footers, etc.)</em></p>
-
-<h3>4. Partial Data Editor</h3>
-<p><img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/screenshot-4.png'); ?>" alt="Partial data editor" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0;" /></p>
-<p><em>Partial data editor for managing global content in template partials</em></p>
-
-<h3>5. Documentation Page</h3>
-<p><img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/screenshot-5.png'); ?>" alt="Documentation page" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0;" /></p>
-<p><em>Comprehensive documentation with guides and examples</em></p>
-
-<h2>Installation</h2>
-
-<h3>From WordPress Plugin Directory (Recommended)</h3>
-
-<ol>
-  <li>Log in to your WordPress admin dashboard</li>
-  <li>Navigate to <strong>Plugins → Add New</strong></li>
-  <li>Search for "YAML Custom Fields"</li>
-  <li>Click <strong>Install Now</strong> next to the YAML Custom Fields plugin</li>
-  <li>Click <strong>Activate</strong> after installation completes</li>
-  <li>Go to <strong>YAML Custom Fields</strong> in the admin menu to configure your schemas</li>
-</ol>
-
-<h3>Manual Installation</h3>
-
-<p>If you're installing from source or a ZIP file:</p>
-
-<ol>
-  <li>Upload the <code>yaml-custom-fields</code> folder to <code>/wp-content/plugins/</code></li>
-  <li>If installing from source, navigate to the plugin directory and install dependencies:
-    <pre><code>cd wp-content/plugins/yaml-custom-fields
-composer install</code></pre>
-    <strong>Note:</strong> If you downloaded from the WordPress plugin directory, dependencies are already included.
-  </li>
-  <li>Activate the plugin through the <strong>Plugins</strong> menu in WordPress</li>
-  <li>Go to <strong>YAML Custom Fields</strong> in the admin menu to configure your schemas</li>
-</ol>
-
-<h2>Quick Start</h2>
-
-<h3>1. Enable YAML for a Template</h3>
-
-<ol>
-  <li>Go to <strong>YAML Custom Fields</strong> in your WordPress admin</li>
-  <li>Find your template in the "Page Templates" section</li>
-  <li>Toggle the "Enable YAML" switch</li>
-  <li>Click "Add Schema" or "Edit Schema"</li>
-</ol>
-
-<h3>2. Define a Schema</h3>
-
-<p>Here's an example schema for a landing page template:</p>
+<h3>Step 2: Write the schema</h3>
+<p><strong>Create schema</strong> opens the editor. Each field is one entry. Here is a schema with three fields:</p>
 
 <pre><code>fields:
-  - name: hero_title
-    label: Page Title
+  - name: headline
+    label: Headline
     type: string
-    required: true
-    options:
-      maxlength: 100
-  - name: hero_image
-    label: Hero Image
+  - name: photo
+    label: Photo
     type: image
-  - name: category
-    label: Category
-    type: taxonomy
-    options:
-      taxonomy: category
-  - name: description
-    label: Description
-    type: text
-    options:
-      maxlength: 500
-  - name: cta_button
-    label: Call to Action Button
-    type: object
-    fields:
-      - name: text
-        label: Button Text
-        type: string
-      - name: url
-        label: Button URL
-        type: string
-  - name: features
-    label: Feature Sections
-    type: block
-    list: true
-    blockKey: type
-    blocks:
-      - name: feature
-        label: Feature Block
-        fields:
-          - name: title
-            label: Feature Title
-            type: string
-          - name: description
-            label: Feature Description
-            type: text
-          - name: icon
-            label: Icon
-            type: image</code></pre>
+  - name: intro
+    label: Introduction
+    type: text</code></pre>
 
-<h3>3. Edit Page Data</h3>
-
-<ol>
-  <li>Create or edit a page/post</li>
-  <li>Select your template from the <strong>Template</strong> dropdown</li>
-  <li>The <strong>YAML Custom Fields Schema</strong> meta box appears below the editor</li>
-  <li>Fill in your custom fields</li>
-  <li>Publish!</li>
-</ol>
-
-<h3>4. Use Fields in Your Template</h3>
-
-<p>In your theme template file (e.g., <code>page-landing.php</code>):</p>
-
-<pre><code>&lt;?php
-// Get individual fields using short alias
-$hero_title = ycf_get_field('hero_title');
-$hero_image = ycf_get_image('hero_image');
-$description = ycf_get_field('description');
-$cta = ycf_get_field('cta_button');
-$features = ycf_get_field('features');
-?&gt;
-
-&lt;div class="hero"&gt;
-  &lt;?php if ($hero_image): ?&gt;
-    &lt;img src="&lt;?php echo esc_url($hero_image['url']); ?&gt;"
-         alt="&lt;?php echo esc_attr($hero_image['alt']); ?&gt;"
-         width="&lt;?php echo esc_attr($hero_image['width']); ?&gt;"
-         height="&lt;?php echo esc_attr($hero_image['height']); ?&gt;"&gt;
-  &lt;?php endif; ?&gt;
-
-  &lt;h1&gt;&lt;?php echo esc_html($hero_title); ?&gt;&lt;/h1&gt;
-  &lt;p&gt;&lt;?php echo esc_html($description); ?&gt;&lt;/p&gt;
-
-  &lt;?php if ($cta): ?&gt;
-    &lt;a href="&lt;?php echo esc_url($cta['url']); ?&gt;" class="button"&gt;
-      &lt;?php echo esc_html($cta['text']); ?&gt;
-    &lt;/a&gt;
-  &lt;?php endif; ?&gt;
-&lt;/div&gt;
-
-&lt;?php if ($features): ?&gt;
-  &lt;div class="features"&gt;
-    &lt;?php foreach ($features as $feature): ?&gt;
-      &lt;div class="feature"&gt;
-        &lt;?php if (!empty($feature['icon'])): ?&gt;
-          &lt;img src="&lt;?php echo esc_url($feature['icon']); ?&gt;" alt=""&gt;
-        &lt;?php endif; ?&gt;
-        &lt;h3&gt;&lt;?php echo esc_html($feature['title']); ?&gt;&lt;/h3&gt;
-        &lt;p&gt;&lt;?php echo esc_html($feature['description']); ?&gt;&lt;/p&gt;
-      &lt;/div&gt;
-    &lt;?php endforeach; ?&gt;
-  &lt;/div&gt;
-&lt;?php endif; ?&gt;</code></pre>
-
-<h2>Template Functions</h2>
-
-<p>YAML Custom Fields provides ACF-like template functions for retrieving your data:</p>
-
-<h3><code>ycf_get_field($field_name, $post_id = null, $context_data = null)</code></h3>
-
-<p>Get a single field value.</p>
-
-<pre><code>// For current page/post
-$title = ycf_get_field('hero_title');
-
-// For specific post ID
-$title = ycf_get_field('hero_title', 123);
-
-// For partials
-$logo = ycf_get_field('logo', 'partial:header.php');
-$copyright = ycf_get_field('copyright', 'partial:footer.php');
-
-// For partials in subdirectories
-$menu = ycf_get_field('menu_items', 'partial:partials/navigation.php');
-
-// For block fields (using context_data parameter)
-$blocks = ycf_get_field('features');
-foreach ($blocks as $block) {
-  $title = ycf_get_field('title', null, $block);
-  $description = ycf_get_field('description', null, $block);
-}</code></pre>
-
-<h3><code>ycf_get_image($field_name, $post_id = null, $size = 'full', $context_data = null)</code></h3>
-
-<p>Get comprehensive image data including URL, alt text, dimensions, and more.</p>
-
-<pre><code>// Basic usage
-$image = ycf_get_image('hero_image');
-
-// With custom size
-$thumbnail = ycf_get_image('hero_image', null, 'thumbnail');
-
-// In blocks
-$blocks = ycf_get_field('features');
-foreach ($blocks as $block) {
-  $icon = ycf_get_image('icon', null, 'medium', $block);
-  if ($icon) {
-    echo '&lt;img src="' . esc_url($icon['url']) . '" alt="' . esc_attr($icon['alt']) . '"&gt;';
-  }
-}</code></pre>
-
-<p><strong>Returns:</strong> Array with <code>id</code>, <code>url</code>, <code>alt</code>, <code>title</code>, <code>caption</code>, <code>description</code>, <code>width</code>, <code>height</code></p>
-
-<h3><code>ycf_get_file($field_name, $post_id = null, $context_data = null)</code></h3>
-
-<p>Get comprehensive file data including URL, path, size, and MIME type.</p>
-
-<pre><code>// Basic usage
-$pdf = ycf_get_file('brochure');
-
-// In blocks
-$blocks = ycf_get_field('downloads');
-foreach ($blocks as $block) {
-  $file = ycf_get_file('document', null, $block);
-  if ($file) {
-    echo '&lt;a href="' . esc_url($file['url']) . '"&gt;' . esc_html($file['filename']) . '&lt;/a&gt;';
-  }
-}</code></pre>
-
-<p><strong>Returns:</strong> Array with <code>id</code>, <code>url</code>, <code>path</code>, <code>filename</code>, <code>filesize</code>, <code>mime_type</code>, <code>title</code></p>
-
-<h3><code>ycf_get_term($field_name, $post_id = null, $context_data = null)</code></h3>
-
-<p>Get WordPress taxonomy term(s) from a taxonomy field.</p>
-
-<pre><code>// Single term
-$category = ycf_get_term('category');
-if ($category) {
-  echo esc_html($category->name);
-  echo '&lt;a href="' . esc_url(get_term_link($category)) . '"&gt;View category&lt;/a&gt;';
-}
-
-// Multiple terms
-$tags = ycf_get_term('tags');
-if ($tags) {
-  foreach ($tags as $tag) {
-    echo esc_html($tag->name) . ' ';
-  }
-}
-
-// In blocks
-$blocks = ycf_get_field('content_sections');
-foreach ($blocks as $block) {
-  $term = ycf_get_term('category', null, $block);
-  if ($term) {
-    echo esc_html($term->name);
-  }
-}</code></pre>
-
-<p><strong>Returns:</strong> <code>WP_Term</code> object (single) or array of <code>WP_Term</code> objects (multiple), or <code>null</code> if not set</p>
-
-<h3><code>ycf_get_fields($post_id = null)</code></h3>
-
-<p>Get all fields at once.</p>
-
-<pre><code>// For current page/post
-$fields = ycf_get_fields();
-// Returns: ['hero_title' => 'Welcome', 'description' => '...', ...]
-
-// For partials
-$header_data = ycf_get_fields('partial:header.php');</code></pre>
-
-<h3><code>ycf_has_field($field_name, $post_id = null)</code></h3>
-
-<p>Check if a field exists and has a value.</p>
-
-<pre><code>if (ycf_has_field('hero_title')) {
-  echo '&lt;h1&gt;' . esc_html(ycf_get_field('hero_title')) . '&lt;/h1&gt;';
-}
-
-// For partials
-if (ycf_has_field('logo', 'partial:header.php')) {
-  $logo = ycf_get_field('logo', 'partial:header.php');
-}</code></pre>
-
-<p><strong>Long-form aliases</strong> are also available:</p>
+<p>Each field needs three lines:</p>
 <ul>
-  <li><code>yaml_cf_get_field()</code></li>
-  <li><code>yaml_cf_get_fields()</code></li>
-  <li><code>yaml_cf_has_field()</code></li>
+  <li><code>name</code> is the field's code name, in lowercase letters and underscores, like <code>team_photo</code>. The theme uses this name.</li>
+  <li><code>label</code> is the text above the box in the editor.</li>
+  <li><code>type</code> is the kind of field. See <a href="#field-types">Field types</a>.</li>
 </ul>
 
-<h2>Working with Partials</h2>
-
-<p>Partials (like <code>header.php</code>, <code>footer.php</code>, <code>sidebar.php</code>) have <strong>global, site-wide data</strong> that you manage from the YAML Custom Fields admin page.</p>
-
-<h3>Partial Detection</h3>
-
-<p>YAML Custom Fields automatically detects partials in two ways:</p>
-
-<h4>Automatic Detection (Standard Partials)</h4>
-
-<p>Common WordPress partials are detected automatically:</p>
+<p><strong>Tips for writing a schema:</strong></p>
 <ul>
-  <li><code>header.php</code>, <code>header-*.php</code></li>
-  <li><code>footer.php</code>, <code>footer-*.php</code></li>
-  <li><code>sidebar.php</code>, <code>sidebar-*.php</code></li>
-  <li><code>content.php</code>, <code>content-*.php</code></li>
-  <li><code>comments.php</code>, <code>searchform.php</code></li>
+  <li>The first line is <code>fields:</code>.</li>
+  <li>Each field starts with a dash: <code>- name:</code>.</li>
+  <li>Spaces only, no tabs. The lines of one field line up.</li>
+  <li>If something is wrong, a message says what to fix. The text stays in the editor.</li>
 </ul>
 
-<h4>Manual Detection (Custom Partials)</h4>
+<h3>Step 3: Fill in the content</h3>
+<p>The fields appear below the title on any page that uses the template. See <a href="#writers">Filling in fields</a>.</p>
 
-<p>For custom partials with non-standard names, add the <code>@ycf</code> marker in the file header:</p>
+<h3>Step 4: Show the fields on the website</h3>
+<p>The theme needs one short line per field. See <a href="#theme">Showing fields on the website</a>.</p>
 
-<pre><code>&lt;?php
-/**
- * Custom Navigation Partial
- * @ycf
- */
+<h2 id="field-types">Field types</h2>
 
-// Your template code here</code></pre>
+<p>Every field has a type. The type decides what the box looks like.</p>
 
-<p>The marker can appear anywhere in the <strong>first 30 lines</strong> of the file, in any comment style:</p>
-
-<pre><code>&lt;?php
-// @ycf - Enable YAML Custom Fields for this partial
-
-/* @ycf */
-
-/**
- * Some description
- * @ycf
- */</code></pre>
-
-<p>After adding the marker, click the <strong>"Refresh Template List"</strong> button in the YAML Custom Fields admin page.</p>
-
-<h3>Example: Header Partial</h3>
-
-<p><strong>Schema</strong> for <code>header.php</code>:</p>
-
-<pre><code>fields:
-  - name: logo
-    label: Site Logo
-    type: image
-  - name: site_title
-    label: Site Title
-    type: string
-  - name: show_search
-    label: Show Search Bar
-    type: boolean
-  - name: header_category
-    label: Featured Category
-    type: taxonomy
-    options:
-      taxonomy: category
-  - name: menu_cta
-    label: Menu CTA Button
-    type: object
-    fields:
-      - name: text
-        label: Button Text
-        type: string
-      - name: url
-        label: Button URL
-        type: string</code></pre>
-
-<p><strong>Usage</strong> in <code>header.php</code>:</p>
-
-<pre><code>&lt;?php
-$logo = ycf_get_field('logo', 'partial:header.php');
-$site_title = ycf_get_field('site_title', 'partial:header.php');
-$show_search = ycf_get_field('show_search', 'partial:header.php');
-$menu_cta = ycf_get_field('menu_cta', 'partial:header.php');
-?&gt;
-
-&lt;header class="site-header"&gt;
-  &lt;div class="logo"&gt;
-    &lt;?php if ($logo): ?&gt;
-      &lt;img src="&lt;?php echo esc_url($logo); ?&gt;" alt="&lt;?php echo esc_attr($site_title); ?&gt;"&gt;
-    &lt;?php else: ?&gt;
-      &lt;h1&gt;&lt;?php echo esc_html($site_title); ?&gt;&lt;/h1&gt;
-    &lt;?php endif; ?&gt;
-  &lt;/div&gt;
-
-  &lt;nav&gt;
-    &lt;?php wp_nav_menu(['theme_location' => 'primary']); ?&gt;
-  &lt;/nav&gt;
-
-  &lt;?php if ($menu_cta): ?&gt;
-    &lt;a href="&lt;?php echo esc_url($menu_cta['url']); ?&gt;" class="cta-button"&gt;
-      &lt;?php echo esc_html($menu_cta['text']); ?&gt;
-    &lt;/a&gt;
-  &lt;?php endif; ?&gt;
-
-  &lt;?php if ($show_search): ?&gt;
-    &lt;?php get_search_form(); ?&gt;
-  &lt;?php endif; ?&gt;
-&lt;/header&gt;</code></pre>
-
-<h2>Template Global Fields</h2>
-
-<p>Template Global Fields allow you to define default values that are shared across all posts using the same template, while still allowing individual posts to override specific fields.</p>
-
-<h3>Setting Up Template Global</h3>
-
-<ol>
-  <li>Go to <strong>YAML Custom Fields</strong> admin page</li>
-  <li>Enable YAML for your template (e.g., <code>page.php</code>)</li>
-  <li>Click <strong>Add Template Global</strong> to define the template global schema</li>
-  <li>Define fields that should have shared default values</li>
-  <li>Click <strong>Manage Template Global Data</strong> to set the default values</li>
-</ol>
-
-<h3>Using Template Global in Posts</h3>
-
-<p>When editing a post that uses a template with Template Global fields, you'll see a dual-field interface for each field:</p>
-
-<ul>
-  <li><strong>Template Global (All Pages)</strong> - Read-only display showing the default value (with Edit link)</li>
-  <li><strong>Page-Specific Value</strong> - Editable field for this post only</li>
-  <li><strong>Checkbox</strong> - "Use template global for this field" - Toggle per field</li>
-</ul>
-
-<h3>Benefits</h3>
-
-<ul>
-  <li><strong>Consistency:</strong> Set default values once, use across all posts</li>
-  <li><strong>Flexibility:</strong> Override any field on any post individually</li>
-  <li><strong>Clarity:</strong> See both global and local values side-by-side</li>
-  <li><strong>Efficiency:</strong> Update template global to affect all posts at once</li>
-</ul>
-
-<h3>Data Priority</h3>
-
-<p>When a field uses template global, <code>ycf_get_field()</code> returns data in this priority order:</p>
-
-<ol>
-  <li>Page-specific value (if "use template global" is unchecked)</li>
-  <li>Template global value (if "use template global" is checked)</li>
-  <li>Site-wide global value (if template has site-wide global enabled)</li>
-  <li><code>null</code> (if no value exists)</li>
-</ol>
-
-<p><strong>Example:</strong> If you set a default hero background image in Template Global, all pages using that template will show that image by default. Individual pages can override it by unchecking "Use template global for this field" and uploading their own image.</p>
-
-<h2>Field Types</h2>
-
-<p>YAML Custom Fields supports the following field types:</p>
-
-<h3>String</h3>
-
-<p>Single-line text input.</p>
-
-<pre><code>- name: title
-  label: Page Title
+<h3>One line of text: <code>string</code></h3>
+<pre><code>- name: headline
+  label: Headline
   type: string
   options:
-    minlength: 3
     maxlength: 100</code></pre>
+<p><code>minlength</code> and <code>maxlength</code> set the shortest and longest text. Both are optional.</p>
 
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>minlength</code> - Minimum character length</li>
-  <li><code>maxlength</code> - Maximum character length</li>
-</ul>
-
-<h3>Text</h3>
-
-<p>Multi-line textarea.</p>
-
-<pre><code>- name: description
-  label: Description
+<h3>A few lines of text: <code>text</code></h3>
+<pre><code>- name: intro
+  label: Introduction
   type: text
   options:
     maxlength: 500</code></pre>
 
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>maxlength</code> - Maximum character length</li>
-</ul>
-
-<h3>Rich Text</h3>
-
-<p>WordPress WYSIWYG editor with full formatting.</p>
-
-<pre><code>- name: content
-  label: Page Content
+<h3>Text with formatting: <code>rich-text</code></h3>
+<p>A text editor with bold, italic, links and lists.</p>
+<pre><code>- name: body
+  label: Main text
   type: rich-text</code></pre>
 
-<h3>Code</h3>
-
-<p>Code editor for storing HTML, CSS, or JavaScript code.</p>
-
-<pre><code>- name: custom_css
-  label: Custom CSS
+<h3>Code: <code>code</code></h3>
+<p>For embed codes, forms or small pieces of CSS.</p>
+<pre><code>- name: newsletter_form
+  label: Newsletter form
   type: code
   options:
-    language: css</code></pre>
+    language: html</code></pre>
+<p>Scripts are kept only when an administrator saves the page. For everyone else, unsafe code is removed on save. See <a href="#safety">Safety</a>.</p>
 
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>language</code> - Code language: html, css, javascript, js, php, python, etc.</li>
-</ul>
-
-<p><strong>Security &amp; Sanitization:</strong></p>
-<ul>
-  <li><strong>Administrators:</strong> Can store raw HTML, JavaScript, and forms. CSS is sanitized to remove dangerous patterns (e.g., <code>expression()</code>, <code>javascript:</code>).</li>
-  <li><strong>Non-administrators:</strong> HTML is sanitized using <code>wp_kses_post()</code> (safe tags only), JavaScript is stripped completely.</li>
-  <li>Uses WordPress's <code>unfiltered_html</code> capability - the same security model as Gutenberg's Custom HTML block.</li>
-</ul>
-
-<p><strong>Usage in templates:</strong></p>
-<pre><code>&lt;?php
-// Output code field (don't escape for HTML/JS)
-echo ycf_get_field('mailchimp_form', 'partial:footer.php');
-
-// For CSS, wrap in style tags
-echo '&lt;style&gt;' . esc_html(ycf_get_field('custom_css')) . '&lt;/style&gt;';
-?&gt;</code></pre>
-
-<p><strong>⚠️ Important:</strong> Only use unescaped output for code fields where you (the administrator) control the content. Never use for untrusted user-generated content.</p>
-
-<h3>Boolean</h3>
-
-<p>Checkbox for true/false values.</p>
-
-<pre><code>- name: featured
-  label: Featured Post
+<h3>Yes or no: <code>boolean</code></h3>
+<p>A tick box.</p>
+<pre><code>- name: show_banner
+  label: Show the banner
   type: boolean
   default: false</code></pre>
 
-<h3>Number</h3>
-
-<p>Number input with optional constraints.</p>
-
+<h3>Number: <code>number</code></h3>
 <pre><code>- name: price
   label: Price
   type: number
@@ -585,672 +179,400 @@ echo '&lt;style&gt;' . esc_html(ycf_get_field('custom_css')) . '&lt;/style&gt;';
     min: 0
     max: 9999</code></pre>
 
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>min</code> - Minimum value</li>
-  <li><code>max</code> - Maximum value</li>
-</ul>
-
-<h3>Date</h3>
-
-<p>Date picker with optional time.</p>
-
+<h3>Date: <code>date</code></h3>
 <pre><code>- name: event_date
-  label: Event Date
+  label: Event date
   type: date
   options:
     time: true</code></pre>
+<p><code>time: true</code> adds a time next to the date.</p>
 
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>time</code> - Set to <code>true</code> to include time selection</li>
-</ul>
-
-<h3>Select</h3>
-
-<p>Dropdown selection.</p>
-
-<pre><code>- name: category
-  label: Category
+<h3>Dropdown: <code>select</code></h3>
+<pre><code>- name: color
+  label: Background color
   type: select
-  multiple: false
   options:
     values:
-      - value: news
-        label: News
-      - value: blog
-        label: Blog Posts
-      - value: events
-        label: Events</code></pre>
+      - value: light
+        label: Light
+      - value: dark
+        label: Dark</code></pre>
+<p><code>multiple: true</code> (next to <code>type</code>) allows more than one choice.</p>
 
-<p><strong>Attributes:</strong></p>
-<ul>
-  <li><code>multiple</code> (boolean, optional) - At field level. Allow multiple selections (default: false)</li>
-</ul>
-
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>values</code> (required) - Array of options with <code>value</code> and <code>label</code> keys</li>
-</ul>
-
-<h3>Taxonomy</h3>
-
-<p>WordPress taxonomy selector for categories, tags, or custom taxonomies.</p>
-
-<pre><code>- name: category
-  label: Post Category
+<h3>Category or tag: <code>taxonomy</code></h3>
+<pre><code>- name: topic
+  label: Topic
   type: taxonomy
   options:
-    taxonomy: category
+    taxonomy: category</code></pre>
+<p><code>category</code> covers categories and <code>post_tag</code> covers tags. <code>multiple: true</code> allows more than one.</p>
 
-- name: tags
-  label: Tags
-  type: taxonomy
-  multiple: true
-  options:
-    taxonomy: post_tag
-
-- name: custom_tax
-  label: Custom Taxonomy
-  type: taxonomy
-  options:
-    taxonomy: your_custom_taxonomy</code></pre>
-
-<p><strong>Options:</strong></p>
-<ul>
-  <li><code>taxonomy</code> - WordPress taxonomy name (category, post_tag, or any custom taxonomy)</li>
-  <li><code>multiple</code> - Set to <code>true</code> to allow multiple term selection</li>
-</ul>
-
-<p><strong>Usage in templates:</strong></p>
-
-<pre><code>&lt;?php
-// Get single term
-$category = ycf_get_term('category');
-if ($category) {
-  echo '&lt;span&gt;' . esc_html($category->name) . '&lt;/span&gt;';
-  echo '&lt;a href="' . esc_url(get_term_link($category)) . '"&gt;View more&lt;/a&gt;';
-}
-
-// Get multiple terms
-$tags = ycf_get_term('tags');
-if ($tags) {
-  foreach ($tags as $tag) {
-    echo '&lt;a href="' . esc_url(get_term_link($tag)) . '"&gt;';
-    echo esc_html($tag->name);
-    echo '&lt;/a&gt; ';
-  }
-}
-
-// In blocks - use context_data parameter
-$blocks = ycf_get_field('content_blocks');
-foreach ($blocks as $block) {
-  $block_category = ycf_get_term('category', null, $block);
-  if ($block_category) {
-    echo esc_html($block_category->name);
-  }
-}
-?&gt;</code></pre>
-
-<p><strong>Returns:</strong> <code>WP_Term</code> object (single selection) or array of <code>WP_Term</code> objects (multiple selection), or <code>null</code> if not set.</p>
-
-<h3>Post Type</h3>
-
-<p>Dropdown selector for registered WordPress post types (Post, Page, and custom post types).</p>
-
-<pre><code>- name: content_type
-  label: Content Type
-  type: post_type
-
-- name: archive_type
-  label: Archive Type
+<h3>Kind of content: <code>post_type</code></h3>
+<p>A dropdown with the kinds of content on the site, like Posts and Pages.</p>
+<pre><code>- name: show_type
+  label: What to show
   type: post_type</code></pre>
 
-<p><strong>Usage in templates:</strong></p>
-
-<pre><code>&lt;?php
-// Get post type object
-$post_type = ycf_get_post_type('content_type');
-if ($post_type) {
-  echo '&lt;h2&gt;' . esc_html($post_type->label) . '&lt;/h2&gt;';
-  echo '&lt;p&gt;Slug: ' . esc_html($post_type->name) . '&lt;/p&gt;';
-
-  // Query posts of this type
-  $query = new WP_Query([
-    'post_type' => $post_type->name,
-    'posts_per_page' => 10
-  ]);
-}
-
-// In blocks - use context_data parameter
-$blocks = ycf_get_field('content_blocks');
-foreach ($blocks as $block) {
-  $block_post_type = ycf_get_post_type('type', null, $block);
-  if ($block_post_type) {
-    echo esc_html($block_post_type->label);
-  }
-}
-?&gt;</code></pre>
-
-<p><strong>Returns:</strong> <code>WP_Post_Type</code> object or <code>null</code> if not set.</p>
-
-<h3>Data Object</h3>
-
-<p>Reference to structured data objects that you define and manage independently of your templates. Perfect for reusable data like universities, companies, team members, or any other structured entities.</p>
-
-<p><strong>How it works:</strong></p>
-<ol>
-  <li>Navigate to <strong>YAML CF &gt; Data Objects</strong> in the admin menu</li>
-  <li>Create a new data object type (e.g., "Universities")</li>
-  <li>Define its schema using YAML (e.g., name, logo, website, description)</li>
-  <li>Add entries through the Manage Entries interface</li>
-  <li>Reference these entries in your page schemas using the data_object field type</li>
-</ol>
-
-<p><strong>Example: Creating a Universities data object type</strong></p>
-
-<p>First, create the type with this schema in Data Objects admin:</p>
-
-<pre><code>fields:
-  - name: name
-    label: University Name
-    type: string
-    required: true
-  - name: logo
-    label: Logo
-    type: image
-  - name: website
-    label: Website URL
-    type: string
-  - name: description
-    label: Description
-    type: text
-  - name: location
-    label: Location
-    type: string
-  - name: founded
-    label: Founded Year
-    type: number</code></pre>
-
-<p><strong>Then reference it in your page schema:</strong></p>
-
-<pre><code>- name: university
-  label: University
+<h3>Item from a reusable list: <code>data_object</code></h3>
+<pre><code>- name: speaker
+  label: Speaker
   type: data_object
   options:
-    object_type: universities
+    object_type: team-members</code></pre>
+<p><code>object_type</code> is the short name of the list. <code>list: true</code> allows more than one item. See <a href="#lists">Reusable lists</a>.</p>
 
-- name: partner_universities
-  label: Partner Universities
-  type: data_object
-  list: true
-  options:
-    object_type: universities</code></pre>
-
-<p><strong>Usage in templates:</strong></p>
-
-<pre><code>&lt;?php
-// Get single data object entry
-$university = ycf_get_data_object('university');
-if ($university) {
-  echo '&lt;h2&gt;' . esc_html($university['name']) . '&lt;/h2&gt;';
-  echo '&lt;p&gt;' . esc_html($university['location']) . '&lt;/p&gt;';
-
-  // Get university logo
-  if (!empty($university['logo'])) {
-    $logo = wp_get_attachment_image($university['logo'], 'medium');
-    echo $logo;
-  }
-}
-
-// Get multiple data objects (list)
-$partners = ycf_get_field('partner_universities');
-if (!empty($partners)) {
-  foreach ($partners as $partner_id) {
-    $partner = ycf_get_data_object('partner_universities', null, ['entry_id' => $partner_id]);
-    if ($partner) {
-      echo '&lt;div class="partner"&gt;';
-      echo '&lt;h3&gt;' . esc_html($partner['name']) . '&lt;/h3&gt;';
-      echo '&lt;/div&gt;';
-    }
-  }
-}
-
-// In blocks - use context_data parameter
-$blocks = ycf_get_field('content_blocks');
-foreach ($blocks as $block) {
-  $university = ycf_get_data_object('university', null, $block);
-  if ($university) {
-    echo esc_html($university['name']);
-  }
-}
-
-// Get all entries of a data object type
-$all_universities = ycf_get_data_objects('universities');
-foreach ($all_universities as $entry_id => $university) {
-  echo '&lt;li&gt;' . esc_html($university['name']) . '&lt;/li&gt;';
-}
-?&gt;</code></pre>
-
-<p><strong>Returns:</strong> Array containing the data object entry fields, or <code>null</code> if not set.</p>
-
-<p><strong>Helper functions:</strong></p>
-<ul>
-  <li><code>ycf_get_data_object($field_name, $post_id = null, $context_data = null)</code> - Get a single data object entry referenced by a field</li>
-  <li><code>ycf_get_data_objects($object_type)</code> - Get all entries of a specific data object type</li>
-</ul>
-
-<h3>Image</h3>
-
-<p>WordPress media uploader for images.</p>
-
-<pre><code>- name: featured_image
-  label: Featured Image
+<h3>Image: <code>image</code></h3>
+<pre><code>- name: photo
+  label: Photo
   type: image</code></pre>
 
-<p>Returns the attachment ID. Use <code>ycf_get_image()</code> helper function to get full image data.</p>
-
-<h3>File</h3>
-
-<p>WordPress media uploader for any file type.</p>
-
-<pre><code>- name: pdf_brochure
-  label: PDF Brochure
+<h3>File: <code>file</code></h3>
+<pre><code>- name: brochure
+  label: Brochure (PDF)
   type: file</code></pre>
+<p><code>list: true</code> allows several files.</p>
 
-<p>Returns the attachment ID. Use <code>ycf_get_file()</code> helper function to get full file data.</p>
-
-<p>Add <code>list: true</code> to allow multiple files to be attached to the field:</p>
-
-<pre><code>- name: audio
-  label: Audio
-  type: file
-  list: true</code></pre>
-
-<p>When <code>list: true</code> is set, <code>ycf_get_file()</code> returns an array of file-data arrays instead of a single one:</p>
-
-<pre><code>&lt;?php
-$audio_files = ycf_get_file('audio', null);
-if (!empty($audio_files)) {
-  foreach ($audio_files as $audio) {
-    echo '&lt;audio controls src="' . esc_url($audio['url']) . '"&gt;&lt;/audio&gt;';
-  }
-}
-?&gt;</code></pre>
-
-<h3>Object</h3>
-
-<p>Nested group of fields.</p>
-
-<pre><code>- name: author
-  label: Author Information
+<h3>Group of fields: <code>object</code></h3>
+<p>Fields that belong together, like a button's text and link.</p>
+<pre><code>- name: button
+  label: Button
   type: object
   fields:
-    - name: name
-      label: Author Name
+    - name: text
+      label: Button text
       type: string
-    - name: bio
-      label: Biography
-      type: text
-    - name: photo
-      label: Author Photo
-      type: image</code></pre>
+    - name: link
+      label: Button link
+      type: string</code></pre>
 
-<p><strong>Access nested fields:</strong></p>
-
-<pre><code>$author = ycf_get_field('author');
-echo $author['name'];
-echo $author['bio'];</code></pre>
-
-<h3>Block</h3>
-
-<p>Repeater field with multiple block types. Perfect for flexible page builders!</p>
-
-<pre><code>- name: page_sections
-  label: Page Sections
+<h3>Sections: <code>block</code></h3>
+<p>Sections that can be added, removed and reordered in the editor. Each section type has its own fields.</p>
+<pre><code>- name: sections
+  label: Page sections
   type: block
   list: true
   blockKey: type
   blocks:
-    - name: hero
-      label: Hero Section
+    - name: banner
+      label: Banner
       fields:
         - name: title
-          label: Hero Title
+          label: Title
           type: string
-        - name: background_image
-          label: Background Image
+        - name: image
+          label: Image
           type: image
-        - name: category
-          label: Category
-          type: taxonomy
-          options:
-            taxonomy: category
-    - name: two_column
-      label: Two Column Layout
+    - name: text
+      label: Text block
       fields:
-        - name: left_content
-          label: Left Column
-          type: rich-text
-        - name: right_content
-          label: Right Column
+        - name: body
+          label: Text
           type: rich-text</code></pre>
-
-<p><strong>Properties:</strong></p>
 <ul>
-  <li><code>list: true</code> - Makes it repeatable</li>
-  <li><code>blockKey</code> - Field name that identifies block type (usually "type")</li>
-  <li><code>blocks</code> - Array of available block definitions</li>
+  <li><code>list: true</code> allows many sections.</li>
+  <li><code>blocks</code> lists the section types.</li>
+  <li><code>blockKey</code> is the name that stores the section type. <code>type</code> is the usual choice.</li>
 </ul>
 
-<p><strong>Usage in templates:</strong></p>
+<h3>Info box: <code>info</code></h3>
+<p>A note in the editor with nothing to fill in. It works on page and post templates.</p>
+<pre><code>- info: "Use a photo that is **at least 1200 pixels wide**."</code></pre>
+<p><code>**bold**</code>, <code>_italic_</code> and <code>[links](https://example.com)</code> work inside the note.</p>
 
+<h3>Section break: <code>section</code></h3>
+<p>A section break splits a long form into segments. The fields after it are grouped under its heading, until the next break.</p>
+<pre><code>fields:
+  - section: Page basics
+  - name: title
+    label: Page title
+    type: string
+
+  - section: Contact details
+  - name: email
+    label: Email
+    type: string
+  - name: phone
+    label: Phone
+    type: string</code></pre>
+<p>The longer form takes a note under the heading:</p>
+<pre><code>- type: section
+  label: Opening hours
+  description: Shown in the footer of every page</code></pre>
+<p>Leave the heading out for a plain break with no title:</p>
+<pre><code>- section:</code></pre>
+<p>On a wide screen short fields sit two or three to a row. To start a new row without drawing anything &mdash; no heading, no line &mdash; use a row break:</p>
+<pre><code>- break: true</code></pre>
+<p>It is the quiet version of a section break, for when fields belong together but the form reads better with them on their own row.</p>
+<p>Section breaks hold no content, so they change nothing about how fields are saved or read in a theme. Fields written before the first break stay where they are, outside any group.</p>
+
+<h3>Extra settings for every field</h3>
+<pre><code>- name: headline      # Code name (needed)
+  label: Headline     # Text above the box
+  type: string        # Kind of field (needed)
+  description: Keep it under 60 characters.  # Help text under the label
+  default: Welcome    # Filled in on new pages</code></pre>
+<p><code>description</code> shows in small text under the label. It is the place for a hint about what belongs in the field.</p>
+
+<h2 id="site-parts">Site parts: header, footer and more</h2>
+
+<p>Site parts appear on many pages. Their content is filled in once, on the YAML Custom Fields page, not on each post.</p>
+
+<p>These files are found automatically:</p>
+<ul>
+  <li>Header, footer and sidebar: <code>header.php</code>, <code>footer.php</code>, <code>sidebar.php</code> and versions like <code>footer-shop.php</code></li>
+  <li>Content parts: <code>content.php</code>, <code>content-*.php</code>, <code>comments.php</code>, <code>searchform.php</code></li>
+  <li>Pages that list posts: <code>index.php</code>, <code>home.php</code>, <code>front-page.php</code>, <code>archive.php</code>, <code>category.php</code>, <code>tag.php</code>, <code>search.php</code>, <code>404.php</code> and similar</li>
+</ul>
+
+<p>Other files need a marker. Add <code>@ycf</code> in a comment in the first 30 lines:</p>
 <pre><code>&lt;?php
-$sections = ycf_get_field('page_sections');
+/**
+ * Newsletter box
+ * @ycf
+ */</code></pre>
+<p><strong>Refresh list</strong> on the YAML Custom Fields page then picks it up.</p>
 
-if ($sections) {
-  foreach ($sections as $section) {
-    switch ($section['type']) {
-      case 'hero':
-        ?&gt;
-        &lt;section class="hero"&gt;
-          &lt;h1&gt;&lt;?php echo esc_html($section['title']); ?&gt;&lt;/h1&gt;
-        &lt;/section&gt;
-        &lt;?php
-        break;
+<p>A site part works like a template: switch it on, create its schema, then use <strong>Edit content</strong>.</p>
 
-      case 'two_column':
-        ?&gt;
-        &lt;section class="two-column"&gt;
-          &lt;div class="column"&gt;
-            &lt;?php echo wp_kses_post($section['left_content']); ?&gt;
-          &lt;/div&gt;
-          &lt;div class="column"&gt;
-            &lt;?php echo wp_kses_post($section['right_content']); ?&gt;
-          &lt;/div&gt;
-        &lt;/section&gt;
-        &lt;?php
-        break;
-    }
-  }
-}
-?&gt;</code></pre>
+<h2 id="shared">Shared fields</h2>
 
-<h2>Helper Functions for Images and Files</h2>
+<p>Shared fields have one value for every page with the same template. Useful for something like a banner on all event pages.</p>
 
-<p>Since image and file fields store attachment IDs, YAML Custom Fields provides helper functions to retrieve full attachment data:</p>
+<ol>
+  <li>Find the template on the YAML Custom Fields page.</li>
+  <li><strong>Add shared fields</strong> opens the schema editor for them.</li>
+  <li><strong>Edit content</strong> in the Shared fields column opens the boxes to fill in.</li>
+</ol>
 
-<h3><code>ycf_get_image($field_name, $post_id = null, $size = 'full')</code></h3>
+<p>When a page's schema has a field with the same name, the editor shows both values, and each page can use the shared one or its own.</p>
 
-<p>Get comprehensive image data including URL, alt text, dimensions, and more.</p>
+<p>The value that shows up comes from this order:</p>
+<ol>
+  <li>The shared value, when "Use the shared value on this page" is ticked.</li>
+  <li>The value on the page.</li>
+  <li>The shared value, for fields that only exist as shared fields.</li>
+</ol>
 
-<pre><code>$image = ycf_get_image('featured_image');
+<h2 id="site-details">Site details</h2>
 
-if ($image) {
-  echo '&lt;img src="' . esc_url($image['url']) . '"
-        alt="' . esc_attr($image['alt']) . '"
-        width="' . esc_attr($image['width']) . '"
-        height="' . esc_attr($image['height']) . '" /&gt;';
-}</code></pre>
+<p>Site details are used across the whole website. Good for a phone number, an address or social links.</p>
+<ol>
+  <li><strong>Create site details</strong> on the YAML Custom Fields page opens the schema editor.</li>
+  <li>Save the schema.</li>
+  <li><strong>Edit site details</strong> opens the boxes to fill in.</li>
+</ol>
 
-<p><strong>Returns:</strong></p>
-<ul>
-  <li><code>id</code> - Attachment ID</li>
-  <li><code>url</code> - Image URL at specified size</li>
-  <li><code>alt</code> - Alt text</li>
-  <li><code>title</code> - Image title</li>
-  <li><code>caption</code> - Image caption</li>
-  <li><code>description</code> - Image description</li>
-  <li><code>width</code> - Image width</li>
-  <li><code>height</code> - Image height</li>
-</ul>
+<h2 id="lists">Reusable lists</h2>
 
-<h3><code>ycf_get_file($field_name, $post_id = null)</code></h3>
+<p>A reusable list holds items used on many pages: team members, partners or locations. Each item is filled in once, and pages pick items from the list.</p>
 
-<p>Get comprehensive file data including URL, path, size, and MIME type.</p>
-
-<pre><code>$pdf = ycf_get_file('pdf_brochure');
-
-if ($pdf) {
-  echo '&lt;a href="' . esc_url($pdf['url']) . '" download&gt;';
-  echo 'Download ' . esc_html($pdf['filename']);
-  echo ' (' . size_format($pdf['filesize']) . ')';
-  echo '&lt;/a&gt;';
-}</code></pre>
-
-<p><strong>Returns:</strong></p>
-<ul>
-  <li><code>id</code> - Attachment ID</li>
-  <li><code>url</code> - File URL</li>
-  <li><code>path</code> - Server file path</li>
-  <li><code>filename</code> - File name</li>
-  <li><code>filesize</code> - File size in bytes</li>
-  <li><code>mime_type</code> - MIME type</li>
-  <li><code>title</code> - File title</li>
-</ul>
-
-<h2>Common Field Properties</h2>
-
-<p>All field types support these properties:</p>
-
-<pre><code>- name: field_name        # Required - Unique machine name
-  label: Field Label      # Display name in admin
-  type: string            # Required - Field type
-  description: Help text  # Optional help text for editors
-  default: Default value  # Default value for new entries
-  required: true          # Make field required (not enforced yet)</code></pre>
-
-<h2>Data Storage</h2>
-
-<h3>Page Templates</h3>
-<ul>
-  <li><strong>Page/Post data</strong>: Post meta with key <code>_yaml_cf_data</code></li>
-  <li><strong>Template Global preferences</strong>: Post meta with key <code>_yaml_cf_use_template_global_fields</code> (per-field array)</li>
-  <li><strong>Scope</strong>: Per post/page</li>
-  <li><strong>Editing</strong>: WordPress post/page editor</li>
-</ul>
-
-<h3>Template Global Fields</h3>
-<ul>
-  <li><strong>Template Global schemas</strong>: WordPress options with key <code>yaml_cf_template_global_schemas</code></li>
-  <li><strong>Template Global data</strong>: WordPress options with key <code>yaml_cf_template_global_data</code></li>
-  <li><strong>Scope</strong>: Per template (shared across all posts using the same template)</li>
-  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Manage Template Global Data" button</li>
-</ul>
-
-<h3>Site-Wide Global Schema</h3>
-<ul>
-  <li><strong>Global schema</strong>: WordPress options with key <code>yaml_cf_global_schema</code></li>
-  <li><strong>Global data</strong>: WordPress options with key <code>yaml_cf_global_data</code></li>
-  <li><strong>Scope</strong>: Site-wide (available to all templates)</li>
-  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Manage Global Data" button</li>
-</ul>
-
-<h3>Template Partials</h3>
-<ul>
-  <li><strong>Location</strong>: WordPress options with key <code>yaml_cf_partial_data</code></li>
-  <li><strong>Scope</strong>: Global (site-wide)</li>
-  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Manage Data" button</li>
-</ul>
-
-<h3>Data Objects</h3>
-<ul>
-  <li><strong>Data Object Types</strong>: WordPress options with key <code>yaml_cf_data_object_types</code></li>
-  <li><strong>Data Object Entries</strong>: WordPress options with keys <code>yaml_cf_data_object_entries_{type_slug}</code></li>
-  <li><strong>Scope</strong>: Global (site-wide)</li>
-  <li><strong>Editing</strong>: YAML Custom Fields admin page → "Data Objects"</li>
-</ul>
-
-<h3>Plugin Settings</h3>
-<ul>
-  <li><code>yaml_cf_template_settings</code> - Tracks which templates have YAML enabled</li>
-  <li><code>yaml_cf_schemas</code> - Stores YAML schemas for each template/partial</li>
-</ul>
-
-<h2>Requirements</h2>
-
-<ul>
-  <li>WordPress 5.0 or higher</li>
-  <li>PHP 7.4 or higher</li>
-  <li>Composer (for installing dependencies from source)</li>
-</ul>
-
-<h2>Dependencies</h2>
-
-<ul>
-  <li><strong>Symfony YAML Component</strong> (v5.4) - YAML parsing
-    <ul>
-      <li>License: MIT (GPL-compatible)</li>
-      <li>Homepage: <a href="https://symfony.com/components/Yaml" target="_blank">https://symfony.com/components/Yaml</a></li>
-    </ul>
+<ol>
+  <li>Open <strong>YAML Custom Fields → Reusable lists</strong>.</li>
+  <li><strong>Add a list</strong> asks for a name, like "Team members", and a short name, like <code>team-members</code>.</li>
+  <li>The schema describes one item:
+<pre><code>fields:
+  - name: name
+    label: Name
+    type: string
+  - name: photo
+    label: Photo
+    type: image
+  - name: role
+    label: Role
+    type: string</code></pre>
   </li>
-</ul>
-
-<h2>Security</h2>
-
-<ul>
-  <li>All admin functionality requires <code>manage_options</code> capability (administrator by default)</li>
-  <li>AJAX requests protected with WordPress nonces</li>
-  <li>Data sanitized and escaped appropriately</li>
-  <li>Input validation on all fields</li>
-</ul>
-
-<h2>Uninstallation</h2>
-
-<p>When you <strong>delete</strong> (not deactivate) the plugin, it automatically cleans up:</p>
-<ul>
-  <li>Template settings (<code>yaml_cf_template_settings</code>)</li>
-  <li>Schemas (<code>yaml_cf_schemas</code>)</li>
-  <li>Partial data (<code>yaml_cf_partial_data</code>)</li>
-  <li>All post meta data (<code>_yaml_cf_data</code>)</li>
-</ul>
-
-<h2>Troubleshooting</h2>
-
-<h3>Plugin activation error about Composer</h3>
-
-<p><strong>Solution</strong>: Navigate to the plugin directory and run:</p>
-<pre><code>composer install</code></pre>
-
-<h3>Schema fields not appearing in post editor</h3>
-
-<ol>
-  <li>Ensure YAML is enabled for the template</li>
-  <li>Verify you selected the correct page template</li>
-  <li>Check YAML syntax (use 2 spaces for indentation)</li>
-  <li>Clear browser cache and refresh</li>
+  <li><strong>Edit items</strong> opens the list to fill in.</li>
+  <li>A <code>data_object</code> field in a page's schema points at the list:
+<pre><code>- name: speaker
+  label: Speaker
+  type: data_object
+  options:
+    object_type: team-members</code></pre>
+  </li>
 </ol>
 
-<h3>YAML parsing errors</h3>
+<h2 id="theme">Showing fields on the website</h2>
 
+<p>The theme decides where each field appears. This part is for whoever edits the theme files. Next to each field in the editor, the <strong>Copy code</strong> button copies the line for that field.</p>
+
+<h3>Text and numbers</h3>
+<pre><code>&lt;h1&gt;&lt;?php echo esc_html(ycf_get_field('headline')); ?&gt;&lt;/h1&gt;</code></pre>
+<p><code>esc_html()</code> keeps the text safe. Text fields always need it.</p>
+
+<h3>Text with formatting</h3>
+<pre><code>&lt;?php echo wp_kses_post(ycf_get_field('body')); ?&gt;</code></pre>
+
+<h3>Images</h3>
+<pre><code>&lt;?php $photo = ycf_get_image('photo', null, 'large'); ?&gt;
+&lt;?php if ($photo) : ?&gt;
+  &lt;img src="&lt;?php echo esc_url($photo['url']); ?&gt;" alt="&lt;?php echo esc_attr($photo['alt']); ?&gt;"&gt;
+&lt;?php endif; ?&gt;</code></pre>
+<p>The size can be <code>thumbnail</code>, <code>medium</code>, <code>large</code> or <code>full</code>. The result also holds <code>width</code>, <code>height</code>, <code>title</code> and <code>caption</code>.</p>
+
+<h3>Files</h3>
+<pre><code>&lt;?php $file = ycf_get_file('brochure'); ?&gt;
+&lt;?php if ($file) : ?&gt;
+  &lt;a href="&lt;?php echo esc_url($file['url']); ?&gt;"&gt;Download &lt;?php echo esc_html($file['filename']); ?&gt;&lt;/a&gt;
+&lt;?php endif; ?&gt;</code></pre>
+<p>With <code>list: true</code>, the result is a list of files, shown with <code>foreach</code>.</p>
+
+<h3>Groups</h3>
+<pre><code>&lt;?php $button = ycf_get_field('button'); ?&gt;
+&lt;a href="&lt;?php echo esc_url($button['link']); ?&gt;"&gt;&lt;?php echo esc_html($button['text']); ?&gt;&lt;/a&gt;</code></pre>
+
+<h3>Sections</h3>
+<pre><code>&lt;?php foreach ((array) ycf_get_field('sections') as $section) : ?&gt;
+  &lt;?php if ($section['type'] === 'banner') : ?&gt;
+    &lt;?php $image = ycf_get_image('image', null, 'full', $section); ?&gt;
+    &lt;h2&gt;&lt;?php echo esc_html(ycf_get_field('title', null, $section)); ?&gt;&lt;/h2&gt;
+  &lt;?php elseif ($section['type'] === 'text') : ?&gt;
+    &lt;?php echo wp_kses_post(ycf_get_field('body', null, $section)); ?&gt;
+  &lt;?php endif; ?&gt;
+&lt;?php endforeach; ?&gt;</code></pre>
+<p>Inside a section, the section goes in as the last value: <code>ycf_get_field('title', null, $section)</code>.</p>
+
+<h3>Categories and tags</h3>
+<pre><code>&lt;?php $topic = ycf_get_term('topic'); ?&gt;
+&lt;?php if ($topic) : ?&gt;
+  &lt;a href="&lt;?php echo esc_url(get_term_link($topic)); ?&gt;"&gt;&lt;?php echo esc_html($topic-&gt;name); ?&gt;&lt;/a&gt;
+&lt;?php endif; ?&gt;</code></pre>
+
+<h3>Items from a reusable list</h3>
+<pre><code>&lt;?php $speaker = ycf_get_data_object('speaker'); ?&gt;
+&lt;?php if ($speaker) : ?&gt;
+  &lt;p&gt;&lt;?php echo esc_html($speaker['name']); ?&gt;&lt;/p&gt;
+&lt;?php endif; ?&gt;
+
+&lt;?php // Every item in a list ?&gt;
+&lt;?php foreach (ycf_get_data_objects('team-members') as $member) : ?&gt;
+  &lt;li&gt;&lt;?php echo esc_html($member['name']); ?&gt;&lt;/li&gt;
+&lt;?php endforeach; ?&gt;</code></pre>
+
+<h3>Site parts</h3>
+<p>The file name goes after <code>partial:</code>:</p>
+<pre><code>&lt;?php echo esc_html(ycf_get_field('phone', 'partial:header.php')); ?&gt;</code></pre>
+
+<h3>Site details</h3>
+<pre><code>&lt;?php echo esc_html(ycf_get_global_field('phone')); ?&gt;</code></pre>
+
+<h3>Code fields</h3>
+<p>Code fields print as they are, so the code works:</p>
+<pre><code>&lt;?php echo ycf_get_field('newsletter_form'); ?&gt;</code></pre>
+<p>CSS needs its tags removed first:</p>
+<pre><code>&lt;style&gt;&lt;?php echo wp_strip_all_tags(ycf_get_field('custom_css')); ?&gt;&lt;/style&gt;</code></pre>
+
+<h3>All the functions</h3>
+<table class="widefat striped yaml-cf-docs-table">
+  <thead>
+    <tr><th>Function</th><th>What it returns</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>ycf_get_field('name')</code></td><td>The value of one field</td></tr>
+    <tr><td><code>ycf_get_fields()</code></td><td>All fields of the page at once</td></tr>
+    <tr><td><code>ycf_has_field('name')</code></td><td>Yes, when the field has a value</td></tr>
+    <tr><td><code>ycf_get_image('name', null, 'large')</code></td><td>An image with its link, size and alt text</td></tr>
+    <tr><td><code>ycf_get_file('name')</code></td><td>A file with its link, name and size</td></tr>
+    <tr><td><code>ycf_get_term('name')</code></td><td>The chosen category or tag</td></tr>
+    <tr><td><code>ycf_get_post_type('name')</code></td><td>The chosen kind of content</td></tr>
+    <tr><td><code>ycf_get_data_object('name')</code></td><td>The chosen item from a reusable list</td></tr>
+    <tr><td><code>ycf_get_data_objects('short-name')</code></td><td>Every item in a reusable list</td></tr>
+    <tr><td><code>ycf_get_global_field('name')</code></td><td>One of the site details</td></tr>
+    <tr><td><code>ycf_get_global_fields()</code></td><td>All site details</td></tr>
+  </tbody>
+</table>
+<p>A post ID as the second value reads another page: <code>ycf_get_field('headline', 42)</code>. Each function also has a long name that starts with <code>yaml_cf_</code>, like <code>yaml_cf_get_field()</code>.</p>
+
+<h2 id="moving">Backups and moving to another website</h2>
+
+<p><strong>YAML Custom Fields → Export &amp; Import</strong> saves three things to a file:</p>
+<ul>
+  <li><strong>Setup</strong>: the schemas and which templates are switched on.</li>
+  <li><strong>Post content</strong>: the fields of the chosen posts and pages.</li>
+  <li><strong>Reusable lists</strong>: the lists and their items.</li>
+</ul>
+<p>The same page on the other website imports the files. The setup goes first.</p>
+
+<p><strong>Images and files are not inside the export file.</strong> Only links to them are, so the media library has to be copied as well. <strong>Content Check</strong> then lists posts with missing images or files.</p>
+
+<h2 id="problems">When something does not work</h2>
+
+<h3>The fields do not appear on a page</h3>
 <ol>
-  <li>Validate YAML syntax with an online validator</li>
-  <li>Use consistent 2-space indentation (no tabs)</li>
-  <li>Check WordPress debug logs for detailed error messages</li>
+  <li>The template has to be switched <strong>On</strong>.</li>
+  <li>The page has to use that template. "Template" on the right side of the editor shows which one.</li>
+  <li>The schema has to show a number of fields, not "Fix schema".</li>
+  <li>Reload the page.</li>
 </ol>
 
-<h3>Changes not saving</h3>
-
-<ol>
-  <li>Check browser console for JavaScript errors</li>
-  <li>Ensure you have permission to edit posts/options</li>
-  <li>Verify WordPress AJAX is working</li>
-</ol>
-
-<h2>Contributing</h2>
-
-<p>Contributions are welcome! If you'd like to contribute to YAML Custom Fields:</p>
-
-<ol>
-  <li>Fork the repository at <a href="https://github.com/maliMirkec/yaml-custom-fields" target="_blank">https://github.com/maliMirkec/yaml-custom-fields</a></li>
-  <li>Create a feature branch (<code>git checkout -b feature/amazing-feature</code>)</li>
-  <li>Commit your changes (<code>git commit -m 'Add amazing feature'</code>)</li>
-  <li>Push to the branch (<code>git push origin feature/amazing-feature</code>)</li>
-  <li>Open a Pull Request</li>
-</ol>
-
-<p>Please ensure your code follows WordPress coding standards and includes appropriate documentation.</p>
-
-<h2>Reporting Issues</h2>
-
-<p>Found a bug or have a feature request? Please report it on GitHub:</p>
-
-<p><a href="https://github.com/maliMirkec/yaml-custom-fields/issues" target="_blank" class="button button-primary">Report an Issue on GitHub</a></p>
-
-<p>When reporting issues, please include:</p>
+<h3>The schema does not save</h3>
+<p>The message at the top says what is wrong. Common mistakes:</p>
 <ul>
-  <li>WordPress version</li>
-  <li>PHP version</li>
-  <li>Plugin version</li>
-  <li>Steps to reproduce the issue</li>
-  <li>Expected behavior vs actual behavior</li>
-  <li>Any error messages or screenshots</li>
+  <li>A tab instead of spaces. Spaces only.</li>
+  <li>Lines of one field that do not line up.</li>
+  <li>A missing <code>name</code> or <code>type</code>.</li>
+  <li>A colon inside a label. Quotes fix it: <code>label: "Note: read this"</code>.</li>
 </ul>
 
-<h2>Credits</h2>
+<h3>A new template is not in the list</h3>
+<p><strong>Refresh list</strong> on the YAML Custom Fields page scans the theme again.</p>
 
+<h3>The field shows in the editor, but not on the website</h3>
+<p>The theme needs a line for that field. See <a href="#theme">Showing fields on the website</a>.</p>
+
+<h3>Still stuck?</h3>
+<p><a href="https://github.com/maliMirkec/yaml-custom-fields/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>. Helpful details: what was done, what was expected, what happened, and a screenshot.</p>
+
+<h2 id="safety">Safety</h2>
 <ul>
-  <li><strong>Author</strong>: <a href="https://www.silvestar.codes" target="_blank">Silvestar Bistrović</a></li>
-  <li><strong>Email</strong>: me@silvestar.codes</li>
-  <li><strong>GitHub</strong>: <a href="https://github.com/maliMirkec/yaml-custom-fields" target="_blank">maliMirkec/yaml-custom-fields</a></li>
+  <li>Only administrators can change schemas, settings and site details.</li>
+  <li>Writers fill in fields on the posts they are allowed to edit.</li>
+  <li>Everything typed into a field is cleaned before it is saved. Scripts are removed.</li>
+  <li>Code fields keep scripts only when an administrator saves the page. This is the same rule WordPress uses for its Custom HTML block.</li>
+  <li>Deleting the plugin removes all its settings and field content.</li>
 </ul>
 
-<h2>License</h2>
+<details class="yaml-cf-docs-developers" id="developers">
+  <summary><h2>For developers</h2></summary>
 
-<p>GPL v2 or later</p>
+  <h3>Requirements</h3>
+  <ul>
+    <li>WordPress 5.0 or newer</li>
+    <li>PHP 8.1 or newer</li>
+    <li>Includes the Symfony YAML component 6.4 (MIT license), scoped to avoid conflicts</li>
+  </ul>
 
-<h2>Changelog</h2>
+  <h3>Where data is stored</h3>
+  <ul>
+    <li>Page fields: post meta <code>_yaml_cf_data</code>. The "use shared value" choices: <code>_yaml_cf_use_template_global_fields</code>.</li>
+    <li>Schemas: option <code>yaml_cf_schemas</code>. Switched-on templates: <code>yaml_cf_template_settings</code>.</li>
+    <li>Site parts: option <code>yaml_cf_partial_data</code>.</li>
+    <li>Shared fields: options <code>yaml_cf_template_global_schemas</code> and <code>yaml_cf_template_global_data</code>.</li>
+    <li>Site details: options <code>yaml_cf_global_schema</code> and <code>yaml_cf_global_data</code>.</li>
+    <li>Reusable lists: option <code>yaml_cf_data_object_types</code>, items in <code>yaml_cf_data_object_entries_{short-name}</code>.</li>
+  </ul>
+  <p>Image and file fields store attachment IDs. Code fields are stored base64-encoded and decoded by the functions above.</p>
 
-<h3>Version 1.2.0</h3>
-<ul>
-  <li><strong>NEW: Template Global Fields</strong> - Define shared default values for all posts using the same template</li>
-  <li><strong>NEW: Per-field global/local toggle</strong> - Each field can independently use template global or page-specific data</li>
-  <li><strong>NEW: Dual-field interface</strong> - Visual side-by-side comparison of template global and page-specific values</li>
-  <li><strong>NEW: Auto-merge data hierarchy</strong> - Intelligent data priority system (page > template global > site global)</li>
-  <li>Enhanced post editor UI with clear visual indicators for global vs local data</li>
-  <li>Improved field rendering system with unique IDs for dual fields</li>
-  <li>Added per-field preferences storage for granular control</li>
-  <li>Better reset functionality that preserves global data</li>
-  <li>Enhanced documentation with Template Global Fields guide</li>
-  <li>Improved admin interface organization for template management</li>
-</ul>
+  <h3>Function signatures</h3>
+  <pre><code>ycf_get_field($field_name, $post_id = null, $context_data = null)
+ycf_get_fields($post_id = null)
+ycf_has_field($field_name, $post_id = null)
+ycf_get_image($field_name, $post_id = null, $size = 'full', $context_data = null)
+ycf_get_file($field_name, $post_id = null, $context_data = null)
+ycf_get_term($field_name, $post_id = null, $context_data = null)
+ycf_get_post_type($field_name, $post_id = null, $context_data = null)
+ycf_get_data_object($field_name, $post_id = null, $context_data = null)
+ycf_get_data_objects($object_type)
+ycf_get_global_field($field_name)
+ycf_get_global_fields()</code></pre>
+  <p><code>$post_id</code> takes a post ID or <code>'partial:header.php'</code>. <code>$context_data</code> takes a section (block item) array.</p>
 
-<h3>Version 1.1.0</h3>
-<ul>
-  <li>Improved code quality and WordPress Coding Standards compliance</li>
-  <li>Consolidated Export/Import functionality into single admin page</li>
-  <li>Renamed "Export Page Data" to "Export/Import" for clarity</li>
-  <li>Reorganized admin menu structure (Export/Import now positioned above Documentation)</li>
-  <li>Enhanced database query performance with optimized caching strategy</li>
-  <li>Implemented post tracking system for efficient cache management</li>
-  <li>Improved input sanitization using <code>filter_input()</code> throughout the plugin</li>
-  <li>Enhanced output escaping for better security</li>
-  <li>Added production-safe logging system with WordPress hooks</li>
-  <li>Better file upload validation and error handling</li>
-  <li>Removed all <code>phpcs:ignore</code> suppressions in favor of proper WordPress coding practices</li>
-  <li>Added <code>phpcs.xml.dist</code> configuration file for consistent code standards</li>
-</ul>
+  <h3>Uninstall</h3>
+  <p>Deleting the plugin runs <code>uninstall.php</code>. It removes all <code>yaml_cf_</code> options and transients and all <code>_yaml_cf_</code> post meta, on every site of a multisite network.</p>
 
-<h3>Version 1.0.0</h3>
-<ul>
-  <li>Initial release</li>
-  <li>Support for 15+ field types</li>
-  <li>Template and partial support</li>
-  <li>ACF-like template functions with <code>context_data</code> parameter for block fields</li>
-  <li>Taxonomy field type for categories, tags, and custom taxonomies (single/multiple selection)</li>
-  <li>Post Type field type for selecting registered WordPress post types</li>
-  <li>Data Objects feature for managing structured, reusable data (universities, companies, etc.)</li>
-  <li>Enhanced helper functions: <code>ycf_get_field()</code>, <code>ycf_get_image()</code>, <code>ycf_get_file()</code>, <code>ycf_get_term()</code>, <code>ycf_get_post_type()</code>, <code>ycf_get_data_object()</code>, <code>ycf_get_data_objects()</code></li>
-  <li>Block/repeater functionality with context-aware field access</li>
-  <li>WordPress media integration with attachment ID storage</li>
-  <li>Administrator-only access</li>
-  <li>Clean uninstall</li>
-  <li>Clear buttons for image and file fields</li>
-  <li>Reset All Data button for clearing all custom fields on a page</li>
-  <li>Confirmation alerts for destructive actions</li>
-  <li>Copy snippet buttons for all field types with complete function signatures</li>
-</ul>
+  <h3>Contributing</h3>
+  <p>The code is on <a href="https://github.com/maliMirkec/yaml-custom-fields" target="_blank" rel="noopener">GitHub</a>. Pull requests are welcome. The code follows the WordPress coding standards, and <code>composer test</code> runs the tests.</p>
+</details>
 
 <hr>
 
-<p><strong>Built with ❤️ for the WordPress community</strong></p>
+<p>YAML Custom Fields is made by <a href="https://www.cita.hr" target="_blank" rel="noopener">Studio Cita</a>. It is free software under the GPL v2 or later license.</p>

@@ -29,7 +29,7 @@ class TemplateGlobalController extends AdminController {
 
     $template = RequestHelper::getParam('template');
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      wp_die(esc_html__('No template was chosen. Go back to the YAML Custom Fields page and pick one.', 'yaml-custom-fields'));
     }
 
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
@@ -43,13 +43,6 @@ class TemplateGlobalController extends AdminController {
         $template_global_schema = $invalid_schema;
         delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
       }
-
-      $error_msg = RequestHelper::getParam('error_msg');
-      if ($error_msg) {
-        $error_message = $error_msg;
-      } else {
-        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
-      }
     }
 
     // Get template name from theme files
@@ -62,11 +55,8 @@ class TemplateGlobalController extends AdminController {
       }
     }
 
-    // Check for success message
+    // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
-    if (RequestHelper::getParam('saved') === '1') {
-      $success_message = __('Template global schema saved successfully!', 'yaml-custom-fields');
-    }
 
     // Pass messages to JavaScript via localization
     $page_config = [];
@@ -97,7 +87,7 @@ class TemplateGlobalController extends AdminController {
 
     $template = RequestHelper::getParam('template');
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      wp_die(esc_html__('No template was chosen. Go back to the YAML Custom Fields page and pick one.', 'yaml-custom-fields'));
     }
 
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
@@ -122,11 +112,8 @@ class TemplateGlobalController extends AdminController {
       }
     }
 
-    // Check for success message
+    // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
-    if (RequestHelper::getParam('saved') === '1') {
-      $success_message = __('Template global data saved successfully!', 'yaml-custom-fields');
-    }
 
     // Localize schema data for JavaScript
     $this->localizeScript(['schema' => $template_global_schema]);
@@ -140,11 +127,11 @@ class TemplateGlobalController extends AdminController {
       'enabled' => true,
       'container' => '#yaml-cf-template-global-data-form',
       'fieldsSelector' => '.yaml-cf-fields',
-      'message' => __('You have unsaved changes', 'yaml-custom-fields'),
+      'message' => __('There are changes that are not saved yet.', 'yaml-custom-fields'),
       'submitSelector' => '#yaml-cf-template-global-data-form',
       'storageKey' => 'originalTemplateGlobalDataFormData',
       'hasChangesKey' => 'hasTemplateGlobalDataFormChanges',
-      'beforeUnloadMessage' => __('You have unsaved changes. Are you sure?', 'yaml-custom-fields'),
+      'beforeUnloadMessage' => __('There are changes that are not saved yet. Leave anyway?', 'yaml-custom-fields'),
       'gutenbergSupport' => false,
       'captureDelay' => 500
     ];

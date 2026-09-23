@@ -39,7 +39,7 @@ class ParseException extends RuntimeException
     /**
      * Gets the snippet of code near the error.
      */
-    public function getSnippet() : string
+    public function getSnippet(): string
     {
         return $this->snippet;
     }
@@ -58,7 +58,7 @@ class ParseException extends RuntimeException
      *
      * This method returns null if a string is parsed.
      */
-    public function getParsedFile() : string
+    public function getParsedFile(): string
     {
         return $this->parsedFile;
     }
@@ -75,7 +75,7 @@ class ParseException extends RuntimeException
     /**
      * Gets the line where the error occurred.
      */
-    public function getParsedLine() : int
+    public function getParsedLine(): int
     {
         return $this->parsedLine;
     }
@@ -89,16 +89,16 @@ class ParseException extends RuntimeException
         $this->parsedLine = $parsedLine;
         $this->updateRepr();
     }
-    private function updateRepr() : void
+    private function updateRepr(): void
     {
         $this->message = $this->rawMessage;
         $dot = \false;
-        if (\str_ends_with($this->message, '.')) {
-            $this->message = \substr($this->message, 0, -1);
+        if (str_ends_with($this->message, '.')) {
+            $this->message = substr($this->message, 0, -1);
             $dot = \true;
         }
         if (null !== $this->parsedFile) {
-            $this->message .= \sprintf(' in %s', \json_encode($this->parsedFile, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE));
+            $this->message .= \sprintf(' in %s', json_encode($this->parsedFile, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE));
         }
         if ($this->parsedLine >= 0) {
             $this->message .= \sprintf(' at line %d', $this->parsedLine);

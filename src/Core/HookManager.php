@@ -47,6 +47,15 @@ class HookManager {
 
     // Cache clearing
     add_action('switch_theme', [$this, 'clearTemplateCache']);
+
+    // Queued notices (saves, imports, errors) shown as standard admin notices
+    add_action('admin_notices', [$this, 'renderNotices']);
+
+    // Plugin credit in the admin footer on plugin screens
+    add_filter('admin_footer_text', [$this, 'adminFooterText']);
+
+    // Body class for plugin screens (used to show notices only after WordPress moves them below the header)
+    add_filter('admin_body_class', [$this, 'adminBodyClass']);
   }
 
   /**
@@ -121,11 +130,76 @@ class HookManager {
   }
 
   /**
+   * Print queued notices
+   */
+  public function renderNotices() {
+    $this->plugin->get('notification_manager')->renderAdminNotices();
+  }
+
+  /**
+   * Replace the admin footer text on plugin screens with a plugin credit
+   *
+   * @param string $text Default footer text
+   * @return string Footer text
+   */
+  public function adminFooterText($text) {
+    if (!$this->isPluginScreen()) {
+      return $text;
+    }
+
+    return sprintf(
+      /* translators: 1: plugin name, 2: link to the author's website */
+      esc_html__('%1$s by %2$s', 'yaml-custom-fields'),
+      '<strong>' . esc_html__('YAML Custom Fields', 'yaml-custom-fields') . '</strong>',
+      '<a href="https://www.cita.hr" target="_blank" rel="noopener">Studio Cita</a>'
+    );
+  }
+
+  /**
+   * Add a body class on plugin screens
+   *
+   * @param string $classes Space-separated body classes
+   * @return string Body classes
+   */
+  public function adminBodyClass($classes) {
+    return $this->isPluginScreen() ? $classes . ' yaml-cf-screen' : $classes;
+  }
+
+  /**
+   * Whether the current admin page belongs to this plugin
+   *
+   * @return bool
+   */
+  private function isPluginScreen() {
+    $page = \YamlCF\Helpers\RequestHelper::getParam('page');
+    return $page === 'yaml-custom-fields' || strpos($page, 'yaml-cf-') === 0;
+  }
+
+  /**
    * Register AJAX handlers
    */
   private function registerAjaxHandlers() {
-    // AJAX handlers will be registered here
-    // For now, the old class continues to handle AJAX
-    // TODO: Implement AJAX handler registration
+    // wp_ajax_{action} => container service. Handlers are created only when their action runs.
+    $handlers = [
+      'yaml_cf_save_template_settings' => 'ajax_save_template_settings',
+      'yaml_cf_refresh_templates' => 'ajax_refresh_templates',
+      'yaml_cf_toggle_use_global' => 'ajax_toggle_use_global',
+      'yaml_cf_save_schema' => 'ajax_save_schema',
+      'yaml_cf_get_schema' => 'ajax_get_schema',
+      'yaml_cf_get_partial_data' => 'ajax_get_partial_data',
+      'yaml_cf_save_partial_data' => 'ajax_save_partial_data',
+      'yaml_cf_export_settings' => 'ajax_export_settings',
+      'yaml_cf_import_settings' => 'ajax_import_settings',
+      'yaml_cf_get_posts_with_data' => 'ajax_get_posts_with_data',
+      'yaml_cf_export_page_data' => 'ajax_export_page_data',
+      'yaml_cf_import_page_data' => 'ajax_import_page_data',
+      'yaml_cf_import_data_objects' => 'ajax_import_data_objects',
+    ];
+
+    foreach ($handlers as $action => $service) {
+      add_action('wp_ajax_' . $action, function() use ($service) {
+        $this->plugin->get($service)->handle();
+      });
+    }
   }
 }

@@ -1,287 +1,301 @@
 <?php
 /**
- * Admin Page Template
+ * Admin Page Template (dashboard)
  * File: templates/admin-page.php
  */
 
 if (!defined('ABSPATH')) {
   exit;
 }
+
+// Variables received from controller via extract():
+// - $template_rows : array - Page/post templates: file, name, enabled, has_schema, field_count, has_shared_schema, shared_field_count
+// - $partial_rows : array - Partials and archives (same keys)
+// - $global_field_count : int - Number of fields in the global schema
+// - $show_getting_started : bool - Show first-run guidance
+
+$yaml_cf_admin_url = function ($page, $template = null) {
+  $args = ['page' => $page];
+  if ($template !== null) {
+    $args['template'] = $template;
+  }
+  return add_query_arg(array_map('rawurlencode', $args), admin_url('admin.php'));
+};
+
+/**
+ * Print the status badge for a schema
+ */
+$yaml_cf_schema_badge = function ($has_schema, $field_count) {
+  if ($has_schema && $field_count > 0) {
+    echo '<span class="yaml-cf-badge is-ready"><span class="dashicons dashicons-yes" aria-hidden="true"></span>';
+    /* translators: %d: number of fields */
+    echo esc_html(sprintf(_n('%d field', '%d fields', $field_count, 'yaml-custom-fields'), $field_count));
+    echo '</span>';
+  } elseif ($has_schema) {
+    echo '<span class="yaml-cf-badge is-warning" title="' . esc_attr__('The schema has a mistake. Open it to fix it.', 'yaml-custom-fields') . '"><span class="dashicons dashicons-warning" aria-hidden="true"></span>' . esc_html__('Fix schema', 'yaml-custom-fields') . '</span>';
+  } else {
+    echo '<span class="yaml-cf-badge is-empty">' . esc_html__('No fields yet', 'yaml-custom-fields') . '</span>';
+  }
+};
+
+/**
+ * Print the on/off switch for a template row
+ */
+$yaml_cf_toggle = function ($row) {
+  ?>
+  <label class="yaml-cf-toggle">
+    <input type="checkbox"
+           class="yaml-cf-enable-yaml"
+           data-template="<?php echo esc_attr($row['file']); ?>"
+           data-template-name="<?php echo esc_attr($row['name']); ?>"
+           data-has-schema="<?php echo $row['has_schema'] ? '1' : '0'; ?>"
+           <?php checked($row['enabled']); ?> />
+    <span class="yaml-cf-toggle-track" aria-hidden="true"></span>
+    <span class="yaml-cf-toggle-state" aria-hidden="true">
+      <span class="is-on"><?php esc_html_e('On', 'yaml-custom-fields'); ?></span>
+      <span class="is-off"><?php esc_html_e('Off', 'yaml-custom-fields'); ?></span>
+    </span>
+    <span class="screen-reader-text">
+      <?php
+      /* translators: %s: template name */
+      echo esc_html(sprintf(__('Custom fields for %s', 'yaml-custom-fields'), $row['name']));
+      ?>
+    </span>
+  </label>
+  <?php
+};
+
 ?>
 
-<div class="wrap">
+<div class="wrap yaml-cf-dashboard">
   <div class="yaml-cf-admin-container">
     <div class="yaml-cf-header">
       <div class="yaml-cf-header-content">
-        <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="YAML Custom Fields" class="yaml-cf-logo" />
+        <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
           <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('YAML-powered content schemas for WordPress themes', 'yaml-custom-fields'); ?></p>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Custom fields for pages, posts and every part of the site.', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
+    <hr class="wp-header-end">
 
-    <div class="yaml-cf-intro">
-    <p><?php esc_html_e('YAML Custom Fields allows you to define YAML frontmatter schemas for your theme templates. Enable YAML for templates, define schemas, and manage structured content directly in the WordPress editor.', 'yaml-custom-fields'); ?></p>
-    <p>
-      <button type="button" id="yaml-cf-refresh-templates" class="button">
-        <span class="dashicons dashicons-update"></span>
-        <?php esc_html_e('Refresh Template List', 'yaml-custom-fields'); ?>
-      </button>
-    </p>
-    <p class="description">
-      <?php esc_html_e('Scan theme files for new templates and partials with @ycf markers', 'yaml-custom-fields'); ?>
-    </p>
-    </div>
+    <?php if ($show_getting_started) : ?>
+      <section class="yaml-cf-onboarding" aria-labelledby="yaml-cf-onboarding-title">
+        <h2 id="yaml-cf-onboarding-title"><?php esc_html_e('Get started in three steps', 'yaml-custom-fields'); ?></h2>
+        <ol class="yaml-cf-steps">
+          <li>
+            <strong><?php esc_html_e('Turn on a template', 'yaml-custom-fields'); ?></strong>
+            <span><?php esc_html_e('Find a template in the tables below and switch it on.', 'yaml-custom-fields'); ?></span>
+          </li>
+          <li>
+            <strong><?php esc_html_e('Create its schema', 'yaml-custom-fields'); ?></strong>
+            <span><?php esc_html_e('A schema is a short list of the fields a page gets, like a title or a photo. It is written in a simple text format. See the example at the bottom of this page.', 'yaml-custom-fields'); ?></span>
+          </li>
+          <li>
+            <strong><?php esc_html_e('Fill in the content', 'yaml-custom-fields'); ?></strong>
+            <span><?php esc_html_e('The fields appear below the title on every page or post that uses the template. The theme shows what was typed.', 'yaml-custom-fields'); ?></span>
+          </li>
+        </ol>
+        <p class="yaml-cf-onboarding-more">
+          <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-docs')); ?>"><?php esc_html_e('Read the documentation', 'yaml-custom-fields'); ?></a>
+        </p>
+      </section>
+    <?php endif; ?>
 
-    <div class="yaml-cf-global-schema-section" style="background: #f9f9f9; padding: 20px; border-left: 4px solid #2271b1; margin: 30px 0;">
-    <h2><?php esc_html_e('Global Schema & Data', 'yaml-custom-fields'); ?></h2>
-    <p><?php esc_html_e('Define a global schema with fields that can be reused across templates. Global data is shared everywhere (not per-post).', 'yaml-custom-fields'); ?></p>
-    <p>
-      <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-global-schema')); ?>" class="button button-primary">
-        <span class="dashicons dashicons-admin-generic"></span>
-        <?php esc_html_e('Edit Global Schema', 'yaml-custom-fields'); ?>
-      </a>
-      <?php if (!empty($global_schema_parsed) && !empty($global_schema_parsed['fields'])) : ?>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-global-data')); ?>" class="button">
-          <span class="dashicons dashicons-edit"></span>
-          <?php esc_html_e('Manage Global Data', 'yaml-custom-fields'); ?>
-        </a>
-        <span>
-          <span class="dashicons dashicons-yes-alt" style="color: #46b450; margin-top: 3px; margin-left: 10px;"></span>
-          <span class="description"><?php esc_html_e('Global schema configured', 'yaml-custom-fields'); ?></span>
-        </span>
+    <!-- Site details -->
+    <section class="yaml-cf-card yaml-cf-global-card" aria-labelledby="yaml-cf-global-title">
+      <div class="yaml-cf-card-title-row">
+        <h2 id="yaml-cf-global-title">
+          <span class="dashicons dashicons-admin-site-alt3" aria-hidden="true"></span>
+          <?php esc_html_e('Site details', 'yaml-custom-fields'); ?>
+        </h2>
+        <?php if ($global_field_count > 0) : ?>
+          <span class="yaml-cf-badge is-ready"><span class="dashicons dashicons-yes" aria-hidden="true"></span>
+            <?php
+            /* translators: %d: number of fields */
+            echo esc_html(sprintf(_n('%d field', '%d fields', $global_field_count, 'yaml-custom-fields'), $global_field_count));
+            ?>
+          </span>
+        <?php else : ?>
+          <span class="yaml-cf-badge is-empty"><?php esc_html_e('Not set up', 'yaml-custom-fields'); ?></span>
+        <?php endif; ?>
+      </div>
+
+      <p class="yaml-cf-card-text">
+        <?php esc_html_e('Details used across the whole website, like a phone number or social links.', 'yaml-custom-fields'); ?><br>
+        <?php esc_html_e('Fill them in once and show them on any page.', 'yaml-custom-fields'); ?>
+      </p>
+
+      <div class="yaml-cf-card-actions">
+        <?php if ($global_field_count > 0) : ?>
+          <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-manage-global-data')); ?>" class="button button-primary">
+            <span class="dashicons dashicons-edit" aria-hidden="true"></span>
+            <?php esc_html_e('Edit site details', 'yaml-custom-fields'); ?>
+          </a>
+          <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-global-schema')); ?>" class="button">
+            <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
+            <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
+          </a>
+        <?php else : ?>
+          <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-global-schema')); ?>" class="button button-primary">
+            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+            <?php esc_html_e('Create site details', 'yaml-custom-fields'); ?>
+          </a>
+          <span class="yaml-cf-hint"><?php esc_html_e('Optional. Skip this if everything is different on each page.', 'yaml-custom-fields'); ?></span>
+        <?php endif; ?>
+      </div>
+    </section>
+
+    <!-- Page & post templates -->
+    <section class="yaml-cf-section" aria-labelledby="yaml-cf-templates-title">
+      <div class="yaml-cf-section-header">
+        <div>
+          <h2 id="yaml-cf-templates-title">
+            <?php esc_html_e('Page & post templates', 'yaml-custom-fields'); ?>
+          </h2>
+          <p class="yaml-cf-section-text"><?php esc_html_e('These fields are filled in on each page or post, below the title.', 'yaml-custom-fields'); ?></p>
+        </div>
+        <div class="yaml-cf-section-tools">
+          <button type="button" id="yaml-cf-refresh-templates" class="button" aria-describedby="yaml-cf-refresh-help">
+            <span class="dashicons dashicons-update" aria-hidden="true"></span>
+            <?php esc_html_e('Refresh list', 'yaml-custom-fields'); ?>
+          </button>
+          <span id="yaml-cf-refresh-help" class="yaml-cf-hint"><?php esc_html_e('Refresh to see newly added templates.', 'yaml-custom-fields'); ?></span>
+        </div>
+      </div>
+
+      <?php if (empty($template_rows)) : ?>
+        <div class="yaml-cf-empty">
+          <p><?php esc_html_e('The active theme has no page or post templates yet.', 'yaml-custom-fields'); ?></p>
+        </div>
       <?php else : ?>
-        <span class="description" style="margin-left: 10px;"><?php esc_html_e('No global schema defined yet', 'yaml-custom-fields'); ?></span>
+        <table class="yaml-cf-table">
+          <thead>
+            <tr>
+              <th scope="col"><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
+              <th scope="col" class="yaml-cf-col-toggle"><?php esc_html_e('Custom fields', 'yaml-custom-fields'); ?></th>
+              <th scope="col">
+                <?php esc_html_e('Page fields', 'yaml-custom-fields'); ?>
+                <span class="yaml-cf-th-help"><?php esc_html_e('Different on each page', 'yaml-custom-fields'); ?></span>
+              </th>
+              <th scope="col">
+                <?php esc_html_e('Shared fields', 'yaml-custom-fields'); ?>
+                <span class="yaml-cf-th-help"><?php esc_html_e('Same on every page with this template', 'yaml-custom-fields'); ?></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($template_rows as $yaml_cf_row) : ?>
+              <tr class="yaml-cf-row <?php echo $yaml_cf_row['enabled'] ? 'is-enabled' : 'is-disabled'; ?>">
+                <td class="yaml-cf-cell-template" data-label="<?php esc_attr_e('Template', 'yaml-custom-fields'); ?>">
+                  <strong><?php echo esc_html($yaml_cf_row['name']); ?></strong>
+                  <code class="yaml-cf-file"><?php echo esc_html($yaml_cf_row['file']); ?></code>
+                </td>
+                <td data-label="<?php esc_attr_e('Custom fields', 'yaml-custom-fields'); ?>">
+                  <?php $yaml_cf_toggle($yaml_cf_row); ?>
+                </td>
+                <td data-label="<?php esc_attr_e('Page fields', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-when-enabled yaml-cf-cell-status">
+                    <?php $yaml_cf_schema_badge($yaml_cf_row['has_schema'], $yaml_cf_row['field_count']); ?>
+                    <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-schema', $yaml_cf_row['file'])); ?>" class="button button-small">
+                      <?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
+                    </a>
+                  </div>
+                  <span class="yaml-cf-when-disabled yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span>
+                </td>
+                <td data-label="<?php esc_attr_e('Shared fields', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-when-enabled yaml-cf-cell-status">
+                    <?php if ($yaml_cf_row['has_shared_schema']) : ?>
+                      <?php $yaml_cf_schema_badge(true, $yaml_cf_row['shared_field_count']); ?>
+                      <?php if ($yaml_cf_row['shared_field_count'] > 0) : ?>
+                        <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-manage-template-global', $yaml_cf_row['file'])); ?>" class="button button-small">
+                          <?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
+                        </a>
+                      <?php endif; ?>
+                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-template-global', $yaml_cf_row['file'])); ?>" class="button button-small button-link yaml-cf-link-button">
+                        <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
+                      </a>
+                    <?php else : ?>
+                      <span class="yaml-cf-hint"><?php esc_html_e('Optional', 'yaml-custom-fields'); ?></span>
+                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-template-global', $yaml_cf_row['file'])); ?>" class="button button-small">
+                        <?php esc_html_e('Add shared fields', 'yaml-custom-fields'); ?>
+                      </a>
+                    <?php endif; ?>
+                  </div>
+                  <span class="yaml-cf-when-disabled yaml-cf-hint">&mdash;</span>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
       <?php endif; ?>
-    </p>
-    </div>
+    </section>
 
-    <h2><?php esc_html_e('Page & Post Templates', 'yaml-custom-fields'); ?></h2>
-    <p><?php esc_html_e('Configure YAML schemas for individual pages and posts. Data is stored per post/page and editable in the post editor.', 'yaml-custom-fields'); ?></p>
+    <!-- Partials & archives -->
+    <section class="yaml-cf-section" aria-labelledby="yaml-cf-partials-title">
+      <div class="yaml-cf-section-header">
+        <div>
+          <h2 id="yaml-cf-partials-title">
+            <?php esc_html_e('Site parts & archive pages', 'yaml-custom-fields'); ?>
+          </h2>
+          <p class="yaml-cf-section-text"><?php esc_html_e('Parts that repeat on many pages, like the header and footer, and pages that list posts. Their content is filled in once, here.', 'yaml-custom-fields'); ?></p>
+        </div>
+      </div>
 
-    <?php if (empty($templates)) : ?>
-    <p><?php esc_html_e('No templates found in the current theme.', 'yaml-custom-fields'); ?></p>
-    <?php else : ?>
-    <div class="wp-table-wrap">
-      <table class="wp-list-table widefat striped">
-        <thead>
+      <?php if (empty($partial_rows)) : ?>
+        <div class="yaml-cf-empty">
+          <p><?php esc_html_e('The active theme has no site parts yet. To add one, put @ycf in a comment at the top of the template file, then refresh.', 'yaml-custom-fields'); ?></p>
+        </div>
+      <?php else : ?>
+        <table class="yaml-cf-table">
+          <thead>
             <tr>
-                <th><?php esc_html_e('Template Name', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('File', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Enable YAML', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Schema', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Template Global Schema', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Template Global Data', 'yaml-custom-fields'); ?></th>
+              <th scope="col"><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
+              <th scope="col" class="yaml-cf-col-toggle"><?php esc_html_e('Custom fields', 'yaml-custom-fields'); ?></th>
+              <th scope="col"><?php esc_html_e('Fields', 'yaml-custom-fields'); ?></th>
+              <th scope="col"><?php esc_html_e('Content', 'yaml-custom-fields'); ?></th>
             </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($templates as $yaml_cf_template) : ?>
-                <?php
-                $yaml_cf_is_enabled = isset($template_settings[$yaml_cf_template['file']]) && $template_settings[$yaml_cf_template['file']];
-                $yaml_cf_has_schema = isset($schemas[$yaml_cf_template['file']]) && !empty($schemas[$yaml_cf_template['file']]);
-                $yaml_cf_has_template_global_schema = isset($template_global_schemas[$yaml_cf_template['file']]) && !empty($template_global_schemas[$yaml_cf_template['file']]);
-                ?>
-                <tr>
-                    <td><strong><?php echo esc_html($yaml_cf_template['name']); ?></strong></td>
-                    <td><code><?php echo esc_html($yaml_cf_template['file']); ?></code></td>
-                    <td>
-                        <label class="yaml-cf-switch">
-                            <input type="checkbox"
-                                    class="yaml-cf-enable-yaml"
-                                    name="enable-yaml"
-                                    data-template="<?php echo esc_attr($yaml_cf_template['file']); ?>"
-                                    <?php checked($yaml_cf_is_enabled); ?> />
-                            <span class="yaml-cf-slider"></span>
-                        </label>
-                    </td>
-                    <td>
-                        <?php if ($yaml_cf_is_enabled) : ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($yaml_cf_template['file']))); ?>"
-                              class="button">
-                                <?php echo $yaml_cf_has_schema ? esc_html__('Edit Schema', 'yaml-custom-fields') : esc_html__('Add Schema', 'yaml-custom-fields'); ?>
-                            </a>
-                            <?php if ($yaml_cf_has_schema) : ?>
-                                <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
-                            <?php endif; ?>
-                        <?php else : ?>
-                            <span class="description"><?php esc_html_e('Enable YAML first', 'yaml-custom-fields'); ?></span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($yaml_cf_is_enabled) : ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-template-global&template=' . urlencode($yaml_cf_template['file']))); ?>"
-                              class="button">
-                                <?php echo $yaml_cf_has_template_global_schema ? esc_html__('Edit Template Global', 'yaml-custom-fields') : esc_html__('Add Template Global', 'yaml-custom-fields'); ?>
-                            </a>
-                            <?php if ($yaml_cf_has_template_global_schema) : ?>
-                                <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
-                            <?php endif; ?>
-                        <?php else : ?>
-                            <span class="description"><?php esc_html_e('Enable YAML first', 'yaml-custom-fields'); ?></span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($yaml_cf_is_enabled && $yaml_cf_has_template_global_schema) : ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($yaml_cf_template['file']))); ?>"
-                              class="button">
-                                <?php esc_html_e('Manage Template Global Data', 'yaml-custom-fields'); ?>
-                            </a>
-                        <?php else : ?>
-                            <span class="description"><?php esc_html_e('Add template global schema first', 'yaml-custom-fields'); ?></span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($partial_rows as $yaml_cf_row) : ?>
+              <tr class="yaml-cf-row <?php echo $yaml_cf_row['enabled'] ? 'is-enabled' : 'is-disabled'; ?>">
+                <td class="yaml-cf-cell-template" data-label="<?php esc_attr_e('Template', 'yaml-custom-fields'); ?>">
+                  <strong><?php echo esc_html($yaml_cf_row['name']); ?></strong>
+                  <code class="yaml-cf-file"><?php echo esc_html($yaml_cf_row['file']); ?></code>
+                </td>
+                <td data-label="<?php esc_attr_e('Custom fields', 'yaml-custom-fields'); ?>">
+                  <?php $yaml_cf_toggle($yaml_cf_row); ?>
+                </td>
+                <td data-label="<?php esc_attr_e('Fields', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-when-enabled yaml-cf-cell-status">
+                    <?php $yaml_cf_schema_badge($yaml_cf_row['has_schema'], $yaml_cf_row['field_count']); ?>
+                    <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-schema', $yaml_cf_row['file'])); ?>" class="button button-small">
+                      <?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
+                    </a>
+                  </div>
+                  <span class="yaml-cf-when-disabled yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span>
+                </td>
+                <td data-label="<?php esc_attr_e('Content', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-when-enabled yaml-cf-cell-status">
+                    <?php if ($yaml_cf_row['field_count'] > 0) : ?>
+                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-partial', $yaml_cf_row['file'])); ?>" class="button button-small button-primary">
+                        <?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
+                      </a>
+                    <?php else : ?>
+                      <span class="yaml-cf-hint"><?php esc_html_e('Create the schema first.', 'yaml-custom-fields'); ?></span>
+                    <?php endif; ?>
+                  </div>
+                  <span class="yaml-cf-when-disabled yaml-cf-hint">&mdash;</span>
+                </td>
+              </tr>
             <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-    <?php endif; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </section>
 
-    <h2 style="margin-top: 40px;"><?php esc_html_e('Template Partials & Archives', 'yaml-custom-fields'); ?></h2>
-    <p><?php esc_html_e('Configure YAML schemas for template partials (header, footer, sidebar, etc.) and archive pages (archive-events.php, category.php, etc.). Data is stored globally and can be managed below.', 'yaml-custom-fields'); ?></p>
-
-    <?php if (empty($partials)) : ?>
-    <p><?php esc_html_e('No partials found in the current theme.', 'yaml-custom-fields'); ?></p>
-    <?php else : ?>
-    <div class="wp-table-wrap">
-      <table class="wp-list-table widefat striped">
-        <thead>
-            <tr>
-                <th><?php esc_html_e('Template Name', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('File', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Enable YAML', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Schema', 'yaml-custom-fields'); ?></th>
-                <th><?php esc_html_e('Data', 'yaml-custom-fields'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($partials as $yaml_cf_partial) : ?>
-                <?php
-                $yaml_cf_is_enabled = isset($template_settings[$yaml_cf_partial['file']]) && $template_settings[$yaml_cf_partial['file']];
-                $yaml_cf_has_schema = isset($schemas[$yaml_cf_partial['file']]) && !empty($schemas[$yaml_cf_partial['file']]);
-                ?>
-                <tr>
-                    <td><strong><?php echo esc_html($yaml_cf_partial['name']); ?></strong></td>
-                    <td><code><?php echo esc_html($yaml_cf_partial['file']); ?></code></td>
-                    <td>
-                        <label class="yaml-cf-switch">
-                            <input type="checkbox"
-                                    class="yaml-cf-enable-yaml"
-                                    name="enable-yaml"
-                                    data-template="<?php echo esc_attr($yaml_cf_partial['file']); ?>"
-                                    <?php checked($yaml_cf_is_enabled); ?> />
-                            <span class="yaml-cf-slider"></span>
-                        </label>
-                    </td>
-                    <td>
-                        <?php if ($yaml_cf_is_enabled) : ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($yaml_cf_partial['file']))); ?>"
-                              class="button">
-                                <?php echo $yaml_cf_has_schema ? esc_html__('Edit Schema', 'yaml-custom-fields') : esc_html__('Add Schema', 'yaml-custom-fields'); ?>
-                            </a>
-                            <?php if ($yaml_cf_has_schema) : ?>
-                                <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>
-                            <?php endif; ?>
-                        <?php else : ?>
-                            <span class="description"><?php esc_html_e('Enable YAML first', 'yaml-custom-fields'); ?></span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($yaml_cf_is_enabled && $yaml_cf_has_schema) : ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-partial&template=' . urlencode($yaml_cf_partial['file']))); ?>"
-                              class="button">
-                                <?php esc_html_e('Manage Data', 'yaml-custom-fields'); ?>
-                            </a>
-                        <?php else : ?>
-                            <span class="description"><?php esc_html_e('Add schema first', 'yaml-custom-fields'); ?></span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-    <?php endif; ?>
-
-    <div class="yaml-cf-schema-examples">
-    <h2><?php esc_html_e('Schema Example', 'yaml-custom-fields'); ?></h2>
-    <p><?php esc_html_e('Here\'s an example schema in YAML format:', 'yaml-custom-fields'); ?></p>
-    <pre>fields:
-  - name: title
-    label: Page Title
-    type: string
-    options:
-      maxlength: 100
-  - name: description
-    label: Description
-    type: text
-    options:
-      maxlength: 160
-  - name: featured_image
-    label: Featured Image
-    type: image
-  - name: category
-    label: Category
-    type: taxonomy
-    options:
-      taxonomy: category
-  - name: university
-    label: University
-    type: data_object
-    options:
-      object_type: universities
-  - name: sponsors
-    label: Sponsors
-    type: data_object
-    multiple: true
-    options:
-      object_type: companies
-  - name: tags
-    label: Tags
-    type: taxonomy
-    multiple: true
-    options:
-      taxonomy: post_tag
-  - name: sections
-    label: Page Sections
-    type: block
-    list: true
-    blockKey: type
-    blocks:
-      - name: hero
-        label: Hero Section
-        fields:
-          - name: hero-title
-            label: Hero Title
-            type: string
-          - name: content
-            label: Hero Content
-            type: rich-text
-      - name: text
-        label: Text Block
-        fields:
-          - name: content
-            label: Content
-            type: rich-text</pre>
-
-    <h3><?php esc_html_e('Supported Field Types', 'yaml-custom-fields'); ?></h3>
-    <ul>
-      <li><strong>boolean</strong> - Checkbox</li>
-      <li><strong>string</strong> - Single line text (supports minlength, maxlength)</li>
-      <li><strong>text</strong> - Multi-line textarea (supports maxlength)</li>
-      <li><strong>rich-text</strong> - WordPress WYSIWYG editor</li>
-      <li><strong>code</strong> - Code editor (supports language option)</li>
-      <li><strong>number</strong> - Number input (supports min, max)</li>
-      <li><strong>date</strong> - Date picker (supports time option for datetime)</li>
-      <li><strong>select</strong> - Dropdown (supports multiple and values options)</li>
-      <li><strong>taxonomy</strong> - WordPress categories, tags, or custom taxonomies (supports multiple and taxonomy options)</li>
-      <li><strong>data_object</strong> - Reference to data object entries (supports multiple and object_type options)</li>
-      <li><strong>image</strong> - WordPress media uploader for images</li>
-      <li><strong>file</strong> - WordPress media uploader for any file</li>
-      <li><strong>object</strong> - Nested fields group</li>
-      <li><strong>block</strong> - Repeater field with multiple block types (list: true for repeatable)</li>
-    </ul>
-    </div>
+    <!-- Schema reference -->
+    <?php include YAML_CF_PLUGIN_DIR . 'templates/partials/schema-reference.php'; ?>
   </div>
 </div>

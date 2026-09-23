@@ -15,12 +15,16 @@ use YamlCF\Helpers\RequestHelper;
  */
 class DataObjectController extends AdminController {
   private $schemaStorage;
-  private $successMessage = null;
-  private $errorMessage = null;
   private $savedTypeSlug = null;
+  private $schemaValidator;
+  private $submittedType = null;
 
-  public function __construct($schemaStorage) {
+  private $notifications;
+
+  public function __construct($schemaStorage, $schemaValidator = null, $notifications = null) {
     $this->schemaStorage = $schemaStorage;
+    $this->schemaValidator = $schemaValidator ? $schemaValidator : new \YamlCF\Schema\SchemaValidator();
+    $this->notifications = $notifications ? $notifications : new \YamlCF\Core\NotificationManager();
   }
 
   /**
@@ -56,14 +60,15 @@ class DataObjectController extends AdminController {
     // Handle data object type delete
     if (isset($_POST['yaml_cf_delete_type_nonce'])) {
       if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_delete_type_nonce'])), 'yaml_cf_delete_type')) {
-        wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+        wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
       }
 
       if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+        wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
       }
 
-      $type_slug = isset($_POST['type_slug']) ? sanitize_key($_POST['type_slug']) : '';
+      // Not sanitize_key(): older imports may have stored slugs it would alter (the slug must exist below)
+      $type_slug = isset($_POST['type_slug']) ? sanitize_text_field(wp_unslash($_POST['type_slug'])) : '';
 
       if (!empty($type_slug)) {
         $data_object_types = get_option('yaml_cf_data_object_types', []);
@@ -76,8 +81,8 @@ class DataObjectController extends AdminController {
           // Delete all entries for this type
           delete_option('yaml_cf_data_object_entries_' . $type_slug);
 
-          // Set success message transient
-          set_transient('yaml_cf_data_objects_success_' . get_current_user_id(), 'type_deleted', 60);
+          /* translators: %s: data object type slug */
+          $this->notifications->success(sprintf(__('The list "%s" and all its items were deleted.', 'yaml-custom-fields'), $type_slug));
         }
 
         // Redirect to prevent form resubmission
@@ -89,20 +94,34 @@ class DataObjectController extends AdminController {
     // Handle data object type save
     if (isset($_POST['yaml_cf_save_data_object_type_nonce'])) {
       if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_data_object_type_nonce'])), 'yaml_cf_save_data_object_type')) {
-        wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+        wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
       }
 
       if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+        wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
       }
 
-      $type_id = RequestHelper::getParamKey('type_id', '');
+      // Same lookup as the entry handlers; older imports may have stored slugs that sanitize_key() would alter
+      $type_id = RequestHelper::getParam('type_id', '');
       $type_name = \YAML_Custom_Fields::post_sanitized('type_name', '', 'sanitize_text_field');
       $new_type_slug = \YAML_Custom_Fields::post_sanitized('type_slug', '', 'sanitize_key');
-      $schema_yaml = \YAML_Custom_Fields::post_raw('schema', '');
+      // Sanitized like the other schema editors and the data object import
+      $schema_yaml = \YAML_Custom_Fields::post_sanitized('schema', '', 'sanitize_textarea_field');
 
       if (empty($type_name) || empty($new_type_slug)) {
-        $this->errorMessage = __('Type name and slug are required.', 'yaml-custom-fields');
+        $this->notifications->error(__('Enter a name and a short name.', 'yaml-custom-fields'), ['title' => __('The list was not saved.', 'yaml-custom-fields')]);
+        $this->submittedType = ['slug' => $new_type_slug, 'name' => $type_name, 'schema' => $schema_yaml];
+        return;
+      }
+
+      // Validate like template schemas (the data object import rejects invalid schemas too)
+      $validation_result = $this->schemaValidator->validate($schema_yaml);
+      if (!$validation_result['valid']) {
+        $this->notifications->error($validation_result['message'], [
+          'title' => __('The list was not saved.', 'yaml-custom-fields'),
+          'details' => [__('The changes are still in the form below. Fix the problem and save again.', 'yaml-custom-fields')],
+        ]);
+        $this->submittedType = ['slug' => $new_type_slug, 'name' => $type_name, 'schema' => $schema_yaml];
         return;
       }
 
@@ -114,7 +133,8 @@ class DataObjectController extends AdminController {
 
       update_option('yaml_cf_data_object_types', $data_object_types);
 
-      $this->successMessage = __('Data object type saved successfully!', 'yaml-custom-fields');
+      /* translators: %s: data object type name */
+      $this->notifications->success(sprintf(__('The list "%s" was saved.', 'yaml-custom-fields'), $type_name));
       $this->savedTypeSlug = $new_type_slug;
 
       // Update URL if slug changed (only redirect if creating new or slug changed)
@@ -127,11 +147,11 @@ class DataObjectController extends AdminController {
     // Handle data object entry save
     if (isset($_POST['yaml_cf_save_entry_nonce'])) {
       if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_entry_nonce'])), 'yaml_cf_save_entry')) {
-        wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+        wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
       }
 
       if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+        wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
       }
 
       $type_id = RequestHelper::getParam('type_id');
@@ -161,20 +181,20 @@ class DataObjectController extends AdminController {
       // Sanitize entry data using the plugin instance
       $plugin = \YAML_Custom_Fields::get_instance();
 
-      // Get form data from yaml_cf array (includes all fields including blocks)
-      // First pass: basic sanitization to satisfy PHPCS
-      $raw_form_data = isset($_POST['yaml_cf']) && is_array($_POST['yaml_cf']) ?
-        map_deep(wp_unslash($_POST['yaml_cf']), 'sanitize_text_field') : [];
+      // Get raw form data; it is sanitized per field type against the schema below
+      // (a sanitize_text_field() pre-pass would strip rich-text HTML and code newlines)
+      $raw_form_data = \YAML_Custom_Fields::post_raw('yaml_cf', []);
+      if (!is_array($raw_form_data)) {
+        $raw_form_data = [];
+      }
 
-      // Second pass: schema-based sanitization that properly handles all field types
       $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema);
 
       $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
       $entries[$entry_id_to_save] = $entry_data;
       update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
 
-      // Set success message transient
-      set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_saved', 60);
+      $this->notifications->success(__('Item saved.', 'yaml-custom-fields'));
 
       // Redirect back to edit page to prevent form resubmission
       wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($type_id) . '&action=edit&entry=' . urlencode($entry_id_to_save)));
@@ -184,11 +204,11 @@ class DataObjectController extends AdminController {
     // Handle data object entry delete
     if (isset($_POST['yaml_cf_delete_entry_nonce'])) {
       if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_delete_entry_nonce'])), 'yaml_cf_delete_entry')) {
-        wp_die(esc_html__('Security check failed', 'yaml-custom-fields'));
+        wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
       }
 
       if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('Permission denied', 'yaml-custom-fields'));
+        wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
       }
 
       $type_id = RequestHelper::getParam('type_id');
@@ -204,8 +224,7 @@ class DataObjectController extends AdminController {
         unset($entries[$entry_id_to_delete]);
         update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
 
-        // Set success message transient
-        set_transient('yaml_cf_data_object_success_' . get_current_user_id(), 'entry_deleted', 60);
+        $this->notifications->success(__('Item deleted.', 'yaml-custom-fields'));
       }
 
       // Redirect to prevent form resubmission
@@ -221,7 +240,7 @@ class DataObjectController extends AdminController {
     $this->checkPermission();
 
     // Get type_id from URL (or use saved slug if we just saved)
-    $type_id = $this->savedTypeSlug ? $this->savedTypeSlug : RequestHelper::getParamKey('type_id', '');
+    $type_id = $this->savedTypeSlug ? $this->savedTypeSlug : RequestHelper::getParam('type_id', '');
 
     // Get data object types
     $data_object_types = get_option('yaml_cf_data_object_types', []);
@@ -231,9 +250,19 @@ class DataObjectController extends AdminController {
     $type_name = $is_editing ? $data_object_types[$type_id]['name'] : '';
     $schema_yaml = $is_editing ? $data_object_types[$type_id]['schema'] : '';
 
+    // After a failed save, show what was submitted instead of the stored values
+    if ($this->submittedType !== null) {
+      $type_name = $this->submittedType['name'];
+      $schema_yaml = $this->submittedType['schema'];
+      if (!$is_editing) {
+        $type_id = $this->submittedType['slug'];
+      }
+    }
+
     // Get messages
-    $success_message = $this->successMessage;
-    $error_message = $this->errorMessage;
+    // Messages are shown as queued admin notices (see NotificationManager)
+    $success_message = '';
+    $error_message = '';
 
     // Load template
     $this->loadTemplate('edit-data-object-type-page.php', compact(

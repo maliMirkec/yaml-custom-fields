@@ -13,19 +13,20 @@ if (!defined('ABSPATH')) {
   <div class="yaml-cf-admin-container">
     <div class="yaml-cf-header">
       <div class="yaml-cf-header-content">
-        <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="YAML Custom Fields" class="yaml-cf-logo" />
+        <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
           <h1><?php echo esc_html($template_name); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Edit YAML schema for this template', 'yaml-custom-fields'); ?></p>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Choose the fields for this template', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
+    <hr class="wp-header-end">
 
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-custom-fields')); ?>" class="button">
           <span class="dashicons dashicons-arrow-left-alt2"></span>
-          <?php esc_html_e('Back to Templates', 'yaml-custom-fields'); ?>
+          <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
         <?php
         // Check if this is a partial (has a slash or matches partial patterns)
@@ -36,28 +37,28 @@ if (!defined('ABSPATH')) {
         if ($yaml_cf_is_partial && !empty($schema_yaml)) :
           $yaml_cf_manage_data_url = admin_url('admin.php?page=yaml-cf-edit-partial&template=' . urlencode($template));
         ?>
-        <a href="<?php echo esc_url($yaml_cf_manage_data_url); ?>" class="button button-secondary" style="margin-left: 10px;">
-          <span class="dashicons dashicons-admin-generic"></span>
-          <?php esc_html_e('Manage Data', 'yaml-custom-fields'); ?>
+        <a href="<?php echo esc_url($yaml_cf_manage_data_url); ?>" class="button button-secondary yaml-cf-button-gap">
+          <span class="dashicons dashicons-edit"></span>
+          <?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
         </a>
         <?php endif; ?>
       </p>
-      <p><strong><?php esc_html_e('Template File:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($template); ?></code></p>
-      <p><?php esc_html_e('Define the YAML schema that specifies which fields are available for this template.', 'yaml-custom-fields'); ?></p>
+      <p><strong><?php esc_html_e('Theme file:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($template); ?></code></p>
+      <p><?php esc_html_e('The schema says which fields pages with this template get. Each field needs a name, a label and a type.', 'yaml-custom-fields'); ?></p>
     </div>
 
     <form method="post" action="">
       <?php wp_nonce_field('yaml_cf_save_schema', 'yaml_cf_save_schema_nonce'); ?>
       <input type="hidden" name="template" value="<?php echo esc_attr($template); ?>" />
 
-      <div style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1);">
-        <p><?php esc_html_e('Enter your YAML schema below:', 'yaml-custom-fields'); ?></p>
-        <textarea name="schema" id="yaml-cf-schema-editor" rows="20" class="large-text code" style="font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.6; width: 100%; border: 1px solid #ddd; padding: 10px;"><?php echo esc_textarea($schema_yaml); ?></textarea>
+      <div class="yaml-cf-surface">
+        <p><?php esc_html_e('Write the schema below:', 'yaml-custom-fields'); ?></p>
+        <textarea name="schema" id="yaml-cf-schema-editor" rows="20" class="large-text code yaml-cf-code-editor"><?php echo esc_textarea($schema_yaml); ?></textarea>
       </div>
 
-      <p class="submit" style="margin-top: 20px;">
+      <p class="submit yaml-cf-spaced-top">
         <button type="submit" class="button button-primary button-large">
-          <?php esc_html_e('Save Schema', 'yaml-custom-fields'); ?>
+          <?php esc_html_e('Save schema', 'yaml-custom-fields'); ?>
         </button>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-custom-fields')); ?>" class="button button-large">
           <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
@@ -65,10 +66,10 @@ if (!defined('ABSPATH')) {
       </p>
     </form>
 
-    <div class="yaml-cf-schema-examples">
-      <h2><?php esc_html_e('Schema Example', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('Here\'s an example schema in YAML format:', 'yaml-custom-fields'); ?></p>
-      <pre>fields:
+    <?php
+    $yaml_cf_reference_example = <<<'YAML'
+fields:
+  - section: Hero
   - name: hero_title
     label: Hero Title
     type: string
@@ -78,6 +79,8 @@ if (!defined('ABSPATH')) {
   - name: hero_image
     label: Hero Image
     type: image
+
+  - break: true
   - name: category
     label: Category
     type: taxonomy
@@ -100,6 +103,7 @@ if (!defined('ABSPATH')) {
     multiple: true
     options:
       taxonomy: post_tag
+  - section: Content
   - name: features
     label: Features
     type: block
@@ -117,25 +121,9 @@ if (!defined('ABSPATH')) {
             type: image
           - name: description
             label: Description
-            type: text</pre>
-
-      <h3><?php esc_html_e('Supported Field Types', 'yaml-custom-fields'); ?></h3>
-      <ul>
-        <li><strong>boolean</strong> - Checkbox</li>
-        <li><strong>string</strong> - Single line text (supports minlength, maxlength)</li>
-        <li><strong>text</strong> - Multi-line textarea (supports maxlength)</li>
-        <li><strong>rich-text</strong> - WordPress WYSIWYG editor</li>
-        <li><strong>code</strong> - Code editor (supports language option)</li>
-        <li><strong>number</strong> - Number input (supports min, max)</li>
-        <li><strong>date</strong> - Date picker (supports time option for datetime)</li>
-        <li><strong>select</strong> - Dropdown (supports multiple and values options)</li>
-        <li><strong>taxonomy</strong> - WordPress categories, tags, or custom taxonomies (supports multiple and taxonomy options)</li>
-        <li><strong>data_object</strong> - Reference to data object entries (supports multiple and object_type options)</li>
-        <li><strong>image</strong> - WordPress media uploader for images</li>
-        <li><strong>file</strong> - WordPress media uploader for any file</li>
-        <li><strong>object</strong> - Nested fields group</li>
-        <li><strong>block</strong> - Repeater field with multiple block types (list: true for repeatable)</li>
-      </ul>
-    </div>
+            type: text
+YAML;
+    include YAML_CF_PLUGIN_DIR . 'templates/partials/schema-reference.php';
+    ?>
   </div>
 </div>

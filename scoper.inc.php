@@ -21,7 +21,7 @@ return [
         Finder::create()
             ->files()
             ->ignoreVCS(true)
-            ->notName('/LICENSE|.*\\.md|.*\\.dist|Makefile|composer\\.json|composer\\.lock/')
+            ->notName('/.*\\.md|.*\\.dist|Makefile|composer\\.json|composer\\.lock/')
             ->exclude([
                 'doc',
                 'test',
@@ -32,7 +32,8 @@ return [
                 'humbug',
                 'php-scoper',
             ])
-            ->in('vendor')
+            // Production-only install created by build-scoped.sh (never the dev vendor/ directory)
+            ->in('build-src/vendor')
             ->filter(function (\SplFileInfo $file) {
                 // Exclude dev dependencies
                 $devPackages = [

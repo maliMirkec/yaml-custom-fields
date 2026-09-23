@@ -28,7 +28,7 @@ class SchemaEditorController extends AdminController {
     // The checkPermission() call above verifies current_user_can('manage_options').
     $template = RequestHelper::getParam('template');
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      wp_die(esc_html__('No template was chosen. Go back to the YAML Custom Fields page and pick one.', 'yaml-custom-fields'));
     }
 
     $schemas = get_option('yaml_cf_schemas', []);
@@ -42,13 +42,6 @@ class SchemaEditorController extends AdminController {
         $schema_yaml = $invalid_schema;
         delete_transient('yaml_cf_invalid_schema_' . get_current_user_id());
       }
-
-      $error_msg = RequestHelper::getParam('error_msg');
-      if ($error_msg) {
-        $error_message = $error_msg;
-      } else {
-        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
-      }
     }
 
     // Get template name from theme files
@@ -61,11 +54,8 @@ class SchemaEditorController extends AdminController {
       }
     }
 
-    // Check for success message
+    // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
-    if (RequestHelper::getParam('saved') === '1') {
-      $success_message = __('Schema saved successfully!', 'yaml-custom-fields');
-    }
 
     // Pass messages to JavaScript (replaces inline scripts)
     $page_data = [];

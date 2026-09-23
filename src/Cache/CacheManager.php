@@ -57,4 +57,39 @@ class CacheManager {
 
     do_action('yaml_cf_post_cache_cleared', $post_id);
   }
+
+  /**
+   * Clear plugin data caches after field data changes
+   *
+   * @param int|null $post_id Specific post to clear, or null for every post with YAML CF data
+   */
+  public function clearDataCaches($post_id = null) {
+    // Admin list caches
+    wp_cache_delete('yaml_cf_validation_posts', 'yaml-custom-fields');
+    wp_cache_delete('yaml_cf_posts_with_data', 'yaml-custom-fields');
+
+    if ($post_id) {
+      wp_cache_delete($post_id, 'post_meta');
+      clean_post_cache($post_id);
+      return;
+    }
+
+    $post_ids = PostTracker::getAll();
+    if (empty($post_ids)) {
+      // Tracking is empty (e.g. data saved by older versions): find the posts by meta key
+      $repository = new \YamlCF\Data\Repositories\PostDataRepository();
+      $result = $repository->queryPostsWithData([
+        'post_type' => 'any',
+        'post_status' => 'any',
+        'per_page' => -1,
+        'fields' => 'ids',
+      ]);
+      $post_ids = $result['posts'];
+    }
+
+    foreach ($post_ids as $pid) {
+      wp_cache_delete($pid, 'post_meta');
+      clean_post_cache($pid);
+    }
+  }
 }

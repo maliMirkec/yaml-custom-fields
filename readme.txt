@@ -1,6 +1,6 @@
 === YAML Custom Fields ===
 Contributors: starbist
-Tags: yaml, frontmatter, custom-fields, meta-fields, schema
+Tags: custom fields, fields, content, yaml, schema
 Requires at least: 5.0
 Tested up to: 7.0
 Requires PHP: 8.1
@@ -8,141 +8,125 @@ Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A WordPress plugin for managing YAML frontmatter schemas in theme templates and partials.
+Custom fields for pages, posts and every part of the site. Set the fields once; writers fill them in.
 
 == Description ==
 
-YAML Custom Fields allows you to define structured content schemas with an intuitive interface and ACF-like template functions. Perfect for theme developers who want flexible, schema-based content management without the complexity.
+YAML Custom Fields adds boxes to pages, like "Headline", "Team photo" or "Event date". Writers fill them in, and the website shows that content in the right place.
 
-= Features =
+The fields of each page template are set in a short list, called a schema. It takes a few lines per field.
 
-* Define YAML schemas for page templates and template partials
-* 15+ field types including string, rich-text, images, blocks, taxonomies, data objects, and more
-* Easy-to-use admin interface for managing schemas and data
-* **Three-level data hierarchy:**
-  * Per-page data for individual customization (stored in post meta)
-  * Per-template global data shared across all posts using the same template
-  * Site-wide global data for partials like headers and footers
-* **Per-field global/local toggle:** Each field can independently use template global data or page-specific data
-* **Visual dual-field interface:** See both template global and page-specific values side-by-side
-* Data Objects for managing structured, reusable data (universities, companies, etc.)
-* Data Validation page for reviewing imported content
-* Consolidated Export/Import page for all data types (settings, page data, data objects)
-* Simple template functions with ACF-like syntax and auto-merge behavior
-* Administrator-only access for security
-* Clean uninstall removes all database records
-* WordPress Coding Standards compliant
+= What it does =
 
-= Supported Field Types =
+* Gives each page template its own fields.
+* Holds the content of the header, footer and other site parts, filled in once.
+* Adds shared fields, the same on every page with one template.
+* Keeps site details, like a phone number or social links, used across the whole website.
+* Builds pages from sections that writers add, remove and reorder.
+* Keeps reusable lists, like team members or partners, for any page to pick from.
+* Exports and imports the setup and content, for backups or a move to another website.
+* Finds imported posts with missing images or files.
 
-* **String** - Single-line text with min/max length
-* **Text** - Multi-line textarea
-* **Rich Text** - WordPress WYSIWYG editor
-* **Code** - Code editor with syntax highlighting
-* **Boolean** - Checkbox for true/false values
-* **Number** - Number input with min/max constraints
-* **Date** - Date picker with optional time
-* **Select** - Dropdown with single/multiple selection
-* **Taxonomy** - WordPress categories, tags, or custom taxonomies with single/multiple selection
-* **Post Type** - Dropdown to select registered post types (Post, Page, custom post types)
-* **Data Object** - Reference to structured data objects managed independently (universities, companies, team members, etc.)
-* **Image** - WordPress media uploader for images
-* **File** - WordPress media uploader for any file
-* **Object** - Nested group of fields
-* **Block** - Repeatable blocks for flexible page builders
+= Field types =
 
-= Usage Example =
+* One line of text
+* A few lines of text
+* Text with formatting (bold, links, lists)
+* Code, like an embed or a form
+* Yes or no (tick box)
+* Number
+* Date, with or without time
+* Dropdown
+* Category or tag
+* Kind of content (posts, pages and more)
+* Item from a reusable list
+* Image
+* File, or several files
+* Group of fields
+* Sections
+* Info box with a note for writers
 
-In your theme template:
+= How it works =
 
-`<?php
-$hero_title = ycf_get_field('hero_title');
-$hero_image = ycf_get_image('hero_image', null, 'full');
-$category = ycf_get_term('category');
-$post_type = ycf_get_post_type('content_type');
-$university = ycf_get_data_object('university');
-$features = ycf_get_field('features');
-?>
+1. Go to **YAML Custom Fields** and switch on a template.
+2. Click **Create schema** and list the fields:
 
-<div class="hero">
-  <?php if ($hero_image): ?>
-    <img src="<?php echo esc_url($hero_image['url']); ?>" alt="<?php echo esc_attr($hero_image['alt']); ?>">
-  <?php endif; ?>
-  <h1><?php echo esc_html($hero_title); ?></h1>
-  <?php if ($category): ?>
-    <span class="category"><?php echo esc_html($category->name); ?></span>
-  <?php endif; ?>
-  <?php if ($university): ?>
-    <p><?php echo esc_html($university['name']); ?></p>
-  <?php endif; ?>
-</div>`
+`fields:
+  - name: headline
+    label: Headline
+    type: string
+  - name: photo
+    label: Photo
+    type: image`
+
+3. Open a page that uses the template. The fields sit below the title.
+4. The theme shows each field with one line:
+
+`<h1><?php echo esc_html( ycf_get_field( 'headline' ) ); ?></h1>`
+
+The Documentation page inside the plugin explains every step in plain words.
 
 == Installation ==
 
-= From WordPress Plugin Directory =
+1. In the WordPress admin, go to **Plugins → Add New**.
+2. Search for "YAML Custom Fields".
+3. Click **Install Now**, then **Activate**.
+4. Go to **YAML Custom Fields** in the menu on the left.
 
-1. Log in to your WordPress admin dashboard
-2. Navigate to **Plugins → Add New**
-3. Search for "YAML Custom Fields"
-4. Click **Install Now** next to the YAML Custom Fields plugin
-5. Click **Activate** after installation completes
-6. Go to **YAML Custom Fields** in the admin menu to configure your schemas
-
-= Manual Installation =
-
-1. Download the plugin ZIP file
-2. Log in to your WordPress admin dashboard
-3. Navigate to **Plugins → Add New → Upload Plugin**
-4. Choose the ZIP file and click **Install Now**
-5. Click **Activate** after installation completes
-6. Go to **YAML Custom Fields** in the admin menu to configure your schemas
+For a ZIP file, use **Plugins → Add New → Upload Plugin** instead.
 
 = Requirements =
 
-* WordPress 5.0 or higher
-* PHP 8.1 or higher
-* The plugin includes all necessary dependencies
+* WordPress 5.0 or newer
+* PHP 8.1 or newer
+
+Everything else the plugin needs is included.
 
 == Frequently Asked Questions ==
 
-= What is YAML frontmatter? =
+= What is a schema? =
 
-YAML frontmatter is a structured way to define metadata for content. It's commonly used in static site generators and headless CMS systems. YAML Custom Fields brings this approach to WordPress themes.
+A short list of the fields a page gets. Each field has a name, a label and a type. It is written in YAML, a simple text format with one setting per line.
 
-= How is this different from ACF? =
+= Is coding needed? =
 
-While ACF is a comprehensive custom fields solution, YAML Custom Fields focuses on YAML-based schemas that are portable and version-controllable. It's ideal for developers who prefer code-first approaches and want simpler, more predictable data structures.
+Not for writers, who only fill in fields. Setting up the fields and showing them on the website needs a few lines in the theme. The **Copy code** button next to each field copies the exact line.
 
-= Can I use this with my existing theme? =
+= Does it work with any theme? =
 
-Yes! YAML Custom Fields works with any WordPress theme. You define schemas for your templates and use simple PHP functions to retrieve the data in your template files.
+Yes. The theme decides where each field shows up.
 
-= Does this work with Gutenberg? =
+= Does it work with the block editor? =
 
-Yes, YAML Custom Fields is compatible with both the Classic and Block (Gutenberg) editors. The custom fields appear below the editor regardless of which editor you're using.
+The fields appear in the classic editor, below the title. On a site that uses the block editor, the Classic Editor plugin brings them back.
 
-= What happens to my data if I deactivate the plugin? =
+= Which content types are supported? =
 
-Your data remains in the database. Only when you **delete** the plugin (not just deactivate) will it clean up all settings, schemas, and custom field data.
+Posts, pages and other public content types, such as an "Events" type added by a theme or plugin.
 
-= Can I use this for WooCommerce products? =
+= Who can change the setup? =
 
-Currently, YAML Custom Fields supports pages and posts only. Support for custom post types including WooCommerce products may be added in future versions.
+Only administrators change schemas and settings. Writers fill in fields on the posts they are allowed to edit.
 
-= How do I report bugs or request features? =
+= What happens when the plugin is switched off? =
 
-Please visit the [GitHub repository](https://github.com/maliMirkec/yaml-custom-fields) to report issues or request features.
+The content stays. It is only removed when the plugin is **deleted**.
+
+= How does content move to another website? =
+
+**YAML Custom Fields → Export & Import** saves it to a file. Images and files are not inside that file, so the media library has to be copied as well. **Content Check** then finds anything missing.
+
+= Where are problems reported? =
+
+On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful details: what was done, what was expected and what happened.
 
 == Screenshots ==
 
-1. Main YAML Custom Fields admin page showing page templates and template partials with enable/disable toggles
-2. Schema editor for main page templates with YAML syntax for defining custom fields
-3. Schema editor for partial templates (headers, footers, etc.)
-4. Partial data editor for managing global content in template partials
-5. Data Validation page for reviewing imported content
-6. Data Objects page for managing structured, reusable data types
-7. Export/Import page with consolidated export/import functionality for settings, page data, and data objects
-8. Documentation page with comprehensive guides and examples
+1. The YAML Custom Fields page, with a switch per template and the status of its fields.
+2. The schema editor for a template.
+3. The schema editor for a site part, like the header.
+4. The content of a site part.
+5. The Documentation page, written in plain words.
 
 == Changelog ==
 
@@ -269,211 +253,41 @@ Initial release of YAML Custom Fields.
 
 == Developer Documentation ==
 
-= Template Functions =
+The full guide is on the plugin's Documentation page. A short summary follows.
 
-**Get a single field value:**
+= Functions =
 
-`$value = ycf_get_field('field_name');
-$value = ycf_get_field('field_name', 123); // Specific post ID
-$value = ycf_get_field('logo', 'partial:header.php'); // From partial
-$value = ycf_get_field('title', null, $block); // From block context`
+`ycf_get_field( 'name' )                 // One field
+ycf_get_field( 'name', 42 )             // One field of another post
+ycf_get_field( 'name', 'partial:header.php' )  // A site part
+ycf_get_field( 'title', null, $section ) // A field inside a section
+ycf_get_fields()                        // All fields
+ycf_has_field( 'name' )                 // Does the field have a value?
+ycf_get_image( 'name', null, 'large' )  // Image: id, url, alt, title, caption, width, height
+ycf_get_file( 'name' )                  // File: id, url, path, filename, filesize, mime_type, title
+ycf_get_term( 'name' )                  // Category or tag (WP_Term)
+ycf_get_post_type( 'name' )             // Content type (WP_Post_Type)
+ycf_get_data_object( 'name' )           // Item from a reusable list
+ycf_get_data_objects( 'short-name' )    // Every item in a reusable list
+ycf_get_global_field( 'name' )          // One of the site details
+ycf_get_global_fields()                 // All site details`
 
-**Get image field with details:**
+Each function also has a long name that starts with `yaml_cf_`.
 
-`$image = ycf_get_image('field_name', null, 'full');
-$image = ycf_get_image('field_name', 123, 'thumbnail'); // Specific post ID
-$image = ycf_get_image('icon', null, 'medium', $block); // From block context
+Output is always escaped: `esc_html()` for text, `esc_url()` for links, `wp_kses_post()` for formatted text. Code fields print as they are.
 
-// Returns: array('id', 'url', 'alt', 'title', 'caption', 'description', 'width', 'height')`
+= Where data is stored =
 
-**Get file field with details:**
-
-`$file = ycf_get_file('field_name', null);
-$file = ycf_get_file('field_name', 123); // Specific post ID
-$file = ycf_get_file('document', null, $block); // From block context
-
-// Returns: array('id', 'url', 'path', 'filename', 'filesize', 'mime_type', 'title')`
-
-**Get taxonomy field (term or terms):**
-
-`$term = ycf_get_term('field_name', null);
-$term = ycf_get_term('field_name', 123); // Specific post ID
-$term = ycf_get_term('category', null, $block); // From block context
-
-// Returns: WP_Term object or array of WP_Term objects (for multiple selection)`
-
-**Get post type field:**
-
-`$post_type = ycf_get_post_type('field_name', null);
-$post_type = ycf_get_post_type('field_name', 123); // Specific post ID
-$post_type = ycf_get_post_type('content_type', null, $block); // From block context
-
-// Returns: WP_Post_Type object or null`
-
-**Get data object field:**
-
-`$university = ycf_get_data_object('field_name', null);
-$university = ycf_get_data_object('field_name', 123); // Specific post ID
-$university = ycf_get_data_object('university', null, $block); // From block context
-
-// Returns: Array with data object entry fields or null`
-
-**Get all entries of a data object type:**
-
-`$all_universities = ycf_get_data_objects('universities');
-foreach ($all_universities as $entry_id => $university) {
-    echo esc_html($university['name']);
-}
-
-// Returns: Array of all entries for the specified data object type`
-
-**Get all fields:**
-
-`$fields = ycf_get_fields();
-$fields = ycf_get_fields(123); // Specific post ID
-$fields = ycf_get_fields('partial:footer.php'); // From partial`
-
-**Check if field exists:**
-
-`if (ycf_has_field('hero_title')) {
-    echo ycf_get_field('hero_title');
-}`
-
-**Working with Block fields:**
-
-`$blocks = ycf_get_field('features');
-
-if (!empty($blocks)) {
-    foreach ($blocks as $block) {
-        // Access nested fields using context_data parameter
-        $title = ycf_get_field('title', null, $block);
-        $icon = ycf_get_image('icon', null, 'thumbnail', $block);
-        $category = ycf_get_term('category', null, $block);
-
-        echo '<h3>' . esc_html($title) . '</h3>';
-        if ($icon) {
-            echo '<img src="' . esc_url($icon['url']) . '">';
-        }
-        if ($category) {
-            echo '<span>' . esc_html($category->name) . '</span>';
-        }
-    }
-}`
-
-= Sample YAML Schema =
-
-`fields:
-  - name: hero_title
-    label: Hero Title
-    type: string
-    required: true
-    options:
-      maxlength: 100
-  - name: hero_image
-    label: Hero Image
-    type: image
-  - name: category
-    label: Category
-    type: taxonomy
-    options:
-      taxonomy: category
-  - name: tags
-    label: Tags
-    type: taxonomy
-    multiple: true
-    options:
-      taxonomy: post_tag
-  - name: content_type
-    label: Content Type
-    type: post_type
-  - name: university
-    label: University
-    type: data_object
-    options:
-      object_type: universities
-  - name: features
-    label: Features
-    type: block
-    list: true
-    blockKey: type
-    blocks:
-      - name: feature
-        label: Feature Block
-        fields:
-          - name: title
-            label: Title
-            type: string
-          - name: icon
-            label: Icon
-            type: image
-          - name: description
-            label: Description
-            type: text`
-
-= Working with Partials =
-
-For custom partials, add the @ycf marker in the file header:
-
-`<?php
-/**
- * Custom Navigation Partial
- * @ycf
- */`
-
-Then click "Refresh Template List" in the YAML Custom Fields admin page.
-
-= Template Global Fields =
-
-Template Global Fields allow you to define default values that are shared across all posts using the same template, while still allowing individual posts to override specific fields.
-
-**Setting up Template Global:**
-
-1. Go to **YAML Custom Fields** admin page
-2. Enable YAML for your template (e.g., page.php)
-3. Click **Add Template Global** to define the template global schema
-4. Define fields that should have shared default values
-5. Click **Manage Template Global Data** to set the default values
-
-**Using Template Global in Posts:**
-
-When editing a post that uses a template with Template Global fields, you'll see a dual-field interface for each field:
-
-* **Template Global (All Pages)** - Read-only display showing the default value (with Edit link)
-* **Page-Specific Value** - Editable field for this post only
-* **Checkbox** - "Use template global for this field" - Toggle per field
-
-**Benefits:**
-
-* **Consistency:** Set default values once, use across all posts
-* **Flexibility:** Override any field on any post individually
-* **Clarity:** See both global and local values side-by-side
-* **Efficiency:** Update template global to affect all posts at once
-
-**Data Priority (when using template functions):**
-
-When a field uses template global, `ycf_get_field()` returns data in this priority order:
-
-1. Page-specific value (if "use template global" is unchecked)
-2. Template global value (if "use template global" is checked)
-3. Site-wide global value (if template has site-wide global enabled)
-4. null (if no value exists)
-
-= Data Storage =
-
-* **Page/Post data:** Stored in post meta with key `_yaml_cf_data`
-* **Template Global preferences:** Stored in post meta with key `_yaml_cf_use_template_global_fields` (per-field array)
-* **Template Global schemas:** Stored in options table with key `yaml_cf_template_global_schemas`
-* **Template Global data:** Stored in options table with key `yaml_cf_template_global_data`
-* **Site-wide global schema:** Stored in options table with key `yaml_cf_global_schema`
-* **Site-wide global data:** Stored in options table with key `yaml_cf_global_data`
-* **Partial data:** Stored in options table with key `yaml_cf_partial_data`
-* **Schemas:** Stored in options table with key `yaml_cf_schemas`
-* **Data Object Types:** Stored in options table with key `yaml_cf_data_object_types`
-* **Data Object Entries:** Stored in options table with keys `yaml_cf_data_object_entries_{type_slug}`
+* Page fields: post meta `_yaml_cf_data`
+* Schemas: option `yaml_cf_schemas`
+* Site parts: option `yaml_cf_partial_data`
+* Shared fields: options `yaml_cf_template_global_schemas` and `yaml_cf_template_global_data`
+* Site details: options `yaml_cf_global_schema` and `yaml_cf_global_data`
+* Reusable lists: option `yaml_cf_data_object_types`, items in `yaml_cf_data_object_entries_{short-name}`
 
 == Privacy Policy ==
 
-YAML Custom Fields does not collect, store, or transmit any user data outside of your WordPress installation. All data is stored locally in your WordPress database.
+YAML Custom Fields does not collect or send any data. Everything stays in the site's own WordPress database.
 
 == Third-Party Libraries ==
 
@@ -485,10 +299,11 @@ This plugin includes the following third-party libraries:
 
 == Credits ==
 
-* Author: [Silvestar Bistrovic](https://www.silvestar.codes)
+* Developed by [Studio Cita](https://www.cita.hr)
+* Lead developer: [Silvestar Bistrović](https://www.silvestar.codes)
 
 == Support ==
 
-For documentation, examples, and support, visit:
+Help and examples:
 * [Plugin Documentation](https://github.com/maliMirkec/yaml-custom-fields)
 * [Report Issues](https://github.com/maliMirkec/yaml-custom-fields/issues)

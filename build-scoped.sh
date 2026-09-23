@@ -12,7 +12,20 @@ echo "=================================================="
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PLUGIN_DIR/build"
 VENDOR_DIR="$PLUGIN_DIR/vendor"
+# Production-only dependencies are installed here and scoped (dev tools such as
+# php-scoper's own symfony/console, finder, etc. must never be shipped)
+SCOPE_SOURCE_DIR="$PLUGIN_DIR/build-src"
 PHP_BIN="${PHP_BIN:-php}"
+
+# Use composer.phar if it exists, otherwise use global composer command
+if [ -f "$PLUGIN_DIR/composer.phar" ]; then
+    COMPOSER_CMD="$PHP_BIN $PLUGIN_DIR/composer.phar"
+else
+    COMPOSER_CMD="composer"
+fi
+
+# Always remove the temporary production install
+trap 'rm -rf "$SCOPE_SOURCE_DIR"' EXIT
 
 # Check if PHP-Scoper is installed
 if [ ! -f "$VENDOR_DIR/bin/php-scoper" ]; then
@@ -29,6 +42,13 @@ fi
 # Create build directory
 mkdir -p "$BUILD_DIR"
 
+# Install production dependencies only (no dev packages) as the scoping source
+echo "📥 Installing production dependencies..."
+rm -rf "$SCOPE_SOURCE_DIR"
+mkdir -p "$SCOPE_SOURCE_DIR"
+cp "$PLUGIN_DIR/composer.json" "$SCOPE_SOURCE_DIR/composer.json"
+$COMPOSER_CMD install --working-dir="$SCOPE_SOURCE_DIR" --no-dev --no-scripts --no-interaction --quiet
+
 # Run PHP-Scoper (suppress deprecation warnings for PHP 8.3 compatibility)
 echo "🔄 Running PHP-Scoper..."
 $PHP_BIN -d error_reporting=E_ALL\&~E_DEPRECATED "$VENDOR_DIR/bin/php-scoper" add-prefix \
@@ -41,6 +61,10 @@ if [ ! -d "$BUILD_DIR/vendor" ]; then
     echo "❌ Error: Scoping failed. Build directory not created."
     exit 1
 fi
+
+# Remove symfony/yaml's CLI linter (needs symfony/console, which is not shipped)
+rm -rf "$BUILD_DIR/vendor/symfony/yaml/Command" "$BUILD_DIR/vendor/symfony/yaml/Resources/bin"
+rmdir "$BUILD_DIR/vendor/symfony/yaml/Resources" 2>/dev/null || true
 
 # Dump the autoloader for the scoped dependencies
 echo "📦 Generating autoloader for scoped dependencies..."
@@ -62,26 +86,20 @@ cat > composer.json <<'EOF'
     ]
   },
   "config": {
-    "platform-check": false
+    "platform-check": false,
+    "autoloader-suffix": "YamlCustomFieldsScoped"
   }
 }
 EOF
 
 # Dump autoload
-# Use composer.phar if it exists, otherwise use global composer command
-if [ -f "../composer.phar" ]; then
-    COMPOSER_CMD="$PHP_BIN ../composer.phar"
-else
-    COMPOSER_CMD="composer"
-fi
-
 $COMPOSER_CMD dump-autoload --working-dir="$BUILD_DIR" --no-dev --classmap-authoritative --quiet
 
 # Remove dev bin stubs (these get auto-generated even with --no-dev)
 echo "🧹 Removing dev bin stubs..."
 if [ -d "$BUILD_DIR/vendor/bin" ]; then
     cd "$BUILD_DIR/vendor/bin"
-    rm -f php-parse php-scoper phpunit
+    rm -f php-parse php-scoper phpunit yaml-lint var-dump-server
 fi
 
 cd "$PLUGIN_DIR"

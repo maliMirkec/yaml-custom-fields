@@ -6,12 +6,22 @@ namespace YamlCF\Ajax\Handlers;
 if (!defined('ABSPATH')) {
     exit;
 }
+
 use YamlCF\Ajax\AjaxHandler;
 
+/**
+ * Return the settings export as JSON
+ * Action: wp_ajax_yaml_cf_export_settings
+ */
 class ExportSettings extends AjaxHandler {
+  private $exporter;
+
+  public function __construct($exporter) {
+    $this->exporter = $exporter;
+  }
+
   public function handle() {
-    // TODO: Phase 14 - Implement ExportSettings
-    $this->checkCapability();
-    $this->sendError('Not yet implemented');
+    $this->verifyRequest();
+    $this->sendSuccess($this->exporter->export());
   }
 }

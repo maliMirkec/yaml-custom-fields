@@ -6,8 +6,8 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype', $vendorDir . '/symfony/polyfill-ctype'),
-    'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\' => array($vendorDir . '/symfony/yaml', $vendorDir . '/symfony/yaml'),
+    'YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
+    'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\' => array($vendorDir . '/symfony/yaml'),
     'YamlCF\\Vendor\\Symfony\\Component\\DeprecationContracts\\' => array($vendorDir . '/symfony/deprecation-contracts'),
     'YamlCF\\' => array($baseDir . '/../src'),
 );

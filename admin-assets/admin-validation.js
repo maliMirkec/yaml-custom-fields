@@ -26,16 +26,8 @@
 
         // Show/hide rows
         rows.forEach(row => {
-          const status = row.dataset.status;
-          if (filter === 'all') {
-            row.style.display = '';
-          } else if (filter === 'issues' && status === 'issues') {
-            row.style.display = '';
-          } else if (filter === 'healthy' && status === 'healthy') {
-            row.style.display = '';
-          } else {
-            row.style.display = 'none';
-          }
+          const visible = filter === 'all' || row.dataset.status === filter;
+          row.classList.toggle('yaml-cf-hidden', !visible);
         });
       });
     });

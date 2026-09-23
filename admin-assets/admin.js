@@ -6,6 +6,8 @@
 (function ($) {
   'use strict';
 
+  const { __, sprintf } = wp.i18n;
+
   const YamlCF = {
     hasMetaBoxChanges: false,
     originalMetaBoxData: {},
@@ -52,6 +54,9 @@
 
       // Import Post Data
       $(document).off('change' + ns, 'input[name="yaml_cf_import_file_hidden"]').on('change' + ns, 'input[name="yaml_cf_import_file_hidden"]', this.importPostData);
+      $(document).off('click' + ns, '.yaml-cf-import-trigger').on('click' + ns, '.yaml-cf-import-trigger', function () {
+        $('#' + $(this).data('target')).trigger('click');
+      });
 
       // Code Snippet Copy
       $(document).off('click' + ns, '.yaml-cf-copy-snippet').on('click' + ns, '.yaml-cf-copy-snippet', this.copySnippet);
@@ -67,7 +72,24 @@
     toggleYAML: function () {
       const $checkbox = $(this);
       const template = $checkbox.data('template');
+      const templateName = $checkbox.data('template-name') || template;
+      const hasSchema = String($checkbox.data('has-schema')) === '1';
       const enabled = $checkbox.is(':checked');
+      const $row = $checkbox.closest('.yaml-cf-row');
+
+      // Both states are rendered by PHP; the row class decides which one is visible
+      const applyState = function (isEnabled) {
+        $row.toggleClass('is-enabled', isEnabled).toggleClass('is-disabled', !isEnabled);
+      };
+
+      const revert = function (message) {
+        $checkbox.prop('checked', !enabled);
+        applyState(!enabled);
+        YamlCF.showMessage(message, 'error');
+      };
+
+      applyState(enabled);
+      $checkbox.prop('disabled', true);
 
       $.ajax({
         url: yamlCF.ajax_url,
@@ -79,128 +101,30 @@
           enabled: enabled,
         },
         success: function (response) {
-          if (response.success) {
-            // Update the schema button visibility
-            const $row = $checkbox.closest('tr');
-            const $cells = $row.find('td');
-
-            // Schema column is always the 4th column (index 3)
-            const $schemaCell = $cells.eq(3);
-
-            // Determine if this is a template table (6 columns) or partial table (5 columns)
-            const isTemplateTable = $cells.length === 6;
-            const isPartialTable = $cells.length === 5;
-
-            if (enabled) {
-              const editSchemaUrl =
-                yamlCF.admin_url +
-                'admin.php?page=yaml-cf-edit-schema&template=' +
-                encodeURIComponent(template);
-              const hasSchema = response.data && response.data.has_schema;
-              const buttonText = hasSchema ? 'Edit Schema' : 'Add Schema';
-              const checkmark = hasSchema
-                ? ' <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>'
-                : '';
-
-              $schemaCell.html(
-                '<a href="' +
-                  editSchemaUrl +
-                  '" class="button">' +
-                  buttonText +
-                  '</a>' +
-                  checkmark
-              );
-
-              // Handle template table (has Template Global Schema and Template Global Data columns)
-              if (isTemplateTable) {
-                const hasTemplateGlobalSchema = response.data && response.data.has_template_global_schema;
-                const templateGlobalButtonText = hasTemplateGlobalSchema ? 'Edit Template Global' : 'Add Template Global';
-                const templateGlobalCheckmark = hasTemplateGlobalSchema
-                  ? ' <span class="dashicons dashicons-yes-alt" style="color: #46b450;"></span>'
-                  : '';
-
-                // Template Global Schema column (index 4)
-                const editTemplateGlobalUrl =
-                  yamlCF.admin_url +
-                  'admin.php?page=yaml-cf-edit-template-global&template=' +
-                  encodeURIComponent(template);
-                $cells.eq(4).html(
-                  '<a href="' +
-                    editTemplateGlobalUrl +
-                    '" class="button">' +
-                    templateGlobalButtonText +
-                    '</a>' +
-                    templateGlobalCheckmark
-                );
-
-                // Template Global Data column (index 5)
-                if (hasTemplateGlobalSchema) {
-                  const manageTemplateGlobalUrl =
-                    yamlCF.admin_url +
-                    'admin.php?page=yaml-cf-manage-template-global&template=' +
-                    encodeURIComponent(template);
-                  $cells.eq(5).html(
-                    '<a href="' +
-                      manageTemplateGlobalUrl +
-                      '" class="button">Manage Template Global Data</a>'
-                  );
-                } else {
-                  $cells.eq(5).html(
-                    '<span class="description">Add template global schema first</span>'
-                  );
-                }
-              }
-
-              // Handle partial table (has Data column)
-              if (isPartialTable) {
-                if (hasSchema) {
-                  const manageDataUrl =
-                    yamlCF.admin_url +
-                    'admin.php?page=yaml-cf-edit-partial&template=' +
-                    encodeURIComponent(template);
-                  $cells.eq(4).html(
-                    '<a href="' +
-                      manageDataUrl +
-                      '" class="button">Manage Data</a>'
-                  );
-                } else {
-                  $cells.eq(4).html(
-                    '<span class="description">Add schema first</span>'
-                  );
-                }
-              }
-            } else {
-              $schemaCell.html(
-                '<span class="description">Enable YAML first</span>'
-              );
-
-              // Update Template Global columns for template table
-              if (isTemplateTable) {
-                $cells.eq(4).html(
-                  '<span class="description">Enable YAML first</span>'
-                );
-                $cells.eq(5).html(
-                  '<span class="description">Add template global schema first</span>'
-                );
-              }
-
-              // Update Data column for partial table
-              if (isPartialTable) {
-                $cells.eq(4).html(
-                  '<span class="description">Add schema first</span>'
-                );
-              }
-            }
-
-            YamlCF.showMessage('Settings saved successfully', 'success');
-          } else {
-            $checkbox.prop('checked', !enabled);
-            YamlCF.showMessage('Error saving settings', 'error');
+          if (!response.success) {
+            /* translators: %s: template name */
+            revert(sprintf(__('Could not change custom fields for %s. Please try again.', 'yaml-custom-fields'), templateName));
+            return;
           }
+
+          let message;
+          if (!enabled) {
+            /* translators: %s: template name */
+            message = sprintf(__('Custom fields turned off for %s. Existing content is kept.', 'yaml-custom-fields'), templateName);
+          } else if (hasSchema) {
+            /* translators: %s: template name */
+            message = sprintf(__('Custom fields turned on for %s.', 'yaml-custom-fields'), templateName);
+          } else {
+            /* translators: %s: template name */
+            message = sprintf(__('Custom fields turned on for %s. Next, create its schema.', 'yaml-custom-fields'), templateName);
+          }
+          YamlCF.showMessage(message, 'success');
         },
         error: function () {
-          $checkbox.prop('checked', !enabled);
-          YamlCF.showMessage('Error saving settings', 'error');
+          revert(__('Could not reach the server. Check the connection and try again.', 'yaml-custom-fields'));
+        },
+        complete: function () {
+          $checkbox.prop('disabled', false);
         },
       });
     },
@@ -221,15 +145,15 @@
         },
         success: function (response) {
           if (response.success) {
-            YamlCF.showMessage('Global schema setting saved', 'success');
+            YamlCF.showMessage(__('Site details setting saved.', 'yaml-custom-fields'), 'success');
           } else {
             $checkbox.prop('checked', !useGlobal);
-            YamlCF.showMessage('Error saving setting', 'error');
+            YamlCF.showMessage(__('This setting could not be saved. Please try again.', 'yaml-custom-fields'), 'error');
           }
         },
         error: function () {
           $checkbox.prop('checked', !useGlobal);
-          YamlCF.showMessage('Error saving setting', 'error');
+          YamlCF.showMessage(__('This setting could not be saved. Please try again.', 'yaml-custom-fields'), 'error');
         },
       });
     },
@@ -297,12 +221,17 @@
 
       // Change indicator to override
       $fieldHeader.find('.yaml-cf-global-indicator').replaceWith(
-        '<span class="yaml-cf-override-indicator" style="margin-left: 10px; padding: 2px 8px; background: #f0ad4e; color: #fff; border-radius: 3px; font-size: 11px; font-weight: bold;">⚠️ OVERRIDDEN</span>'
+        $('<span>', { 'class': 'yaml-cf-override-indicator', text: '⚠️ ' + __('Changed for this page', 'yaml-custom-fields') })
       );
 
       // Change button to reset
       $button.replaceWith(
-        '<button type="button" class="button button-small yaml-cf-reset-override" data-field="' + fieldName + '">Reset to Global</button>'
+        $('<button>', {
+          type: 'button',
+          'class': 'button button-small yaml-cf-reset-override',
+          'data-field': fieldName,
+          text: __('Use shared value', 'yaml-custom-fields')
+        })
       );
 
       // Enable editing - remove readonly class
@@ -315,8 +244,12 @@
       });
 
       // Add hidden field to mark as override
-      if ($fieldDisplay.find('input[name="yaml_cf_template_global_override[' + fieldName + ']"]').length === 0) {
-        $fieldDisplay.prepend('<input type="hidden" name="yaml_cf_template_global_override[' + fieldName + ']" value="1" />');
+      const overrideName = 'yaml_cf_template_global_override[' + fieldName + ']';
+      const hasOverrideInput = $fieldDisplay.find('input').filter(function() {
+        return $(this).attr('name') === overrideName;
+      }).length > 0;
+      if (!hasOverrideInput) {
+        $fieldDisplay.prepend($('<input>', { type: 'hidden', name: overrideName, value: '1' }));
       }
 
       // Update field names to use override namespace
@@ -334,7 +267,7 @@
       const $button = $(this);
       const fieldName = $button.data('field');
 
-      if (!confirm('Are you sure you want to reset this field to the global value? Any custom changes will be lost.')) {
+      if (!confirm(__('Go back to the shared value? The value typed for this page will be lost.', 'yaml-custom-fields'))) {
         return;
       }
 
@@ -349,7 +282,7 @@
       const blockType = $select.val();
 
       if (!blockType) {
-        alert('Please select a block type');
+        alert(__('Choose a section type first.', 'yaml-custom-fields'));
         return;
       }
 
@@ -378,7 +311,7 @@
       }
 
       if (!blockDef) {
-        alert('Block definition not found');
+        alert(__('This section type no longer exists in the schema.', 'yaml-custom-fields'));
         return;
       }
 
@@ -398,7 +331,7 @@
         $('<button>', {
           type: 'button',
           class: 'button button-small yaml-cf-move-up',
-          title: 'Move up',
+          title: __('Move up', 'yaml-custom-fields'),
           html: '<span class="dashicons dashicons-arrow-up-alt"></span>',
         })
       );
@@ -406,7 +339,7 @@
         $('<button>', {
           type: 'button',
           class: 'button button-small yaml-cf-move-down',
-          title: 'Move down',
+          title: __('Move down', 'yaml-custom-fields'),
           html: '<span class="dashicons dashicons-arrow-down-alt"></span>',
         })
       );
@@ -414,7 +347,7 @@
         $('<button>', {
           type: 'button',
           class: 'button button-small yaml-cf-remove-block',
-          text: 'Remove',
+          text: __('Remove', 'yaml-custom-fields'),
         })
       );
       $header.append($actions);
@@ -435,7 +368,7 @@
         });
 
         for (let blockField of blockDef.fields) {
-          const $field = $('<div>', { class: 'yaml-cf-field' });
+          const $field = $('<div>', { class: 'yaml-cf-field', 'data-type': blockField.type });
           const blockFieldId = 'ycf_' + uniqueId + '_' + blockField.name;
 
           $field.append(
@@ -444,6 +377,11 @@
               text: blockField.label || blockField.name,
             })
           );
+
+          // Help text for writers (the optional "description" in the schema)
+          if (blockField.description) {
+            $field.append($('<p>', { 'class': 'yaml-cf-field-help', text: blockField.description }));
+          }
 
           // Render field based on type
           if (blockField.type === 'boolean') {
@@ -465,13 +403,10 @@
           } else if (blockField.type === 'rich-text') {
             // For rich-text, we need to use WordPress editor which requires page reload
             $field.append(
-              $('<div>', {
-                style:
-                  'padding: 10px; background: #fff3cd; border: 1px solid #f0ad4e; border-radius: 3px;',
-              }).html(
-                '<strong>ℹ️ Rich Text Editor</strong><br>' +
-                  'The visual editor will appear after you <strong>save this post</strong>. ' +
-                  'For now, you can save the post to enable the full WYSIWYG editor.'
+              $('<div>', { 'class': 'yaml-cf-richtext-notice' }).append(
+                $('<strong>').text('ℹ️ ' + __('Text editor', 'yaml-custom-fields')),
+                $('<br>'),
+                document.createTextNode(__('Save this post to see the full text editor here.', 'yaml-custom-fields'))
               )
             );
             // Add hidden input to preserve the field structure
@@ -583,7 +518,7 @@
               multiple: multiple,
             });
 
-            $select.append($('<option>', { value: '', text: '-- Select --' }));
+            $select.append($('<option>', { value: '', text: __('-- Select --', 'yaml-custom-fields') }));
 
             if (Array.isArray(values)) {
               values.forEach(function (option) {
@@ -620,7 +555,9 @@
             });
 
             const fieldLabel = blockField.label || blockField.name;
-            $select.append($('<option>', { value: '', text: '-- Select ' + fieldLabel + ' --' }));
+            $select.append($('<option>', { value: '', text: sprintf(
+              /* translators: %s: field label */
+              __('-- Select %s --', 'yaml-custom-fields'), fieldLabel) }));
 
             // Get taxonomy terms from pre-loaded data
             if (typeof yamlCF !== 'undefined' && yamlCF.taxonomyTerms && yamlCF.taxonomyTerms[taxonomy]) {
@@ -648,7 +585,9 @@
             });
 
             const fieldLabel = blockField.label || blockField.name;
-            $select.append($('<option>', { value: '', text: '-- Select ' + fieldLabel + ' --' }));
+            $select.append($('<option>', { value: '', text: sprintf(
+              /* translators: %s: field label */
+              __('-- Select %s --', 'yaml-custom-fields'), fieldLabel) }));
 
             // Get post types from pre-loaded data
             if (typeof yamlCF !== 'undefined' && yamlCF.postTypes && Array.isArray(yamlCF.postTypes)) {
@@ -669,8 +608,8 @@
             if (!objectType) {
               $field.append(
                 $('<p>', {
-                  style: 'color: #d63638;',
-                  text: 'Error: object_type not specified in field options.'
+                  'class': 'yaml-cf-status-bad',
+                  text: __('This field needs a list to choose from. Add object_type to the schema.', 'yaml-custom-fields')
                 })
               );
             } else {
@@ -690,7 +629,9 @@
               });
 
               const fieldLabel = blockField.label || blockField.name;
-              $select.append($('<option>', { value: '', text: '-- Select ' + fieldLabel + ' --' }));
+              $select.append($('<option>', { value: '', text: sprintf(
+              /* translators: %s: field label */
+              __('-- Select %s --', 'yaml-custom-fields'), fieldLabel) }));
 
               // Get data object entries from pre-loaded data
               if (typeof yamlCF !== 'undefined' && yamlCF.dataObjects && yamlCF.dataObjects[objectType]) {
@@ -728,7 +669,7 @@
                 type: 'button',
                 class: 'button yaml-cf-upload-image',
                 'data-target': blockFieldId,
-                text: 'Upload Image',
+                text: __('Choose image', 'yaml-custom-fields'),
               })
             );
             $field.append($mediaButtons);
@@ -757,7 +698,7 @@
                 type: 'button',
                 class: 'button yaml-cf-upload-file',
                 'data-target': blockFieldId,
-                text: 'Upload File',
+                text: __('Choose file', 'yaml-custom-fields'),
               })
             );
             $field.append($mediaButtons);
@@ -823,7 +764,7 @@
 
       // Show notification to remind user to save
       YamlCF.showMessage(
-        "Block removed. Don't forget to save the changes.",
+        __("Section removed. Click Update to save the change.", 'yaml-custom-fields'),
         'warning'
       );
     },
@@ -886,9 +827,9 @@
 
         // Create a new frame instance to avoid conflicts
         const mediaUploader = wp.media({
-          title: 'Select Image',
+          title: __('Choose an image', 'yaml-custom-fields'),
           button: {
-            text: 'Use This Image',
+            text: __('Use this image', 'yaml-custom-fields'),
           },
           multiple: false,
           library: {
@@ -935,11 +876,9 @@
           } else {
             // Create new preview after the buttons container
             $buttonsDiv.after(
-              '<div class="yaml-cf-image-preview">' +
-                '<img src="' +
-                attachment.url +
-                '" style="max-width: 200px; display: block; margin-top: 10px;" />' +
-                '</div>'
+              $('<div>', { 'class': 'yaml-cf-image-preview' }).append(
+                $('<img>', { src: attachment.url, 'class': 'yaml-cf-image-preview-img', alt: '' })
+              )
             );
           }
 
@@ -950,7 +889,7 @@
                 type: 'button',
                 class: 'button yaml-cf-clear-media',
                 'data-target': targetId,
-                text: 'Clear',
+                text: __('Remove', 'yaml-custom-fields'),
               })
             );
           }
@@ -968,9 +907,9 @@
 
         // Always create a new media uploader instance to avoid target conflicts
         const mediaUploader = wp.media({
-          title: 'Select File',
+          title: __('Choose a file', 'yaml-custom-fields'),
           button: {
-            text: 'Use This File',
+            text: __('Use this file', 'yaml-custom-fields'),
           },
           multiple: false,
         });
@@ -1007,7 +946,7 @@
                 type: 'button',
                 class: 'button yaml-cf-clear-media',
                 'data-target': targetId,
-                text: 'Clear',
+                text: __('Remove', 'yaml-custom-fields'),
               })
             );
           }
@@ -1025,9 +964,9 @@
         const $list = $button.siblings('.yaml-cf-file-list-items');
 
         const mediaUploader = wp.media({
-          title: 'Select File(s)',
+          title: __('Choose files', 'yaml-custom-fields'),
           button: {
-            text: 'Add File(s)',
+            text: __('Add files', 'yaml-custom-fields'),
           },
           multiple: true,
         });
@@ -1052,7 +991,7 @@
             $('<button>', {
               type: 'button',
               class: 'button button-small yaml-cf-remove-file-list-item',
-              text: 'Remove',
+              text: __('Remove', 'yaml-custom-fields'),
             }).appendTo($item);
             $list.append($item);
           });
@@ -1100,7 +1039,7 @@
 
       // Show notification to remind user to save
       YamlCF.showMessage(
-        "Don't forget to save the changes.",
+        __("Click Update to save the change.", 'yaml-custom-fields'),
         'warning'
       );
     },
@@ -1112,7 +1051,7 @@
 
       if (
         !confirm(
-          '⚠️ WARNING: This will clear all LOCAL custom field data for this page (not global or template global fields).\n\nThis action cannot be undone. You will need to save the page to make this permanent.\n\nAre you sure you want to continue?'
+          '⚠️ ' + __('This empties every field on this page. Shared fields and site details stay as they are.\n\nClick Update afterwards to save the change.\n\nContinue?', 'yaml-custom-fields')
         )
       ) {
         return;
@@ -1185,7 +1124,7 @@
       $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-block-item').remove();
 
       alert(
-        'All custom field data has been cleared. Remember to save the page to make this change permanent.'
+        __('All fields on this page are now empty. Click Update to save this change.', 'yaml-custom-fields')
       );
     },
 
@@ -1200,22 +1139,17 @@
 
       // Validate file type
       if (!file.name.endsWith('.json')) {
-        YamlCF.showMessage('Please select a valid JSON file', 'error');
+        YamlCF.showMessage(__('Choose a .json file exported from YAML Custom Fields.', 'yaml-custom-fields'), 'error');
         return;
       }
 
       // Confirm import
-      const confirmMsg =
-        'This will import settings and may overwrite existing schemas.\n\n' +
-        'Choose:\n' +
-        'OK = Replace all settings\n' +
-        'Cancel = Merge with existing settings\n\n' +
-        'Continue?';
+      const confirmMsg = __('This imports schemas and settings from the file. It can change the current setup.\n\nOK: replace the current settings.\nCancel: add them to the current settings.\n\nContinue?', 'yaml-custom-fields');
 
       if (!confirm(confirmMsg)) {
         // User wants to merge
         const mergeConfirm = confirm(
-          'Merge imported settings with existing settings?'
+          __('Add the imported settings to the current ones?', 'yaml-custom-fields')
         );
         if (!mergeConfirm) {
           e.target.value = ''; // Reset file input
@@ -1224,7 +1158,7 @@
       }
 
       const merge = !confirm(
-        'Replace all existing settings? (Cancel to merge instead)'
+        __('Replace all current settings with the imported ones? Choose Cancel to add them instead.', 'yaml-custom-fields')
       );
 
       const reader = new FileReader();
@@ -1244,16 +1178,19 @@
             success: function (response) {
               if (response.success) {
                 const info = response.data;
-                let message = 'Settings imported successfully!';
+                let message = __('Settings imported.', 'yaml-custom-fields');
+                if (info.errors && info.errors.length > 0) {
+                  message = __('Settings imported, but some parts were skipped:', 'yaml-custom-fields') + '\n- ' + info.errors.join('\n- ');
+                }
                 if (info.imported_from && info.imported_from !== 'unknown') {
-                  message += '\n\nImported from: ' + info.imported_from;
+                  message += '\n\n' + __('From website:', 'yaml-custom-fields') + ' ' + info.imported_from;
                 }
                 if (info.exported_at && info.exported_at !== 'unknown') {
-                  message += '\nExported at: ' + info.exported_at;
+                  message += '\n' + __('Exported on:', 'yaml-custom-fields') + ' ' + info.exported_at;
                 }
                 alert(message);
                 YamlCF.showMessage(
-                  'Settings imported successfully',
+                  __('Settings imported.', 'yaml-custom-fields'),
                   'success'
                 );
 
@@ -1263,15 +1200,15 @@
                 }, 1500);
               } else {
                 YamlCF.showMessage(
-                  'Error importing settings: ' +
-                    (response.data || 'Unknown error'),
+                  __('The settings could not be imported:', 'yaml-custom-fields') + ' ' +
+                    (response.data || __('Something went wrong.', 'yaml-custom-fields')),
                   'error'
                 );
               }
             },
             error: function () {
               YamlCF.showMessage(
-                'AJAX error occurred during import',
+                __('The import did not reach the server. Check the connection and try again.', 'yaml-custom-fields'),
                 'error'
               );
             },
@@ -1281,7 +1218,7 @@
             },
           });
         } catch (err) {
-          YamlCF.showMessage('Invalid JSON file: ' + err.message, 'error');
+          YamlCF.showMessage(__('This file could not be read:', 'yaml-custom-fields') + ' ' + err.message, 'error');
           $('#yaml-cf-import-settings-file').val('');
         }
       };
@@ -1424,7 +1361,7 @@
       this.initFormChangeTracking({
         container: '#yaml-cf-meta-box',
         fieldsSelector: '.yaml-cf-fields',
-        message: 'You have unsaved changes in YAML Custom Fields fields',
+        message: __('There are changes that are not saved yet.', 'yaml-custom-fields'),
         submitSelector: 'form#post',
         storageKey: 'originalMetaBoxData',
         hasChangesKey: 'hasMetaBoxChanges',
@@ -1433,46 +1370,78 @@
       });
     },
 
+    /**
+     * Show instant feedback for an action on the current page (toast)
+     *
+     * Page-load feedback (after a save or import) is shown as admin notices by
+     * YamlCF\Core\NotificationManager; toasts use the same colours and icons.
+     *
+     * @param {string} message Text to show
+     * @param {string} type success | error | warning | info
+     * @param {boolean} [persistent] Keep until dismissed (errors and warnings always are)
+     */
     showMessage: function (message, type, persistent) {
-      // Create notification container if it doesn't exist
+      const icons = {
+        success: 'dashicons-yes-alt',
+        error: 'dashicons-dismiss',
+        warning: 'dashicons-warning',
+        info: 'dashicons-info',
+      };
+      type = icons[type] ? type : 'info';
+      const sticky = persistent || type === 'error' || type === 'warning';
+
       let $container = $('#yaml-cf-notifications');
       if (!$container.length) {
         $container = $('<div>', {
           id: 'yaml-cf-notifications',
+          role: 'region',
+          'aria-label': __('Notifications', 'yaml-custom-fields'),
         });
         $('body').append($container);
       }
 
-      // Remove existing message of the same type if persistent
-      if (persistent) {
-        $container.find('.yaml-cf-message.' + type).remove();
-      }
+      // One toast per message: replace an identical one instead of stacking duplicates
+      $container.find('.yaml-cf-toast').filter(function () {
+        return $(this).data('message') === message;
+      }).remove();
 
-      const $message = $('<div>', {
-        class: 'yaml-cf-message ' + type,
-        text: message,
-        'data-type': type,
-      });
+      const $toast = $('<div>', {
+        'class': 'yaml-cf-toast is-' + type,
+        role: type === 'error' ? 'alert' : 'status',
+      }).data('message', message);
 
-      $container.append($message);
-
-      // Auto-hide after 3 seconds unless persistent
-      if (!persistent) {
+      const dismiss = function () {
+        $toast.addClass('is-leaving');
         setTimeout(function () {
-          $message.fadeOut(300, function () {
-            $(this).remove();
-          });
-        }, 3000);
+          $toast.remove();
+        }, 200);
+      };
+
+      $toast.append(
+        $('<span>', { 'class': 'dashicons ' + icons[type], 'aria-hidden': 'true' }),
+        $('<span>', { 'class': 'yaml-cf-toast-text', text: message }),
+        $('<button>', {
+          type: 'button',
+          'class': 'yaml-cf-toast-close',
+          'aria-label': __('Dismiss notification', 'yaml-custom-fields'),
+        }).append($('<span>', { 'class': 'dashicons dashicons-no-alt', 'aria-hidden': 'true' })).on('click', dismiss)
+      );
+
+      $container.append($toast);
+
+      if (!sticky) {
+        let timer = setTimeout(dismiss, 5000);
+        // Pause while the pointer or keyboard focus is on the toast
+        $toast.on('mouseenter focusin', function () {
+          clearTimeout(timer);
+        }).on('mouseleave focusout', function () {
+          timer = setTimeout(dismiss, 3000);
+        });
       }
     },
 
     hideMessage: function (type) {
-      $('#yaml-cf-notifications .yaml-cf-message.' + type).fadeOut(
-        300,
-        function () {
-          $(this).remove();
-        }
-      );
+      $('#yaml-cf-notifications .yaml-cf-toast.is-' + type).remove();
     },
 
     showSnippetPopover: function (e) {
@@ -1581,7 +1550,7 @@
         document.execCommand('copy');
         YamlCF.showCopyFeedback($button);
       } catch (err) {
-        YamlCF.showMessage('Failed to copy snippet', 'error');
+        YamlCF.showMessage(__('Could not copy. Select the code and copy it by hand.', 'yaml-custom-fields'), 'error');
       }
       $temp.remove();
     },
@@ -1599,7 +1568,7 @@
       // Create success tooltip
       const $tooltip = $('<div>', {
         class: 'yaml-cf-snippet-tooltip',
-        text: 'Copied!',
+        text: __('Copied', 'yaml-custom-fields'),
       });
 
       // Position tooltip
@@ -1626,7 +1595,7 @@
       }, 2000);
 
       // Show success message
-      YamlCF.showMessage('Code snippet copied to clipboard!', 'success');
+      YamlCF.showMessage(__('Code copied. Paste it into the theme file.', 'yaml-custom-fields'), 'success');
     },
 
     importPostData: function (e) {
@@ -1635,7 +1604,7 @@
 
       if (!file) return;
 
-      if (!confirm('⚠️ WARNING: This will replace ALL custom field data for this page. Continue?')) {
+      if (!confirm('⚠️ ' + __('This replaces all fields on this page with the file\'s content. Continue?', 'yaml-custom-fields'))) {
         $input.val('');
         return;
       }
@@ -1658,7 +1627,7 @@
           window.location.href = window.location.href.split('?')[0] + '?post=' + postId + '&action=edit&yaml_cf_imported=1';
         },
         error: function () {
-          alert('Import failed. Please try again.');
+          alert(__('The import did not work. Please try again.', 'yaml-custom-fields'));
           $input.val('');
         }
       });

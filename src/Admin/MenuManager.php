@@ -39,15 +39,15 @@ class MenuManager {
       'manage_options',
       'yaml-custom-fields',
       [$this, 'renderMainPage'],
-      'dashicons-edit-page',
+      'dashicons-forms',
       30
     );
 
     // Register hidden pages (accessible via URL but not shown in menu by default)
     add_submenu_page(
       'yaml-custom-fields',
-      __('Edit Schema', 'yaml-custom-fields'),
-      __('Edit Schema', 'yaml-custom-fields'),
+      __('Edit schema', 'yaml-custom-fields'),
+      __('Edit schema', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-edit-schema',
       [$this, 'renderEditSchemaPage']
@@ -55,8 +55,8 @@ class MenuManager {
 
     add_submenu_page(
       'yaml-custom-fields',
-      __('Edit Partial', 'yaml-custom-fields'),
-      __('Edit Partial', 'yaml-custom-fields'),
+      __('Edit site part', 'yaml-custom-fields'),
+      __('Edit site part', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-edit-partial',
       [$this, 'renderEditPartialPage']
@@ -65,8 +65,8 @@ class MenuManager {
     // Global Schema pages
     add_submenu_page(
       'yaml-custom-fields',
-      __('Edit Global Schema', 'yaml-custom-fields'),
-      __('Edit Global Schema', 'yaml-custom-fields'),
+      __('Site details schema', 'yaml-custom-fields'),
+      __('Site details schema', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-edit-global-schema',
       [$this, 'renderEditGlobalSchemaPage']
@@ -74,8 +74,8 @@ class MenuManager {
 
     add_submenu_page(
       'yaml-custom-fields',
-      __('Manage Global Data', 'yaml-custom-fields'),
-      __('Manage Global Data', 'yaml-custom-fields'),
+      __('Site details', 'yaml-custom-fields'),
+      __('Site details', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-manage-global-data',
       [$this, 'renderManageGlobalDataPage']
@@ -84,8 +84,8 @@ class MenuManager {
     // Template Global pages (hidden from menu)
     add_submenu_page(
       'yaml-custom-fields',
-      __('Edit Template Global Schema', 'yaml-custom-fields'),
-      __('Edit Template Global Schema', 'yaml-custom-fields'),
+      __('Shared fields schema', 'yaml-custom-fields'),
+      __('Shared fields schema', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-edit-template-global',
       [$this, 'renderEditTemplateGlobalPage']
@@ -93,8 +93,8 @@ class MenuManager {
 
     add_submenu_page(
       'yaml-custom-fields',
-      __('Manage Template Global Data', 'yaml-custom-fields'),
-      __('Manage Template Global Data', 'yaml-custom-fields'),
+      __('Shared content', 'yaml-custom-fields'),
+      __('Shared content', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-manage-template-global',
       [$this, 'renderManageTemplateGlobalPage']
@@ -103,8 +103,8 @@ class MenuManager {
     // Data Validation
     add_submenu_page(
       'yaml-custom-fields',
-      __('Data Validation', 'yaml-custom-fields'),
-      __('Data Validation', 'yaml-custom-fields'),
+      __('Content Check', 'yaml-custom-fields'),
+      __('Content Check', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-data-validation',
       [$this, 'renderDataValidationPage']
@@ -113,8 +113,8 @@ class MenuManager {
     // Data Objects
     add_submenu_page(
       'yaml-custom-fields',
-      __('Data Objects', 'yaml-custom-fields'),
-      __('Data Objects', 'yaml-custom-fields'),
+      __('Reusable lists', 'yaml-custom-fields'),
+      __('Reusable lists', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-data-objects',
       [$this, 'renderDataObjectsPage']
@@ -123,8 +123,8 @@ class MenuManager {
     // Hidden pages for Data Objects
     add_submenu_page(
       'yaml-custom-fields',
-      __('Edit Data Object Type', 'yaml-custom-fields'),
-      __('Edit Data Object Type', 'yaml-custom-fields'),
+      __('Edit list', 'yaml-custom-fields'),
+      __('Edit list', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-edit-data-object-type',
       [$this, 'renderEditDataObjectTypePage']
@@ -132,8 +132,8 @@ class MenuManager {
 
     add_submenu_page(
       'yaml-custom-fields',
-      __('Manage Data Object Entries', 'yaml-custom-fields'),
-      __('Manage Data Object Entries', 'yaml-custom-fields'),
+      __('List items', 'yaml-custom-fields'),
+      __('List items', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-manage-data-object-entries',
       [$this, 'renderManageDataObjectEntriesPage']
@@ -142,8 +142,8 @@ class MenuManager {
     // Export/Import (consolidated - positioned before Documentation)
     add_submenu_page(
       'yaml-custom-fields',
-      __('Export/Import', 'yaml-custom-fields'),
-      __('Export/Import', 'yaml-custom-fields'),
+      __('Export & Import', 'yaml-custom-fields'),
+      __('Export & Import', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-export-data',
       [$this, 'renderExportImportPage']
@@ -240,25 +240,25 @@ class MenuManager {
       // Edit Schema page
       if ($page === 'yaml-cf-edit-schema') {
         /* translators: %s: Template name */
-        return sprintf(__('Edit Schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+        return sprintf(__('Edit schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
       }
 
       // Edit Partial page
       if ($page === 'yaml-cf-edit-partial') {
         /* translators: %s: Template name */
-        return sprintf(__('Edit Partial: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+        return sprintf(__('Edit site part: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
       }
 
       // Edit Template Global Schema page
       if ($page === 'yaml-cf-edit-template-global') {
         /* translators: %s: Template name */
-        return sprintf(__('Edit Template Global Schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+        return sprintf(__('Shared fields schema: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
       }
 
       // Manage Template Global Data page
       if ($page === 'yaml-cf-manage-template-global') {
         /* translators: %s: Template name */
-        return sprintf(__('Manage Template Global Data: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
+        return sprintf(__('Shared content: %s', 'yaml-custom-fields'), $template_name) . ' ' . $admin_title;
       }
     }
 
@@ -272,12 +272,12 @@ class MenuManager {
 
       if ($page === 'yaml-cf-edit-data-object-type') {
         /* translators: %s: Data object type name */
-        return sprintf(__('Edit Data Object Type: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
+        return sprintf(__('Edit list: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
       }
 
       if ($page === 'yaml-cf-manage-data-object-entries') {
         /* translators: %s: Data object type name */
-        return sprintf(__('Manage Entries: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
+        return sprintf(__('Items in %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
       }
     }
 

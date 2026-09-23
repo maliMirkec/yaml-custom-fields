@@ -39,7 +39,7 @@ class SchemaValidator {
       if ($parsed === null) {
         return [
           'valid' => false,
-          'message' => 'Empty or invalid YAML content'
+          'message' => __('The schema is empty, or it is not written in YAML.', 'yaml-custom-fields')
         ];
       }
 
@@ -47,33 +47,36 @@ class SchemaValidator {
       if (!isset($parsed['fields']) || !is_array($parsed['fields'])) {
         return [
           'valid' => false,
-          'message' => 'Schema must contain a "fields" array'
+          'message' => __('The schema must start with "fields:", followed by the list of fields.', 'yaml-custom-fields')
         ];
       }
 
-      // Normalize info field shorthand for validation
-      $fields = $this->normalizer->normalizeInfoFields($parsed['fields']);
+      // Normalize shorthand syntax (info boxes, section breaks) for validation
+      $fields = $this->normalizer->normalizeAll($parsed['fields']);
 
       // Basic validation of field structure
       foreach ($fields as $index => $field) {
         if (!is_array($field)) {
           return [
             'valid' => false,
-            'message' => 'Field at index ' . $index . ' is not a valid array'
+            /* translators: %s: field index */
+            'message' => sprintf(__('Field number %s is not written correctly. Start it with "- name:".', 'yaml-custom-fields'), $index + 1)
           ];
         }
 
         if (!isset($field['name'])) {
           return [
             'valid' => false,
-            'message' => 'Field at index ' . $index . ' is missing required "name" property'
+            /* translators: %s: field index */
+            'message' => sprintf(__('Field number %s needs a name. Add a line like "name: title".', 'yaml-custom-fields'), $index + 1)
           ];
         }
 
         if (!isset($field['type'])) {
           return [
             'valid' => false,
-            'message' => 'Field "' . $field['name'] . '" is missing required "type" property'
+            /* translators: %s: field name */
+            'message' => sprintf(__('The field "%s" needs a type. Add a line like "type: string".', 'yaml-custom-fields'), $field['name'])
           ];
         }
 
@@ -82,7 +85,8 @@ class SchemaValidator {
           if (!$this->isTemplateAllowedForInfoField($template)) {
             return [
               'valid' => false,
-              'message' => 'Info fields are not allowed for template partials and archives. Current template: ' . $template
+              /* translators: %s: template file name */
+              'message' => sprintf(__('Info boxes only work on page and post templates, not on %s.', 'yaml-custom-fields'), $template)
             ];
           }
         }
@@ -90,12 +94,13 @@ class SchemaValidator {
 
       return [
         'valid' => true,
-        'message' => 'Schema is valid'
+        'message' => __('The schema looks good.', 'yaml-custom-fields')
       ];
     } catch (ParseException $e) {
       return [
         'valid' => false,
-        'message' => 'YAML syntax error: ' . $e->getMessage()
+        /* translators: %s: YAML parser error */
+        'message' => sprintf(__('The schema has a typing mistake. %s', 'yaml-custom-fields'), $e->getMessage())
       ];
     }
   }

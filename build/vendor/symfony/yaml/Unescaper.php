@@ -30,27 +30,27 @@ class Unescaper
      *
      * @param string $value A single quoted string
      */
-    public function unescapeSingleQuotedString(string $value) : string
+    public function unescapeSingleQuotedString(string $value): string
     {
-        return \str_replace('\'\'', '\'', $value);
+        return str_replace('\'\'', '\'', $value);
     }
     /**
      * Unescapes a double quoted string.
      *
      * @param string $value A double quoted string
      */
-    public function unescapeDoubleQuotedString(string $value) : string
+    public function unescapeDoubleQuotedString(string $value): string
     {
         $callback = fn($match) => $this->unescapeCharacter($match[0]);
         // evaluate the string
-        return \preg_replace_callback('/' . self::REGEX_ESCAPED_CHARACTER . '/u', $callback, $value);
+        return preg_replace_callback('/' . self::REGEX_ESCAPED_CHARACTER . '/u', $callback, $value);
     }
     /**
      * Unescapes a character that was found in a double-quoted string.
      *
      * @param string $value An escaped character
      */
-    private function unescapeCharacter(string $value) : string
+    private function unescapeCharacter(string $value): string
     {
         return match ($value[1]) {
             '0' => "\x00",
@@ -75,18 +75,18 @@ class Unescaper
             'L' => " ",
             // U+2029 PARAGRAPH SEPARATOR
             'P' => " ",
-            'x' => self::utf8chr(\hexdec(\substr($value, 2, 2))),
-            'u' => self::utf8chr(\hexdec(\substr($value, 2, 4))),
-            'U' => self::utf8chr(\hexdec(\substr($value, 2, 8))),
+            'x' => self::utf8chr(hexdec(substr($value, 2, 2))),
+            'u' => self::utf8chr(hexdec(substr($value, 2, 4))),
+            'U' => self::utf8chr(hexdec(substr($value, 2, 8))),
             default => throw new ParseException(\sprintf('Found unknown escape character "%s".', $value)),
         };
     }
     /**
      * Get the UTF-8 character for the given code point.
      */
-    private static function utf8chr(int $c) : string
+    private static function utf8chr(int $c): string
     {
-        if (0x80 > ($c %= 0x200000)) {
+        if (0x80 > $c %= 0x200000) {
             return \chr($c);
         }
         if (0x800 > $c) {

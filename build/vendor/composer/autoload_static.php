@@ -4,17 +4,15 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
+class ComposerStaticInitYamlCustomFieldsScoped
 {
     public static $files = array (
-        '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
-        '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         '1667e1f90fa47c1a118a0caf0688c5f4' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         'bb9d93b48f7e591202cd09dbe6dc3a9f' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
     );
 
     public static $prefixLengthsPsr4 = array (
-        'Y' =>
+        'Y' => 
         array (
             'YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\' => 37,
             'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\' => 37,
@@ -24,21 +22,19 @@ class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
     );
 
     public static $prefixDirsPsr4 = array (
-        'YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\' =>
+        'YamlCF\\Vendor\\Symfony\\Polyfill\\Ctype\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
-            1 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\' =>
+        'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/yaml',
-            1 => __DIR__ . '/..' . '/symfony/yaml',
         ),
-        'YamlCF\\Vendor\\Symfony\\Component\\DeprecationContracts\\' =>
+        'YamlCF\\Vendor\\Symfony\\Component\\DeprecationContracts\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/deprecation-contracts',
         ),
-        'YamlCF\\' =>
+        'YamlCF\\' => 
         array (
             0 => __DIR__ . '/../..' . '/../src',
         ),
@@ -68,6 +64,7 @@ class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
         'YamlCF\\Ajax\\Handlers\\ImportDataObjects' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ImportDataObjects.php',
         'YamlCF\\Ajax\\Handlers\\ImportPageData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ImportPageData.php',
         'YamlCF\\Ajax\\Handlers\\ImportSettings' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/ImportSettings.php',
+        'YamlCF\\Ajax\\Handlers\\RefreshTemplates' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/RefreshTemplates.php',
         'YamlCF\\Ajax\\Handlers\\SavePartialData' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/SavePartialData.php',
         'YamlCF\\Ajax\\Handlers\\SaveSchema' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/SaveSchema.php',
         'YamlCF\\Ajax\\Handlers\\SaveTemplateSettings' => __DIR__ . '/../..' . '/../src/Ajax/Handlers/SaveTemplateSettings.php',
@@ -93,6 +90,7 @@ class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
         'YamlCF\\Helpers\\RequestHelper' => __DIR__ . '/../..' . '/../src/Helpers/RequestHelper.php',
         'YamlCF\\ImportExport\\DataObjectExporter' => __DIR__ . '/../..' . '/../src/ImportExport/DataObjectExporter.php',
         'YamlCF\\ImportExport\\DataObjectImporter' => __DIR__ . '/../..' . '/../src/ImportExport/DataObjectImporter.php',
+        'YamlCF\\ImportExport\\JsonDownload' => __DIR__ . '/../..' . '/../src/ImportExport/JsonDownload.php',
         'YamlCF\\ImportExport\\PageDataExporter' => __DIR__ . '/../..' . '/../src/ImportExport/PageDataExporter.php',
         'YamlCF\\ImportExport\\PageDataImporter' => __DIR__ . '/../..' . '/../src/ImportExport/PageDataImporter.php',
         'YamlCF\\ImportExport\\SettingsExporter' => __DIR__ . '/../..' . '/../src/ImportExport/SettingsExporter.php',
@@ -122,11 +120,12 @@ class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
         'YamlCF\\Schema\\SchemaParser' => __DIR__ . '/../..' . '/../src/Schema/SchemaParser.php',
         'YamlCF\\Schema\\SchemaStorage' => __DIR__ . '/../..' . '/../src/Schema/SchemaStorage.php',
         'YamlCF\\Schema\\SchemaValidator' => __DIR__ . '/../..' . '/../src/Schema/SchemaValidator.php',
+        'YamlCF\\Schema\\SectionGrouper' => __DIR__ . '/../..' . '/../src/Schema/SectionGrouper.php',
         'YamlCF\\Template\\TemplateCache' => __DIR__ . '/../..' . '/../src/Template/TemplateCache.php',
         'YamlCF\\Template\\TemplateNameFormatter' => __DIR__ . '/../..' . '/../src/Template/TemplateNameFormatter.php',
         'YamlCF\\Template\\TemplateResolver' => __DIR__ . '/../..' . '/../src/Template/TemplateResolver.php',
         'YamlCF\\Template\\TemplateScanner' => __DIR__ . '/../..' . '/../src/Template/TemplateScanner.php',
-        'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Command\\LintCommand' => __DIR__ . '/..' . '/symfony/yaml/Command/LintCommand.php',
+        'YamlCF\\Template\\TemplateSorter' => __DIR__ . '/../..' . '/../src/Template/TemplateSorter.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Dumper' => __DIR__ . '/..' . '/symfony/yaml/Dumper.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Escaper' => __DIR__ . '/..' . '/symfony/yaml/Escaper.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Exception\\DumpException' => __DIR__ . '/..' . '/symfony/yaml/Exception/DumpException.php',
@@ -135,6 +134,7 @@ class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Exception\\RuntimeException' => __DIR__ . '/..' . '/symfony/yaml/Exception/RuntimeException.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Inline' => __DIR__ . '/..' . '/symfony/yaml/Inline.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Parser' => __DIR__ . '/..' . '/symfony/yaml/Parser.php',
+        'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\ParserState' => __DIR__ . '/..' . '/symfony/yaml/ParserState.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Tag\\TaggedValue' => __DIR__ . '/..' . '/symfony/yaml/Tag/TaggedValue.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Unescaper' => __DIR__ . '/..' . '/symfony/yaml/Unescaper.php',
         'YamlCF\\Vendor\\Symfony\\Component\\Yaml\\Yaml' => __DIR__ . '/..' . '/symfony/yaml/Yaml.php',
@@ -144,9 +144,9 @@ class ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInitf7ca7540b1134c940ebfb90c72edec33::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitYamlCustomFieldsScoped::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitYamlCustomFieldsScoped::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInitYamlCustomFieldsScoped::$classMap;
 
         }, null, ClassLoader::class);
     }

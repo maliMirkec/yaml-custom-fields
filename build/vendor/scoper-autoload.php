@@ -4,7 +4,7 @@
 
 $loader = (static function () {
     // Backup the autoloaded Composer files
-    $existingComposerAutoloadFiles = $GLOBALS['__composer_autoload_files'] ?? [];
+    $existingComposerAutoloadFiles = isset($GLOBALS['__composer_autoload_files']) ? $GLOBALS['__composer_autoload_files'] : [];
 
     $loader = require_once __DIR__.'/autoload.php';
     // Ensure InstalledVersions is available
@@ -29,8 +29,7 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('ComposerAutoloaderInitf7ca7540b1134c940ebfb90c72edec33', 'YamlCF\Vendor\ComposerAutoloaderInitf7ca7540b1134c940ebfb90c72edec33');
-humbug_phpscoper_expose_class('Normalizer', 'YamlCF\Vendor\Normalizer');
+humbug_phpscoper_expose_class('ComposerAutoloaderInit97f0b70405c00922b9e29d6b2d7ebc39', 'YamlCF\Vendor\ComposerAutoloaderInit97f0b70405c00922b9e29d6b2d7ebc39');
 
 // Function aliases. For more information see:
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases
@@ -45,63 +44,7 @@ if (!function_exists('ctype_punct')) { function ctype_punct() { return \YamlCF\V
 if (!function_exists('ctype_space')) { function ctype_space() { return \YamlCF\Vendor\ctype_space(...func_get_args()); } }
 if (!function_exists('ctype_upper')) { function ctype_upper() { return \YamlCF\Vendor\ctype_upper(...func_get_args()); } }
 if (!function_exists('ctype_xdigit')) { function ctype_xdigit() { return \YamlCF\Vendor\ctype_xdigit(...func_get_args()); } }
-if (!function_exists('grapheme_extract')) { function grapheme_extract() { return \YamlCF\Vendor\grapheme_extract(...func_get_args()); } }
-if (!function_exists('grapheme_str_split')) { function grapheme_str_split() { return \YamlCF\Vendor\grapheme_str_split(...func_get_args()); } }
-if (!function_exists('grapheme_stripos')) { function grapheme_stripos() { return \YamlCF\Vendor\grapheme_stripos(...func_get_args()); } }
-if (!function_exists('grapheme_stristr')) { function grapheme_stristr() { return \YamlCF\Vendor\grapheme_stristr(...func_get_args()); } }
-if (!function_exists('grapheme_strlen')) { function grapheme_strlen() { return \YamlCF\Vendor\grapheme_strlen(...func_get_args()); } }
-if (!function_exists('grapheme_strpos')) { function grapheme_strpos() { return \YamlCF\Vendor\grapheme_strpos(...func_get_args()); } }
-if (!function_exists('grapheme_strripos')) { function grapheme_strripos() { return \YamlCF\Vendor\grapheme_strripos(...func_get_args()); } }
-if (!function_exists('grapheme_strrpos')) { function grapheme_strrpos() { return \YamlCF\Vendor\grapheme_strrpos(...func_get_args()); } }
-if (!function_exists('grapheme_strstr')) { function grapheme_strstr() { return \YamlCF\Vendor\grapheme_strstr(...func_get_args()); } }
-if (!function_exists('grapheme_substr')) { function grapheme_substr() { return \YamlCF\Vendor\grapheme_substr(...func_get_args()); } }
 if (!function_exists('includeIfExists')) { function includeIfExists() { return \YamlCF\Vendor\includeIfExists(...func_get_args()); } }
-if (!function_exists('mb_check_encoding')) { function mb_check_encoding() { return \YamlCF\Vendor\mb_check_encoding(...func_get_args()); } }
-if (!function_exists('mb_chr')) { function mb_chr() { return \YamlCF\Vendor\mb_chr(...func_get_args()); } }
-if (!function_exists('mb_convert_case')) { function mb_convert_case() { return \YamlCF\Vendor\mb_convert_case(...func_get_args()); } }
-if (!function_exists('mb_convert_encoding')) { function mb_convert_encoding() { return \YamlCF\Vendor\mb_convert_encoding(...func_get_args()); } }
-if (!function_exists('mb_convert_variables')) { function mb_convert_variables() { return \YamlCF\Vendor\mb_convert_variables(...func_get_args()); } }
-if (!function_exists('mb_decode_mimeheader')) { function mb_decode_mimeheader() { return \YamlCF\Vendor\mb_decode_mimeheader(...func_get_args()); } }
-if (!function_exists('mb_decode_numericentity')) { function mb_decode_numericentity() { return \YamlCF\Vendor\mb_decode_numericentity(...func_get_args()); } }
-if (!function_exists('mb_detect_encoding')) { function mb_detect_encoding() { return \YamlCF\Vendor\mb_detect_encoding(...func_get_args()); } }
-if (!function_exists('mb_detect_order')) { function mb_detect_order() { return \YamlCF\Vendor\mb_detect_order(...func_get_args()); } }
-if (!function_exists('mb_encode_mimeheader')) { function mb_encode_mimeheader() { return \YamlCF\Vendor\mb_encode_mimeheader(...func_get_args()); } }
-if (!function_exists('mb_encode_numericentity')) { function mb_encode_numericentity() { return \YamlCF\Vendor\mb_encode_numericentity(...func_get_args()); } }
-if (!function_exists('mb_encoding_aliases')) { function mb_encoding_aliases() { return \YamlCF\Vendor\mb_encoding_aliases(...func_get_args()); } }
-if (!function_exists('mb_get_info')) { function mb_get_info() { return \YamlCF\Vendor\mb_get_info(...func_get_args()); } }
-if (!function_exists('mb_http_input')) { function mb_http_input() { return \YamlCF\Vendor\mb_http_input(...func_get_args()); } }
-if (!function_exists('mb_http_output')) { function mb_http_output() { return \YamlCF\Vendor\mb_http_output(...func_get_args()); } }
-if (!function_exists('mb_internal_encoding')) { function mb_internal_encoding() { return \YamlCF\Vendor\mb_internal_encoding(...func_get_args()); } }
-if (!function_exists('mb_language')) { function mb_language() { return \YamlCF\Vendor\mb_language(...func_get_args()); } }
-if (!function_exists('mb_lcfirst')) { function mb_lcfirst() { return \YamlCF\Vendor\mb_lcfirst(...func_get_args()); } }
-if (!function_exists('mb_list_encodings')) { function mb_list_encodings() { return \YamlCF\Vendor\mb_list_encodings(...func_get_args()); } }
-if (!function_exists('mb_ltrim')) { function mb_ltrim() { return \YamlCF\Vendor\mb_ltrim(...func_get_args()); } }
-if (!function_exists('mb_ord')) { function mb_ord() { return \YamlCF\Vendor\mb_ord(...func_get_args()); } }
-if (!function_exists('mb_output_handler')) { function mb_output_handler() { return \YamlCF\Vendor\mb_output_handler(...func_get_args()); } }
-if (!function_exists('mb_parse_str')) { function mb_parse_str() { return \YamlCF\Vendor\mb_parse_str(...func_get_args()); } }
-if (!function_exists('mb_rtrim')) { function mb_rtrim() { return \YamlCF\Vendor\mb_rtrim(...func_get_args()); } }
-if (!function_exists('mb_scrub')) { function mb_scrub() { return \YamlCF\Vendor\mb_scrub(...func_get_args()); } }
-if (!function_exists('mb_str_pad')) { function mb_str_pad() { return \YamlCF\Vendor\mb_str_pad(...func_get_args()); } }
-if (!function_exists('mb_str_split')) { function mb_str_split() { return \YamlCF\Vendor\mb_str_split(...func_get_args()); } }
-if (!function_exists('mb_stripos')) { function mb_stripos() { return \YamlCF\Vendor\mb_stripos(...func_get_args()); } }
-if (!function_exists('mb_stristr')) { function mb_stristr() { return \YamlCF\Vendor\mb_stristr(...func_get_args()); } }
-if (!function_exists('mb_strlen')) { function mb_strlen() { return \YamlCF\Vendor\mb_strlen(...func_get_args()); } }
-if (!function_exists('mb_strpos')) { function mb_strpos() { return \YamlCF\Vendor\mb_strpos(...func_get_args()); } }
-if (!function_exists('mb_strrchr')) { function mb_strrchr() { return \YamlCF\Vendor\mb_strrchr(...func_get_args()); } }
-if (!function_exists('mb_strrichr')) { function mb_strrichr() { return \YamlCF\Vendor\mb_strrichr(...func_get_args()); } }
-if (!function_exists('mb_strripos')) { function mb_strripos() { return \YamlCF\Vendor\mb_strripos(...func_get_args()); } }
-if (!function_exists('mb_strrpos')) { function mb_strrpos() { return \YamlCF\Vendor\mb_strrpos(...func_get_args()); } }
-if (!function_exists('mb_strstr')) { function mb_strstr() { return \YamlCF\Vendor\mb_strstr(...func_get_args()); } }
-if (!function_exists('mb_strtolower')) { function mb_strtolower() { return \YamlCF\Vendor\mb_strtolower(...func_get_args()); } }
-if (!function_exists('mb_strtoupper')) { function mb_strtoupper() { return \YamlCF\Vendor\mb_strtoupper(...func_get_args()); } }
-if (!function_exists('mb_strwidth')) { function mb_strwidth() { return \YamlCF\Vendor\mb_strwidth(...func_get_args()); } }
-if (!function_exists('mb_substitute_character')) { function mb_substitute_character() { return \YamlCF\Vendor\mb_substitute_character(...func_get_args()); } }
-if (!function_exists('mb_substr')) { function mb_substr() { return \YamlCF\Vendor\mb_substr(...func_get_args()); } }
-if (!function_exists('mb_substr_count')) { function mb_substr_count() { return \YamlCF\Vendor\mb_substr_count(...func_get_args()); } }
-if (!function_exists('mb_trim')) { function mb_trim() { return \YamlCF\Vendor\mb_trim(...func_get_args()); } }
-if (!function_exists('mb_ucfirst')) { function mb_ucfirst() { return \YamlCF\Vendor\mb_ucfirst(...func_get_args()); } }
-if (!function_exists('normalizer_is_normalized')) { function normalizer_is_normalized() { return \YamlCF\Vendor\normalizer_is_normalized(...func_get_args()); } }
-if (!function_exists('normalizer_normalize')) { function normalizer_normalize() { return \YamlCF\Vendor\normalizer_normalize(...func_get_args()); } }
 if (!function_exists('trigger_deprecation')) { function trigger_deprecation() { return \YamlCF\Vendor\trigger_deprecation(...func_get_args()); } }
 
 return $loader;

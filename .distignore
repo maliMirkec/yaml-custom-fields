@@ -28,6 +28,7 @@ scoper.inc.php
 build-scoped.sh
 package-for-wporg.sh
 build/composer.json
+build-src
 /bin/
 
 # Build artifacts and staging
@@ -48,6 +49,7 @@ examples/
 # Tests
 tests
 phpunit.xml
+phpunit-integration.xml.dist
 .phpunit.result.cache
 
 # WordPress.org specific assets (uploaded separately to SVN assets/ folder)

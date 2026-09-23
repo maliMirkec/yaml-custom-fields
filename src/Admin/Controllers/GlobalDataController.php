@@ -32,11 +32,8 @@ class GlobalDataController extends AdminController {
 
     $global_data = get_option('yaml_cf_global_data', []);
 
-    // Check for success message
+    // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
-    if (RequestHelper::getParam('saved') === '1') {
-      $success_message = __('Global data saved successfully!', 'yaml-custom-fields');
-    }
 
     // Collect taxonomy terms and post types from schema
     $taxonomy_terms = [];
@@ -66,11 +63,11 @@ class GlobalDataController extends AdminController {
       'enabled' => true,
       'container' => '#yaml-cf-global-data-form',
       'fieldsSelector' => '.yaml-cf-fields',
-      'message' => __('You have unsaved changes', 'yaml-custom-fields'),
+      'message' => __('There are changes that are not saved yet.', 'yaml-custom-fields'),
       'submitSelector' => '#yaml-cf-global-data-form',
       'storageKey' => 'originalGlobalDataFormData',
       'hasChangesKey' => 'hasGlobalDataFormChanges',
-      'beforeUnloadMessage' => __('You have unsaved changes. Are you sure?', 'yaml-custom-fields'),
+      'beforeUnloadMessage' => __('There are changes that are not saved yet. Leave anyway?', 'yaml-custom-fields'),
       'gutenbergSupport' => false,
       'captureDelay' => 500
     ];

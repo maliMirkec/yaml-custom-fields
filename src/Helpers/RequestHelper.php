@@ -16,7 +16,7 @@ class RequestHelper {
   /**
    * Get sanitized GET parameter (string)
    *
-   * Uses PHP's filter_input() for safe parameter access without phpcs suppressions.
+   * Reads $_GET, which WordPress slashes (wp_magic_quotes), so values are unslashed first.
    * Nonce verification is not required here as this only reads GET parameters.
    * Methods that perform actions must verify nonces separately.
    *
@@ -25,11 +25,10 @@ class RequestHelper {
    * @return string Sanitized value
    */
   public static function getParam($key, $default = '') {
-    $value = filter_input(INPUT_GET, $key, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    if ($value === null || $value === false) {
+    if (!isset($_GET[$key]) || !is_scalar($_GET[$key])) {
       return $default;
     }
-    return sanitize_text_field($value);
+    return sanitize_text_field(wp_unslash((string) $_GET[$key]));
   }
 
   /**
@@ -40,11 +39,11 @@ class RequestHelper {
    * @return int Validated integer
    */
   public static function getParamInt($key, $default = 0) {
-    $value = filter_input(INPUT_GET, $key, FILTER_VALIDATE_INT);
-    if ($value === null || $value === false) {
+    if (!isset($_GET[$key]) || !is_scalar($_GET[$key])) {
       return $default;
     }
-    return $value;
+    $value = filter_var(wp_unslash((string) $_GET[$key]), FILTER_VALIDATE_INT);
+    return $value === false ? $default : $value;
   }
 
   /**
@@ -55,43 +54,28 @@ class RequestHelper {
    * @return string Sanitized key
    */
   public static function getParamKey($key, $default = '') {
-    $value = filter_input(INPUT_GET, $key, FILTER_CALLBACK, [
-      'options' => 'sanitize_key'
-    ]);
-    if ($value === null || $value === false) {
+    if (!isset($_GET[$key]) || !is_scalar($_GET[$key])) {
       return $default;
     }
-    return $value;
+    return sanitize_key(wp_unslash((string) $_GET[$key]));
   }
 
   /**
-   * Get POST data with basic sanitization for further processing
-   * Use this when data will be sanitized by a custom function (e.g., parse_yaml_schema, sanitize_field_data)
+   * Get unslashed POST data for schema-aware sanitization
+   * Use this when data will be sanitized by a custom function (e.g., DataSanitizer)
    *
    * Note: Caller must verify nonce before using this method
    *
    * @param string $key POST key to retrieve
    * @param mixed $default Default value if key doesn't exist
-   * @return mixed Sanitized POST data
+   * @return mixed Unslashed POST data (not sanitized)
    */
   public static function postRaw($key, $default = '') {
-    // Check if POST data exists and is set
-    // Using FILTER_UNSAFE_RAW to preserve raw data for schema-aware sanitization later
-    // FILTER_SANITIZE_FULL_SPECIAL_CHARS was encoding HTML entities before sanitize_field_data()
-    // could identify code fields and preserve them properly
-    $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW, FILTER_REQUIRE_ARRAY | FILTER_NULL_ON_FAILURE);
-
-    if ($value === null) {
-      // Try as non-array
-      $value = filter_input(INPUT_POST, $key, FILTER_UNSAFE_RAW);
-    }
-
-    if ($value === null || $value === false) {
+    if (!isset($_POST[$key])) {
       return $default;
     }
-
-    // Apply wp_unslash to handle magic quotes
-    return wp_unslash($value);
+    // $_POST is slashed by WordPress (wp_magic_quotes); unslash to get the submitted value
+    return wp_unslash($_POST[$key]);
   }
 
   /**

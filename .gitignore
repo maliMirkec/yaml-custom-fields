@@ -7,6 +7,7 @@ composer.lock
 
 # Build artifacts
 /build/composer.json
+/build-src/
 /dist/
 *.zip
 
@@ -19,3 +20,6 @@ composer.lock
 /build/vendor/theseer/
 /build/vendor/yoast/
 /build/vendor/bin/phpunit
+
+# PHPUnit
+.phpunit.result.cache

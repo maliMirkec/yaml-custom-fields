@@ -79,6 +79,10 @@ class Plugin {
       return new \YamlCF\Schema\FieldNormalizer();
     });
 
+    $this->container->register('section_grouper', function($c) {
+      return new \YamlCF\Schema\SectionGrouper();
+    });
+
     $this->container->register('schema_storage', function($c) {
       return new \YamlCF\Schema\SchemaStorage(
         $c->get('schema_parser')
@@ -150,27 +154,107 @@ class Plugin {
     });
 
     $this->container->register('settings_importer', function($c) {
-      return new \YamlCF\ImportExport\SettingsImporter();
+      return new \YamlCF\ImportExport\SettingsImporter(
+        $c->get('data_sanitizer'),
+        $c->get('schema_validator'),
+        $c->get('schema_parser'),
+        $c->get('cache_manager')
+      );
     });
 
     $this->container->register('page_data_exporter', function($c) {
-      return new \YamlCF\ImportExport\PageDataExporter();
+      return new \YamlCF\ImportExport\PageDataExporter(
+        $c->get('template_resolver')
+      );
     });
 
     $this->container->register('page_data_importer', function($c) {
-      return new \YamlCF\ImportExport\PageDataImporter();
+      return new \YamlCF\ImportExport\PageDataImporter(
+        $c->get('data_sanitizer'),
+        $c->get('attachment_validator'),
+        $c->get('schema_parser'),
+        $c->get('template_resolver'),
+        $c->get('cache_manager')
+      );
     });
 
     $this->container->register('data_object_exporter', function($c) {
       return new \YamlCF\ImportExport\DataObjectExporter(
-        $c->get('attachment_validator')
+        $c->get('attachment_validator'),
+        $c->get('schema_parser')
       );
     });
 
     $this->container->register('data_object_importer', function($c) {
       return new \YamlCF\ImportExport\DataObjectImporter(
-        $c->get('attachment_validator')
+        $c->get('attachment_validator'),
+        $c->get('data_sanitizer'),
+        $c->get('schema_validator'),
+        $c->get('schema_parser')
       );
+    });
+
+    // AJAX Handlers (wired to wp_ajax_* actions by HookManager)
+    $this->container->register('ajax_save_template_settings', function($c) {
+      return new \YamlCF\Ajax\Handlers\SaveTemplateSettings();
+    });
+
+    $this->container->register('ajax_refresh_templates', function($c) {
+      return new \YamlCF\Ajax\Handlers\RefreshTemplates(
+        $c->get('template_cache'),
+        $c->get('notification_manager')
+      );
+    });
+
+    $this->container->register('ajax_toggle_use_global', function($c) {
+      return new \YamlCF\Ajax\Handlers\ToggleUseGlobal();
+    });
+
+    $this->container->register('ajax_save_schema', function($c) {
+      return new \YamlCF\Ajax\Handlers\SaveSchema($c->get('schema_validator'));
+    });
+
+    $this->container->register('ajax_get_schema', function($c) {
+      return new \YamlCF\Ajax\Handlers\GetSchema();
+    });
+
+    $this->container->register('ajax_get_partial_data', function($c) {
+      return new \YamlCF\Ajax\Handlers\GetPartialData($c->get('schema_parser'));
+    });
+
+    $this->container->register('ajax_save_partial_data', function($c) {
+      return new \YamlCF\Ajax\Handlers\SavePartialData(
+        $c->get('data_sanitizer'),
+        $c->get('schema_parser'),
+        $c->get('cache_manager')
+      );
+    });
+
+    $this->container->register('ajax_export_settings', function($c) {
+      return new \YamlCF\Ajax\Handlers\ExportSettings($c->get('settings_exporter'));
+    });
+
+    $this->container->register('ajax_import_settings', function($c) {
+      return new \YamlCF\Ajax\Handlers\ImportSettings($c->get('settings_importer'));
+    });
+
+    $this->container->register('ajax_get_posts_with_data', function($c) {
+      return new \YamlCF\Ajax\Handlers\GetPostsWithData(
+        $c->get('post_data_repository'),
+        $c->get('template_resolver')
+      );
+    });
+
+    $this->container->register('ajax_export_page_data', function($c) {
+      return new \YamlCF\Ajax\Handlers\ExportPageData($c->get('page_data_exporter'));
+    });
+
+    $this->container->register('ajax_import_page_data', function($c) {
+      return new \YamlCF\Ajax\Handlers\ImportPageData($c->get('page_data_importer'));
+    });
+
+    $this->container->register('ajax_import_data_objects', function($c) {
+      return new \YamlCF\Ajax\Handlers\ImportDataObjects($c->get('data_object_importer'));
     });
 
     // Admin Management
@@ -193,7 +277,8 @@ class Plugin {
       return new \YamlCF\Admin\Controllers\TemplateSchemaController(
         $c->get('template_cache'),
         $c->get('schema_storage'),
-        $c->get('notification_manager')
+        $c->get('notification_manager'),
+        new \YamlCF\Template\TemplateSorter()
       );
     });
 
@@ -229,13 +314,16 @@ class Plugin {
 
     $this->container->register('data_object_controller', function($c) {
       return new \YamlCF\Admin\Controllers\DataObjectController(
-        $c->get('schema_storage')
+        $c->get('schema_storage'),
+        $c->get('schema_validator'),
+        $c->get('notification_manager')
       );
     });
 
     $this->container->register('validation_controller', function($c) {
       return new \YamlCF\Admin\Controllers\ValidationController(
-        $c->get('attachment_validator')
+        $c->get('attachment_validator'),
+        $c->get('post_data_repository')
       );
     });
 

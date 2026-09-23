@@ -98,7 +98,8 @@ if (!function_exists('sanitize_text_field')) {
 
 if (!function_exists('sanitize_key')) {
 	function yaml_cf_test_sanitize_key($key) {
-		return strtolower(preg_replace('/[^a-z0-9_\-]/', '', $key));
+		// Same order as core: lowercase first, then strip disallowed characters
+		return preg_replace('/[^a-z0-9_\-]/', '', strtolower($key));
 	}
 	// Alias to WordPress core function name for mocking
 	function sanitize_key($key) {
@@ -163,8 +164,8 @@ if (!function_exists('esc_attr')) {
 
 if (!function_exists('wp_kses_post')) {
 	function yaml_cf_test_wp_kses_post($data) {
-		// Basic implementation for testing
-		return $data;
+		// Basic implementation for testing: drop script elements like core kses does
+		return preg_replace('#<script\b[^>]*>.*?</script>#is', '', $data);
 	}
 	// Alias to WordPress core function name for mocking
 	function wp_kses_post($data) {
@@ -180,5 +181,63 @@ if (!function_exists('do_action')) {
 	// Alias to WordPress core function name for mocking
 	function do_action($hook_name, ...$args) {
 		return yaml_cf_test_do_action($hook_name, ...$args);
+	}
+}
+
+if (!function_exists('sanitize_textarea_field')) {
+	function yaml_cf_test_sanitize_textarea_field($str) {
+		// Remove all HTML tags but keep newlines
+		$str = preg_replace('/<[^>]*>/', '', (string) $str);
+		return trim($str);
+	}
+	// Alias to WordPress core function name for mocking
+	function sanitize_textarea_field($str) {
+		return yaml_cf_test_sanitize_textarea_field($str);
+	}
+}
+
+if (!function_exists('current_user_can')) {
+	/**
+	 * Capabilities granted to the mocked current user, e.g. ['unfiltered_html' => true]
+	 */
+	$GLOBALS['yaml_cf_test_user_caps'] = [];
+
+	function yaml_cf_test_current_user_can($capability, ...$args) {
+		return !empty($GLOBALS['yaml_cf_test_user_caps'][$capability]);
+	}
+	// Alias to WordPress core function name for mocking
+	function current_user_can($capability, ...$args) {
+		return yaml_cf_test_current_user_can($capability, ...$args);
+	}
+}
+
+if (!function_exists('get_post')) {
+	/**
+	 * Post IDs the mocked get_post() treats as missing, and post types by ID (default: attachment)
+	 */
+	$GLOBALS['yaml_cf_test_missing_posts'] = [];
+	$GLOBALS['yaml_cf_test_post_types'] = [];
+
+	function yaml_cf_test_get_post($post = null) {
+		$post_id = is_object($post) ? (int) $post->ID : (int) $post;
+		if ($post_id <= 0 || in_array($post_id, $GLOBALS['yaml_cf_test_missing_posts'], true)) {
+			return null;
+		}
+		$post_type = isset($GLOBALS['yaml_cf_test_post_types'][$post_id]) ? $GLOBALS['yaml_cf_test_post_types'][$post_id] : 'attachment';
+		return (object) ['ID' => $post_id, 'post_type' => $post_type];
+	}
+	// Alias to WordPress core function name for mocking
+	function get_post($post = null) {
+		return yaml_cf_test_get_post($post);
+	}
+}
+
+if (!function_exists('__')) {
+	function yaml_cf_test_translate($text, $domain = 'default') {
+		return $text;
+	}
+	// Alias to WordPress core function name for mocking
+	function __($text, $domain = 'default') {
+		return yaml_cf_test_translate($text, $domain);
 	}
 }

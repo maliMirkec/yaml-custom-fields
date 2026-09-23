@@ -234,7 +234,7 @@ $all_universities = ycf_get_data_objects('universities');
 
 ```php
 if (ycf_has_field('hero_title')) {
-    echo ycf_get_field('hero_title');
+    echo esc_html(ycf_get_field('hero_title'));
 }
 ```
 
@@ -488,7 +488,8 @@ This plugin includes the following third-party libraries:
 
 ## Credits
 
-- **Author:** [Silvestar Bistrovic](https://www.silvestar.codes)
+- **Author:** [Studio Cita](https://www.cita.hr)
+- **Lead developer:** [Silvestar Bistrović](https://www.silvestar.codes)
 - **Contributors:** [View all contributors](https://github.com/maliMirkec/yaml-custom-fields/graphs/contributors)
 
 ## License
@@ -514,6 +515,6 @@ GNU General Public License for more details.
 
 **Last Updated:** 2026-01-06
 **Plugin Version:** 1.2.4
-**Maintained By:** Silvestar Bistrović
+**Maintained By:** [Studio Cita](https://www.cita.hr)
 
-Made with ❤️ by [Silvestar Bistrovic](https://www.silvestar.codes)
+Made with ❤️ by [Studio Cita](https://www.cita.hr)

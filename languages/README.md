@@ -38,7 +38,18 @@ wp i18n make-po /path/to/yaml-custom-fields/languages/yaml-custom-fields.pot de_
 
 # Create MO file from PO
 wp i18n make-mo /path/to/yaml-custom-fields/languages/
+
+# Create JSON files for JavaScript strings (admin scripts use wp.i18n)
+wp i18n make-json /path/to/yaml-custom-fields/languages/ --no-purge
 ```
+
+`yaml-custom-fields.pot` in this directory is the current template. Regenerate it after changing
+translatable strings (run `make-pot` from a copy of the plugin outside a WordPress install, or pass
+`--exclude=build,vendor,tests,examples`).
+
+JavaScript strings are loaded with `wp_set_script_translations()`, which reads the
+`yaml-custom-fields-{locale}-{hash}.json` files created by `make-json`. Language packs from
+translate.wordpress.org include them automatically.
 
 ## WordPress.org Translation Platform
 
@@ -58,4 +69,4 @@ https://github.com/maliMirkec/yaml-custom-fields/issues
 
 **Last Updated:** 2025-12-28
 **Plugin Version:** 1.2.2
-**Maintained By:** Silvestar Bistrović
+**Maintained By:** [Studio Cita](https://www.cita.hr)

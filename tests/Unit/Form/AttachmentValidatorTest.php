@@ -14,10 +14,16 @@ class AttachmentValidatorTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->validator = new AttachmentValidator();
+		$GLOBALS['yaml_cf_test_missing_posts'] = [];
+	}
+
+	protected function tearDown(): void {
+		$GLOBALS['yaml_cf_test_missing_posts'] = [];
+		parent::tearDown();
 	}
 
 	/**
-	 * Test validateAndClean returns data unchanged (current placeholder implementation)
+	 * Test validateAndClean keeps IDs of existing posts
 	 */
 	public function testValidateAndCleanReturnsDataUnchanged() {
 		$data = ['attachment_id' => 123];
@@ -202,5 +208,64 @@ class AttachmentValidatorTest extends TestCase {
 		$result = $this->validator->validateAndClean($data);
 
 		$this->assertEquals($data, $result);
+	}
+
+	/**
+	 * Test missing attachment IDs in image/file fields are cleared
+	 */
+	public function testValidateAndCleanClearsMissingAttachment() {
+		$GLOBALS['yaml_cf_test_missing_posts'] = [999];
+		$schema = ['fields' => [
+			['name' => 'hero', 'type' => 'image'],
+			['name' => 'doc', 'type' => 'file'],
+		]];
+
+		$result = $this->validator->validateAndClean(['hero' => '999', 'doc' => '12'], $schema);
+
+		$this->assertSame('', $result['hero']);
+		$this->assertSame('12', $result['doc']);
+	}
+
+	/**
+	 * Test numeric values in non-attachment fields are never cleared when a schema is given
+	 */
+	public function testValidateAndCleanIgnoresNonAttachmentFields() {
+		$GLOBALS['yaml_cf_test_missing_posts'] = [999];
+		$schema = ['fields' => [['name' => 'count', 'type' => 'number']]];
+
+		$result = $this->validator->validateAndClean(['count' => '999'], $schema);
+
+		$this->assertSame('999', $result['count']);
+	}
+
+	/**
+	 * Test missing IDs are cleared in nested block fields
+	 */
+	public function testValidateAndCleanClearsMissingAttachmentInBlocks() {
+		$GLOBALS['yaml_cf_test_missing_posts'] = [999];
+		$schema = ['fields' => [
+			['name' => 'sections', 'type' => 'block', 'list' => true, 'blocks' => [
+				['name' => 'gallery', 'fields' => [['name' => 'photo', 'type' => 'image']]],
+			]],
+		]];
+
+		$result = $this->validator->validateAndClean(['sections' => [
+			['type' => 'gallery', 'photo' => '999'],
+			['type' => 'gallery', 'photo' => '5'],
+		]], $schema);
+
+		$this->assertSame('', $result['sections'][0]['photo']);
+		$this->assertSame('5', $result['sections'][1]['photo']);
+	}
+
+	/**
+	 * Test without a schema every numeric value pointing to a missing post is cleared
+	 */
+	public function testValidateAndCleanWithoutSchemaChecksAllNumbers() {
+		$GLOBALS['yaml_cf_test_missing_posts'] = [999];
+
+		$result = $this->validator->validateAndClean(['a' => '999', 'b' => 'text', 'c' => '7']);
+
+		$this->assertSame(['a' => '', 'b' => 'text', 'c' => '7'], $result);
 	}
 }

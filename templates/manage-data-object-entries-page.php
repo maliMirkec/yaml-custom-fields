@@ -59,71 +59,55 @@ if ($yaml_cf_action === 'edit') {
 }
 ?>
 
-<div id="yaml-cf-notifications">
-  <?php
-  // Display success messages (using transients - shown only once)
-  $yaml_cf_success_key = 'yaml_cf_data_object_success_' . get_current_user_id();
-  $yaml_cf_success_msg = get_transient($yaml_cf_success_key);
-  if ($yaml_cf_success_msg) {
-    $yaml_cf_success_messages = [
-      'entry_saved' => __('Entry saved successfully!', 'yaml-custom-fields'),
-      'entry_deleted' => __('Entry deleted successfully!', 'yaml-custom-fields'),
-    ];
-    $yaml_cf_message = isset($yaml_cf_success_messages[$yaml_cf_success_msg]) ? $yaml_cf_success_messages[$yaml_cf_success_msg] : __('Action completed successfully!', 'yaml-custom-fields');
-    echo '<div class="yaml-cf-message success" data-type="success">' . esc_html($yaml_cf_message) . '</div>';
-    delete_transient($yaml_cf_success_key);
-  }
-  ?>
-</div>
-
 <div class="wrap">
   <div class="yaml-cf-admin-container">
     <div class="yaml-cf-header">
       <div class="yaml-cf-header-content">
-        <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="YAML Custom Fields" class="yaml-cf-logo" />
+        <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
           <h1><?php echo esc_html($yaml_cf_type_name); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Manage entries', 'yaml-custom-fields'); ?></p>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Add and edit the items in this list', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
+    <hr class="wp-header-end">
 
     <div class="yaml-cf-intro">
       <p>
         <?php if ($yaml_cf_action === 'list') : ?>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>" class="button">
             <span class="dashicons dashicons-arrow-left-alt2"></span>
-            <?php esc_html_e('Back to Data Objects', 'yaml-custom-fields'); ?>
+            <?php esc_html_e('Back to Reusable lists', 'yaml-custom-fields'); ?>
           </a>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary" style="margin-left: 10px;">
-            <span class="dashicons dashicons-edit"></span>
-            <?php esc_html_e('Edit Schema', 'yaml-custom-fields'); ?>
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
+            <span class="dashicons dashicons-admin-generic"></span>
+            <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
           </a>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=add')); ?>" class="button button-primary" style="margin-left: 10px;">
-            <?php esc_html_e('Add New Entry', 'yaml-custom-fields'); ?>
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=add')); ?>" class="button button-primary yaml-cf-button-gap">
+            <?php esc_html_e('Add an item', 'yaml-custom-fields'); ?>
           </a>
         <?php else : ?>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button">
             <span class="dashicons dashicons-arrow-left-alt2"></span>
-            <?php esc_html_e('Back to Entries', 'yaml-custom-fields'); ?>
+            <?php esc_html_e('Back to items', 'yaml-custom-fields'); ?>
           </a>
         <?php endif; ?>
       </p>
-      <p><strong><?php esc_html_e('Type:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($yaml_cf_type_slug); ?></code></p>
+      <p><strong><?php esc_html_e('List:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($yaml_cf_type_slug); ?></code></p>
     </div>
 
     <?php if ($yaml_cf_action === 'list') : ?>
       <!-- List View -->
       <?php if (empty($yaml_cf_entries)) : ?>
         <div class="notice notice-info inline">
-          <p><?php esc_html_e('No entries yet. Click "Add New Entry" to create your first entry.', 'yaml-custom-fields'); ?></p>
+          <p><?php esc_html_e('This list is empty. Click "Add an item" to add the first one.', 'yaml-custom-fields'); ?></p>
         </div>
       <?php else : ?>
         <table class="wp-list-table widefat fixed striped">
           <thead>
             <tr>
-              <th><?php esc_html_e('Entry ID', 'yaml-custom-fields'); ?></th>
-              <th><?php esc_html_e('Data', 'yaml-custom-fields'); ?></th>
+              <th><?php esc_html_e('Item ID', 'yaml-custom-fields'); ?></th>
+              <th><?php esc_html_e('Content', 'yaml-custom-fields'); ?></th>
               <th><?php esc_html_e('Actions', 'yaml-custom-fields'); ?></th>
             </tr>
           </thead>
@@ -140,7 +124,7 @@ if ($yaml_cf_action === 'edit') {
                     if (is_string($yaml_cf_first_value)) {
                       echo esc_html(wp_trim_words($yaml_cf_first_value, 10));
                     } else {
-                      echo '<em>' . esc_html__('(Complex data)', 'yaml-custom-fields') . '</em>';
+                      echo '<em>' . esc_html__('(more than text)', 'yaml-custom-fields') . '</em>';
                     }
                   }
                   ?>
@@ -149,7 +133,7 @@ if ($yaml_cf_action === 'edit') {
                   <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=edit&entry=' . urlencode($yaml_cf_entry_id))); ?>" class="button">
                     <?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
                   </a>
-                  <form method="post" style="display: inline;" onsubmit="return confirm('<?php esc_attr_e('Are you sure you want to delete this entry?', 'yaml-custom-fields'); ?>');">
+                  <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php esc_attr_e('Delete this item? This cannot be undone.', 'yaml-custom-fields'); ?>');">
                     <?php wp_nonce_field('yaml_cf_delete_entry', 'yaml_cf_delete_entry_nonce'); ?>
                     <input type="hidden" name="entry_id" value="<?php echo esc_attr($yaml_cf_entry_id); ?>" />
                     <button type="submit" class="button button-link-delete"><?php esc_html_e('Delete', 'yaml-custom-fields'); ?></button>
@@ -169,20 +153,20 @@ if ($yaml_cf_action === 'edit') {
           <input type="hidden" name="entry_id" value="<?php echo esc_attr($yaml_cf_entry_id); ?>" />
         <?php endif; ?>
 
-        <div class="yaml-cf-fields" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1);">
+        <div class="yaml-cf-fields yaml-cf-surface">
           <?php
           if (!empty($yaml_cf_schema['fields'])) {
             $yaml_cf_context = ['type' => 'data_object', 'object_type' => $yaml_cf_type_slug];
             $yaml_cf_plugin->render_schema_fields($yaml_cf_schema['fields'], $yaml_cf_entry_data, '', $yaml_cf_context);
           } else {
-            echo '<p>' . esc_html__('No fields defined in schema.', 'yaml-custom-fields') . '</p>';
+            echo '<p>' . esc_html__('This schema has no fields yet. Add fields to the schema first.', 'yaml-custom-fields') . '</p>';
           }
           ?>
         </div>
 
-        <p class="submit" style="margin-top: 20px;">
+        <p class="submit yaml-cf-spaced-top">
           <button type="submit" class="button button-primary button-large">
-            <?php esc_html_e('Save Entry', 'yaml-custom-fields'); ?>
+            <?php esc_html_e('Save item', 'yaml-custom-fields'); ?>
           </button>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-large">
             <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>

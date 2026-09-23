@@ -30,20 +30,20 @@ class PartialController extends AdminController {
     // The checkPermission() call above verifies current_user_can('manage_options').
     $template = RequestHelper::getParam('template');
     if (!$template) {
-      wp_die(esc_html__('No template specified.', 'yaml-custom-fields'));
+      wp_die(esc_html__('No template was chosen. Go back to the YAML Custom Fields page and pick one.', 'yaml-custom-fields'));
     }
 
     $schemas = get_option('yaml_cf_schemas', []);
 
     if (!isset($schemas[$template])) {
-      wp_die(esc_html__('No schema found for this template.', 'yaml-custom-fields'));
+      wp_die(esc_html__('This template has no schema yet. Create one first.', 'yaml-custom-fields'));
     }
 
     $schema_yaml = $schemas[$template];
     $schema = $this->schemaStorage->parseSchema($schema_yaml);
 
     if (!$schema || !isset($schema['fields'])) {
-      wp_die(esc_html__('Invalid schema for this template.', 'yaml-custom-fields'));
+      wp_die(esc_html__('The schema for this template has a mistake. Fix the schema first.', 'yaml-custom-fields'));
     }
 
     // Get partial data
@@ -60,11 +60,8 @@ class PartialController extends AdminController {
       }
     }
 
-    // Check for success message
+    // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
-    if (RequestHelper::getParam('saved') === '1') {
-      $success_message = __('Partial data saved successfully!', 'yaml-custom-fields');
-    }
 
     // Localize schema data for JavaScript
     $this->localizeScript(['schema' => $schema]);
@@ -75,11 +72,11 @@ class PartialController extends AdminController {
         'enabled' => true,
         'container' => '#yaml-cf-partial-form',
         'fieldsSelector' => '.yaml-cf-fields',
-        'message' => __('You have unsaved changes', 'yaml-custom-fields'),
+        'message' => __('There are changes that are not saved yet.', 'yaml-custom-fields'),
         'submitSelector' => '#yaml-cf-partial-form',
         'storageKey' => 'originalPartialFormData',
         'hasChangesKey' => 'hasPartialFormChanges',
-        'beforeUnloadMessage' => __('You have unsaved changes. Are you sure you want to leave?', 'yaml-custom-fields'),
+        'beforeUnloadMessage' => __('There are changes that are not saved yet. Leave anyway?', 'yaml-custom-fields'),
         'gutenbergSupport' => false,
         'captureDelay' => 500,
       ]

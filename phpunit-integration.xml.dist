@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+  Integration tests: run inside a real WordPress test environment.
+  Requires a MySQL database that the suite may wipe and a WordPress core checkout;
+  see tests/Integration/README.md.
+-->
+<phpunit
+    bootstrap="tests/bootstrap.php"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    beStrictAboutOutputDuringTests="false"
+>
+    <testsuites>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

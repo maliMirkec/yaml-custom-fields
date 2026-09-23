@@ -2,7 +2,7 @@
 
 /**
  * Global Data Repository
- * Handle all global/site-wide data operations
+ * Handle all site details (global) data operations
  */
 
 namespace YamlCF\Data\Repositories;

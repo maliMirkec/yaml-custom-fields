@@ -8,65 +8,118 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Exports page/post custom field data
+ * Exports per-post field data
+ *
+ * Formats are unchanged from earlier versions so old export files stay importable:
+ * a single post uses 'type' => 'single-post' with a 'post' entry, several posts use a 'posts' list.
  */
 class PageDataExporter {
-  /**
-   * Export data for a single post
-   *
-   * @param int $post_id Post ID
-   * @return array Export data
-   */
-  public function exportPost($post_id) {
-    // TODO: Phase 14 - Implement single post export
-    $export_data = [
-      'plugin' => 'yaml-custom-fields',
-      'type' => 'page_data',
-      'version' => YAML_CF_VERSION,
-      'site_url' => get_site_url(),
-      'exported_at' => current_time('mysql'),
-      'post' => []
-    ];
+  private $templateResolver;
 
-    return $export_data;
+  public function __construct($templateResolver = null) {
+    $this->templateResolver = $templateResolver ?: new \YamlCF\Template\TemplateResolver();
   }
 
   /**
-   * Export data for multiple posts
+   * Build the export entry for one post
    *
-   * @param array $post_ids Array of post IDs
-   * @return array Export data
+   * @param \WP_Post $post Post
+   * @return array|null Entry, or null when the post has no field data
    */
-  public function exportMultiple($post_ids) {
-    // TODO: Phase 14 - Implement multiple post export
-    $export_data = [
-      'plugin' => 'yaml-custom-fields',
-      'type' => 'page_data',
-      'version' => YAML_CF_VERSION,
-      'site_url' => get_site_url(),
-      'exported_at' => current_time('mysql'),
-      'posts' => []
-    ];
-
-    return $export_data;
-  }
-
-  /**
-   * Generate download headers and output JSON
-   *
-   * @param array $data Export data
-   * @param string $filename Custom filename (optional)
-   */
-  public function download($data, $filename = null) {
-    // TODO: Phase 14 - Implement download method
-    if (!$filename) {
-      $filename = 'yaml-cf-page-data-' . sanitize_file_name(wp_parse_url(get_site_url(), PHP_URL_HOST)) . '-' . gmdate('Y-m-d-His') . '.json';
+  public function buildPostEntry($post) {
+    $data = get_post_meta($post->ID, '_yaml_cf_data', true);
+    if (empty($data)) {
+      return null;
     }
 
-    nocache_headers();
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Type: application/json; charset=utf-8');
+    $entry = [
+      'id' => $post->ID,
+      'title' => $post->post_title,
+      'slug' => $post->post_name,
+      'type' => $post->post_type,
+      'template' => $this->templateResolver->getTemplateForPost($post),
+      'data' => $data,
+    ];
 
-    echo wp_json_encode($data, JSON_PRETTY_PRINT);
+    $schema = get_post_meta($post->ID, '_yaml_cf_schema', true);
+    if (!empty($schema)) {
+      $entry['schema'] = $schema;
+    }
+
+    return $entry;
+  }
+
+  /**
+   * Export a single post
+   *
+   * @param int $post_id Post ID
+   * @return array|null Export data, or null when the post is missing or has no data
+   */
+  public function exportPost($post_id) {
+    $post = get_post($post_id);
+    if (!$post) {
+      return null;
+    }
+
+    $entry = $this->buildPostEntry($post);
+    if (!$entry) {
+      return null;
+    }
+
+    return array_merge($this->header(), [
+      'type' => 'single-post',
+      'post' => $entry,
+    ]);
+  }
+
+  /**
+   * Export several posts (posts without data are skipped)
+   *
+   * @param int[] $post_ids Post IDs
+   * @param string $match_by How the import should match posts: 'slug' or 'id'
+   * @return array Export data
+   */
+  public function exportMultiple($post_ids, $match_by = 'slug') {
+    $export = array_merge($this->header(), [
+      'match_by' => $match_by === 'id' ? 'id' : 'slug',
+      'posts' => [],
+    ]);
+
+    foreach ($post_ids as $post_id) {
+      $post = get_post((int) $post_id);
+      if (!$post) {
+        continue;
+      }
+      $entry = $this->buildPostEntry($post);
+      if ($entry) {
+        $export['posts'][] = $entry;
+      }
+    }
+
+    return $export;
+  }
+
+  /**
+   * Send export data as a JSON file download
+   *
+   * @param array $data Export data
+   * @param string $filename Download file name
+   */
+  public function download($data, $filename) {
+    JsonDownload::send($data, $filename);
+  }
+
+  /**
+   * Common export header
+   *
+   * @return array Header fields
+   */
+  private function header() {
+    return [
+      'plugin' => 'yaml-custom-fields',
+      'version' => YAML_CF_VERSION,
+      'exported_at' => current_time('mysql'),
+      'site_url' => get_site_url(),
+    ];
   }
 }

@@ -8,46 +8,50 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Imports data object types and entries
+ * Imports data object types and their entries
+ *
+ * Type schemas are validated, slugs and entry IDs sanitized, and entries sanitized
+ * against the imported (validated) schema.
  */
 class DataObjectImporter {
   private $attachmentValidator;
+  private $sanitizer;
+  private $validator;
+  private $parser;
 
-  public function __construct($attachmentValidator) {
-    $this->attachmentValidator = $attachmentValidator;
+  public function __construct($attachmentValidator = null, $sanitizer = null, $validator = null, $parser = null) {
+    $this->attachmentValidator = $attachmentValidator ?: new \YamlCF\Form\AttachmentValidator();
+    $this->sanitizer = $sanitizer ?: new \YamlCF\Form\DataSanitizer();
+    $this->validator = $validator ?: new \YamlCF\Schema\SchemaValidator();
+    $this->parser = $parser ?: new \YamlCF\Schema\SchemaParser();
   }
 
   /**
-   * Validate import data format
+   * Validate the structure of a data objects import
    *
-   * @param array $data Import data
+   * @param mixed $data Decoded import file
    * @return array ['valid' => bool, 'message' => string]
    */
   public function validate($data) {
-    // TODO: Phase 14 - Implement validation
-    if (!$data || !isset($data['plugin']) || $data['plugin'] !== 'yaml-custom-fields') {
-      return ['valid' => false, 'message' => 'Invalid import file format'];
+    if (!is_array($data) || !isset($data['plugin']) || $data['plugin'] !== 'yaml-custom-fields') {
+      return ['valid' => false, 'message' => __('This is not a YAML Custom Fields export file.', 'yaml-custom-fields')];
     }
-
     if (!isset($data['type']) || $data['type'] !== 'data_objects') {
-      return ['valid' => false, 'message' => 'Invalid import file type. Expected data_objects export file.'];
+      return ['valid' => false, 'message' => __('This file does not contain reusable lists. Use the file from "Export all lists".', 'yaml-custom-fields')];
     }
-
     if (!isset($data['types']) || !is_array($data['types'])) {
-      return ['valid' => false, 'message' => 'No data object types found in import file'];
+      return ['valid' => false, 'message' => __('The file contains no reusable lists.', 'yaml-custom-fields')];
     }
-
     return ['valid' => true, 'message' => ''];
   }
 
   /**
-   * Import data objects
+   * Import data object types and entries (existing types with the same slug are replaced)
    *
-   * @param array $data Import data
-   * @return array ['success' => bool, 'message' => string, 'types_imported' => int, 'entries_imported' => int, 'errors' => array]
+   * @param array $data Decoded import file
+   * @return array Result with 'success', 'message', 'types_imported', 'entries_imported', 'errors', 'exported_at'
    */
   public function import($data) {
-    // TODO: Phase 14 - Implement import logic
     $validation = $this->validate($data);
     if (!$validation['valid']) {
       return [
@@ -55,16 +59,69 @@ class DataObjectImporter {
         'message' => $validation['message'],
         'types_imported' => 0,
         'entries_imported' => 0,
-        'errors' => []
+        'errors' => [],
       ];
     }
 
+    $types_imported = 0;
+    $entries_imported = 0;
+    $errors = [];
+    $existing_types = get_option('yaml_cf_data_object_types', []);
+    if (!is_array($existing_types)) {
+      $existing_types = [];
+    }
+
+    foreach ($data['types'] as $raw_type_slug => $type_data) {
+      $type_slug = sanitize_key($raw_type_slug);
+
+      if ($type_slug === '' || !is_array($type_data) || !isset($type_data['name']) || !isset($type_data['schema']) || !is_string($type_data['schema'])) {
+        /* translators: %s: data object type slug */
+        $errors[] = sprintf(__('Skipped "%s": the list is incomplete.', 'yaml-custom-fields'), sanitize_text_field($raw_type_slug));
+        continue;
+      }
+
+      $schema_yaml = sanitize_textarea_field($type_data['schema']);
+      $validation_result = $this->validator->validate($schema_yaml);
+      if (!$validation_result['valid']) {
+        /* translators: 1: data object type slug, 2: schema validation error */
+        $errors[] = sprintf(__('Skipped the list "%1$s": %2$s', 'yaml-custom-fields'), $type_slug, $validation_result['message']);
+        continue;
+      }
+
+      $existing_types[$type_slug] = [
+        'name' => sanitize_text_field($type_data['name']),
+        'schema' => $schema_yaml,
+      ];
+
+      if (isset($type_data['entries']) && is_array($type_data['entries'])) {
+        $schema = $this->parser->parse($schema_yaml);
+        $schema = is_array($schema) ? $schema : null;
+        $cleaned_entries = [];
+        foreach ($type_data['entries'] as $entry_id => $entry_data) {
+          $entry_id = sanitize_text_field($entry_id);
+          if ($entry_id === '' || !is_array($entry_data)) {
+            continue;
+          }
+          $entry_data = $this->attachmentValidator->validateAndClean($entry_data, $schema);
+          $cleaned_entries[$entry_id] = $this->sanitizer->sanitize($entry_data, $schema);
+          $entries_imported++;
+        }
+        update_option('yaml_cf_data_object_entries_' . $type_slug, $cleaned_entries);
+      }
+
+      $types_imported++;
+    }
+
+    update_option('yaml_cf_data_object_types', $existing_types);
+
     return [
       'success' => true,
-      'message' => 'Data objects imported successfully',
-      'types_imported' => 0,
-      'entries_imported' => 0,
-      'errors' => []
+      /* translators: 1: number of imported types, 2: number of imported entries */
+      'message' => sprintf(__('Import done. %1$d lists with %2$d items were added.', 'yaml-custom-fields'), $types_imported, $entries_imported),
+      'types_imported' => $types_imported,
+      'entries_imported' => $entries_imported,
+      'errors' => $errors,
+      'exported_at' => isset($data['exported_at']) && is_string($data['exported_at']) ? sanitize_text_field($data['exported_at']) : 'unknown',
     ];
   }
 }

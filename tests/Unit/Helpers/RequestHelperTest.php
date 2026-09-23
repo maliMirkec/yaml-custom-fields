@@ -14,7 +14,6 @@ class RequestHelperTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		// Note: filter_input() reads from actual superglobals, so we simulate with $_GET/$_POST
 		$_GET = [];
 		$_POST = [];
 	}
@@ -34,16 +33,9 @@ class RequestHelperTest extends TestCase {
 	public function testGetParamReturnsSanitizedValue() {
 		$_GET['test_key'] = 'test value';
 
-		// Note: Since filter_input() may not work in CLI context,
-		// this test documents expected behavior
 		$result = RequestHelper::getParam('test_key', 'default');
 
-		// In CLI/test context, filter_input may return null
-		// so we test that it returns either the sanitized value or default
-		$this->assertTrue(
-			$result === 'test value' || $result === 'default',
-			'Should return sanitized value or default'
-		);
+		$this->assertSame('test value', $result);
 	}
 
 	/**
@@ -62,11 +54,7 @@ class RequestHelperTest extends TestCase {
 
 		$result = RequestHelper::getParamInt('number', 0);
 
-		// Should return either validated int or default
-		$this->assertTrue(
-			$result === 123 || $result === 0,
-			'Should return validated integer or default'
-		);
+		$this->assertSame(123, $result);
 	}
 
 	/**
@@ -87,21 +75,17 @@ class RequestHelperTest extends TestCase {
 
 		$result = RequestHelper::getParamInt('negative', 0);
 
-		// Should return either -5 or default
-		$this->assertTrue(
-			$result === -5 || $result === 0,
-			'Should handle negative integers'
-		);
+		$this->assertSame(-5, $result);
 	}
 
 	/**
 	 * Test getParamKey() sanitizes to valid key
 	 */
 	public function testGetParamKeySanitizesToValidKey() {
-		// Note: This tests the expected behavior
-		// In actual WordPress, sanitize_key() would be called
-		$result = RequestHelper::getParamKey('nonexistent', 'default_key');
-		$this->assertEquals('default_key', $result);
+		$_GET['type'] = 'My-Type!';
+
+		$this->assertSame('my-type', RequestHelper::getParamKey('type', 'default_key'));
+		$this->assertEquals('default_key', RequestHelper::getParamKey('nonexistent', 'default_key'));
 	}
 
 	/**
@@ -116,9 +100,10 @@ class RequestHelperTest extends TestCase {
 	 * Test postSanitized() applies callback
 	 */
 	public function testPostSanitizedAppliesCallback() {
-		// Testing with empty POST since filter_input may not work in CLI
-		$result = RequestHelper::postSanitized('test', 'default', 'sanitize_text_field');
-		$this->assertEquals('default', $result);
+		$_POST['test'] = '<b>Bold</b> text';
+
+		$this->assertEquals('Bold text', RequestHelper::postSanitized('test', 'default', 'sanitize_text_field'));
+		$this->assertEquals('default', RequestHelper::postSanitized('missing', 'default', 'sanitize_text_field'));
 	}
 
 	/**
@@ -167,5 +152,38 @@ class RequestHelperTest extends TestCase {
 		$this->assertEquals('custom', RequestHelper::getParam('missing', 'custom'));
 		$this->assertEquals(999, RequestHelper::getParamInt('missing', 999));
 		$this->assertEquals('my_key', RequestHelper::getParamKey('missing', 'my_key'));
+	}
+
+	/**
+	 * Test GET values are unslashed once (WordPress slashes superglobals)
+	 */
+	public function testGetParamUnslashesAndDoesNotDoubleEncode() {
+		$_GET['template'] = addslashes("Tom's & Jerry's.php");
+
+		$this->assertSame("Tom's & Jerry's.php", RequestHelper::getParam('template'));
+	}
+
+	/**
+	 * Test postRaw() unslashes once and keeps real backslashes and HTML
+	 */
+	public function testPostRawUnslashesOnce() {
+		$submitted = [
+			'code' => 'console.log("a\\"b"); <div>x</div>',
+			'nested' => ['path' => 'C:\\temp'],
+		];
+		$_POST['yaml_cf'] = array_map(function ($value) {
+			return is_array($value) ? array_map('addslashes', $value) : addslashes($value);
+		}, $submitted);
+
+		$this->assertSame($submitted, RequestHelper::postRaw('yaml_cf', []));
+	}
+
+	/**
+	 * Test array GET values fall back to the default
+	 */
+	public function testGetParamIgnoresArrays() {
+		$_GET['template'] = ['a', 'b'];
+
+		$this->assertSame('default', RequestHelper::getParam('template', 'default'));
 	}
 }

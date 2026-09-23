@@ -26,20 +26,10 @@ class GlobalSchemaController extends AdminController {
         $global_schema = $invalid_schema;
         delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
       }
-
-      $error_msg = RequestHelper::getParam('error_msg');
-      if ($error_msg) {
-        $error_message = $error_msg;
-      } else {
-        $error_message = __('Invalid YAML schema. Please check your syntax and try again.', 'yaml-custom-fields');
-      }
     }
 
-    // Check for success message
+    // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
-    if (RequestHelper::getParam('saved') === '1') {
-      $success_message = __('Global schema saved successfully!', 'yaml-custom-fields');
-    }
 
     // Pass messages to JavaScript via localization
     $page_config = [];
