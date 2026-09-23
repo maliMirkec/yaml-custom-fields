@@ -69,9 +69,7 @@ fields:
     type: string
     options:
       maxlength: 200
-
   - break: true
-
   - section: Layout
   - name: site_settings
     label: Site Settings

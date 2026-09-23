@@ -37,10 +37,10 @@ class DataObjectImporter {
       return ['valid' => false, 'message' => __('This is not a YAML Custom Fields export file.', 'yaml-custom-fields')];
     }
     if (!isset($data['type']) || $data['type'] !== 'data_objects') {
-      return ['valid' => false, 'message' => __('This file does not contain reusable lists. Use the file from "Export all lists".', 'yaml-custom-fields')];
+      return ['valid' => false, 'message' => __('This file does not contain collections.', 'yaml-custom-fields')];
     }
     if (!isset($data['types']) || !is_array($data['types'])) {
-      return ['valid' => false, 'message' => __('The file contains no reusable lists.', 'yaml-custom-fields')];
+      return ['valid' => false, 'message' => __('The file contains no collections.', 'yaml-custom-fields')];
     }
     return ['valid' => true, 'message' => ''];
   }

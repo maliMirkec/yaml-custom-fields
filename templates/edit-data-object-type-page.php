@@ -28,8 +28,8 @@ $yaml_cf_schema_yaml = $schema_yaml;
       <div class="yaml-cf-header-content">
         <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
-          <h1><?php echo $yaml_cf_is_editing ? esc_html($yaml_cf_type_name) : esc_html__('New list', 'yaml-custom-fields'); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Choose the fields for this list', 'yaml-custom-fields'); ?></p>
+          <h1><?php echo $yaml_cf_is_editing ? esc_html($yaml_cf_type_name) : esc_html__('New collection', 'yaml-custom-fields'); ?></h1>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Choose the fields for this collection', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
@@ -39,7 +39,7 @@ $yaml_cf_schema_yaml = $schema_yaml;
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>" class="button">
           <span class="dashicons dashicons-arrow-left-alt2"></span>
-          <?php esc_html_e('Back to Reusable lists', 'yaml-custom-fields'); ?>
+          <?php esc_html_e('Back to Collections', 'yaml-custom-fields'); ?>
         </a>
         <?php if ($yaml_cf_is_editing) : ?>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
@@ -51,19 +51,19 @@ $yaml_cf_schema_yaml = $schema_yaml;
       <?php if ($yaml_cf_is_editing) : ?>
         <p><strong><?php esc_html_e('Short name:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($yaml_cf_type_slug); ?></code></p>
       <?php endif; ?>
-      <p><?php esc_html_e('The schema says which fields every item in this list has. For example: a name, a logo and a website.', 'yaml-custom-fields'); ?></p>
+      <p><?php esc_html_e('The schema says which fields every item in this collection has. For example: a name, a logo and a website.', 'yaml-custom-fields'); ?></p>
     </div>
 
     <form method="post" action="">
       <?php wp_nonce_field('yaml_cf_save_data_object_type', 'yaml_cf_save_data_object_type_nonce'); ?>
 
       <div class="yaml-cf-surface yaml-cf-spaced-bottom">
-        <h2><?php esc_html_e('About this list', 'yaml-custom-fields'); ?></h2>
+        <h2><?php esc_html_e('About this collection', 'yaml-custom-fields'); ?></h2>
 
         <table class="form-table">
           <tr>
             <th scope="row">
-              <label for="type_name"><?php esc_html_e('List name', 'yaml-custom-fields'); ?></label>
+              <label for="type_name"><?php esc_html_e('Collection name', 'yaml-custom-fields'); ?></label>
             </th>
             <td>
               <input type="text" name="type_name" id="type_name" value="<?php echo esc_attr($yaml_cf_type_name); ?>" class="regular-text" required />
@@ -90,7 +90,7 @@ $yaml_cf_schema_yaml = $schema_yaml;
 
       <p class="submit yaml-cf-spaced-top">
         <button type="submit" class="button button-primary button-large">
-          <?php esc_html_e('Save list', 'yaml-custom-fields'); ?>
+          <?php esc_html_e('Save collection', 'yaml-custom-fields'); ?>
         </button>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>" class="button button-large">
           <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
@@ -112,12 +112,10 @@ fields:
   - name: website
     label: Website URL
     type: string
-
   - break: true
   - name: description
     label: Description
     type: text
-
   - section: Details
   - name: location
     label: Location
@@ -132,7 +130,7 @@ YAML;
     <?php if ($yaml_cf_is_editing) : ?>
     <div class="yaml-cf-schema-examples yaml-cf-examples-spaced">
       <h2><?php esc_html_e('Use it on a page', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('To let a page pick an item from this list, add this to the page\'s schema:', 'yaml-custom-fields'); ?></p>
+      <p><?php esc_html_e('To let a page pick an item from this collection, add this to the page\'s schema:', 'yaml-custom-fields'); ?></p>
       <div class="yaml-cf-relative">
         <button type="button" class="yaml-cf-copy-snippet button button-small yaml-cf-copy-corner" data-snippet="- name: <?php echo esc_attr($yaml_cf_type_slug); ?>&#10;  label: <?php echo esc_attr($yaml_cf_type_name); ?>&#10;  type: data_object&#10;  options:&#10;    object_type: <?php echo esc_attr($yaml_cf_type_slug); ?>">
           <span class="dashicons dashicons-editor-code"></span>

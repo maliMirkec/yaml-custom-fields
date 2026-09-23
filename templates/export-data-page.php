@@ -1,11 +1,71 @@
 <?php
 /**
- * Export Page Data Template
+ * Export & Import Page Template
+ * File: templates/export-data-page.php
+ *
+ * Variables received from controller via extract():
+ * - $yaml_cf_catalog : array ['setup' => item[], 'lists' => item[]] - what this site can export
  */
 
 if (!defined('ABSPATH')) {
   exit;
 }
+
+$yaml_cf_setup_groups = isset($yaml_cf_catalog['setup']) ? $yaml_cf_catalog['setup'] : [];
+$yaml_cf_list_items = isset($yaml_cf_catalog['lists']) ? $yaml_cf_catalog['lists'] : [];
+
+/**
+ * Print one tick box for a single thing that can be exported
+ */
+$yaml_cf_export_row = function ($item, $checked = true) {
+  ?>
+  <label class="yaml-cf-pick-row">
+    <input type="checkbox" class="yaml-cf-pick" value="<?php echo esc_attr($item['id']); ?>" <?php checked($checked); ?> />
+    <span class="yaml-cf-pick-label"><?php echo esc_html($item['label']); ?></span>
+    <?php if (!empty($item['meta'])) : ?>
+      <span class="yaml-cf-pick-meta"><?php echo esc_html($item['meta']); ?></span>
+    <?php endif; ?>
+  </label>
+  <?php
+};
+
+/**
+ * Print a template and its pieces: one row, with the pieces hidden until opened
+ */
+$yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
+  $single = count($group['children']) === 1;
+  $panel_id = 'yaml-cf-branch-' . sanitize_html_class($group['key']);
+  ?>
+  <div class="yaml-cf-pick-node">
+    <div class="yaml-cf-pick-row is-branch">
+      <input type="checkbox" class="yaml-cf-pick-branch" checked
+        aria-label="<?php echo esc_attr($group['label']); ?>" />
+      <span class="yaml-cf-pick-label"><?php echo esc_html($group['label']); ?></span>
+      <?php if (!empty($group['summary'])) : ?>
+        <span class="yaml-cf-pick-meta"><?php echo esc_html($group['summary']); ?></span>
+      <?php endif; ?>
+
+      <?php if (!$single) : ?>
+        <button type="button" class="yaml-cf-pick-expand" aria-expanded="false" aria-controls="<?php echo esc_attr($panel_id); ?>">
+          <span class="screen-reader-text">
+            <?php
+            /* translators: %s: template name */
+            echo esc_html(sprintf(__('Show what is in %s', 'yaml-custom-fields'), $group['label']));
+            ?>
+          </span>
+          <span class="yaml-cf-pick-caret" aria-hidden="true"></span>
+        </button>
+      <?php endif; ?>
+    </div>
+
+    <div class="yaml-cf-pick-children" id="<?php echo esc_attr($panel_id); ?>" hidden>
+      <?php foreach ($group['children'] as $yaml_cf_child) {
+        $yaml_cf_export_row($yaml_cf_child);
+      } ?>
+    </div>
+  </div>
+  <?php
+};
 ?>
 
 <div class="wrap">
@@ -21,52 +81,84 @@ if (!defined('ABSPATH')) {
     </div>
     <hr class="wp-header-end">
 
-    <div class="yaml-cf-export-data-container">
-
-    <!-- Settings Export/Import -->
-    <div class="card yaml-cf-card-wide">
-      <h2><?php esc_html_e('Setup', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('Save the setup to a file, or load it from a file. Useful for backups, or for copying a setup to another website.', 'yaml-custom-fields'); ?></p>
-
-      <div class="yaml-cf-button-row">
-        <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?yaml_cf_export_settings=1'), 'yaml_cf_export_settings')); ?>" class="button button-primary">
-          <span class="dashicons dashicons-download"></span>
-          <?php esc_html_e('Export setup', 'yaml-custom-fields'); ?>
-        </a>
-        <button type="button" class="button yaml-cf-import-settings-trigger">
-          <span class="dashicons dashicons-upload"></span>
-          <?php esc_html_e('Import setup', 'yaml-custom-fields'); ?>
-        </button>
-        <input type="file" id="yaml-cf-import-settings-file" accept=".json" class="yaml-cf-hidden" />
-      </div>
-
-      <div class="yaml-cf-callout is-info yaml-cf-spaced-top">
-        <p><strong><?php esc_html_e('What is in the file:', 'yaml-custom-fields'); ?></strong></p>
-        <ul>
-          <li><?php esc_html_e('The schemas of the page templates', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('The schemas of the site parts', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('Which templates are switched on', 'yaml-custom-fields'); ?></li>
-        </ul>
-      </div>
+    <div class="yaml-cf-callout is-warning yaml-cf-spaced-bottom">
+      <p>
+        <strong><?php esc_html_e('Good to know:', 'yaml-custom-fields'); ?></strong>
+        <?php esc_html_e('Images and files are not inside the export file, only links to them. Copy the media library to the other website too. Images and files that are missing there are left empty.', 'yaml-custom-fields'); ?>
+      </p>
     </div>
 
-    <!-- Page Data Export -->
-    <div class="card yaml-cf-card-wide">
-      <h2><?php esc_html_e('Post content', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('Save the field content of posts and pages to a file.', 'yaml-custom-fields'); ?></p>
+    <!-- ================= Export ================= -->
+    <section class="yaml-cf-card yaml-cf-card-wide" aria-labelledby="yaml-cf-export-title">
+      <h2 id="yaml-cf-export-title">
+        <span class="dashicons dashicons-download" aria-hidden="true"></span>
+        <?php esc_html_e('Export', 'yaml-custom-fields'); ?>
+      </h2>
 
-      <h3 class="yaml-cf-spaced-top"><?php esc_html_e('Choose posts and pages', 'yaml-custom-fields'); ?></h3>
+      <ol class="yaml-cf-wizard-steps" id="yaml-cf-wizard-steps">
+        <li data-step="1" class="is-current"><?php esc_html_e('What to export', 'yaml-custom-fields'); ?></li>
+        <li data-step="2"><?php esc_html_e('Choose pages and posts', 'yaml-custom-fields'); ?></li>
+        <li data-step="3"><?php esc_html_e('Review', 'yaml-custom-fields'); ?></li>
+      </ol>
 
-      <div class="yaml-cf-callout is-warning yaml-cf-spaced-bottom">
-        <p>
-          <strong><?php esc_html_e('Good to know:', 'yaml-custom-fields'); ?></strong>
-          <?php esc_html_e('Images and files are not inside the file, only links to them. The media library has to be copied to the other website too. Images and files that are missing there are left empty.', 'yaml-custom-fields'); ?>
-        </p>
+      <!-- Step 1: what -->
+      <div class="yaml-cf-wizard-panel" data-panel="1">
+        <?php if (empty($yaml_cf_setup_groups) && empty($yaml_cf_list_items)) : ?>
+          <div class="yaml-cf-empty-state">
+            <p><?php esc_html_e('There is nothing to export yet. Create a schema first.', 'yaml-custom-fields'); ?></p>
+          </div>
+        <?php endif; ?>
+
+        <?php if (!empty($yaml_cf_setup_groups)) : ?>
+          <div class="yaml-cf-pick-group" data-group="setup">
+            <label class="yaml-cf-pick-row is-group">
+              <input type="checkbox" class="yaml-cf-pick-all" checked />
+              <span class="yaml-cf-pick-label"><?php esc_html_e('Setup', 'yaml-custom-fields'); ?></span>
+              <span class="yaml-cf-pick-meta"><?php esc_html_e('Schemas, shared content and site details', 'yaml-custom-fields'); ?></span>
+            </label>
+            <div class="yaml-cf-pick-list">
+              <?php foreach ($yaml_cf_setup_groups as $yaml_cf_group) {
+                $yaml_cf_export_branch($yaml_cf_group);
+              } ?>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <div class="yaml-cf-pick-group" data-group="posts">
+          <label class="yaml-cf-pick-row is-group">
+            <input type="checkbox" id="yaml-cf-want-posts" />
+            <span class="yaml-cf-pick-label"><?php esc_html_e('Pages and posts', 'yaml-custom-fields'); ?></span>
+            <span class="yaml-cf-pick-meta"><?php esc_html_e('The fields filled in on each one, chosen in the next step', 'yaml-custom-fields'); ?></span>
+          </label>
+        </div>
+
+        <?php if (!empty($yaml_cf_list_items)) : ?>
+          <div class="yaml-cf-pick-group" data-group="lists">
+            <label class="yaml-cf-pick-row is-group">
+              <input type="checkbox" class="yaml-cf-pick-all" />
+              <span class="yaml-cf-pick-label"><?php esc_html_e('Collections', 'yaml-custom-fields'); ?></span>
+              <span class="yaml-cf-pick-meta"><?php esc_html_e('Collections and their items', 'yaml-custom-fields'); ?></span>
+            </label>
+            <div class="yaml-cf-pick-list">
+              <?php foreach ($yaml_cf_list_items as $yaml_cf_item) {
+                // Collections start off, like post content
+                $yaml_cf_export_row($yaml_cf_item, false);
+              } ?>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <div class="yaml-cf-wizard-actions">
+          <button type="button" class="button button-primary" id="yaml-cf-step1-next">
+            <?php esc_html_e('Next', 'yaml-custom-fields'); ?>
+          </button>
+        </div>
       </div>
 
-      <div class="yaml-cf-export-options yaml-cf-panel">
-        <h3><?php esc_html_e('How should the other website find each post?', 'yaml-custom-fields'); ?></h3>
-        <p>
+      <!-- Step 2: which posts -->
+      <div class="yaml-cf-wizard-panel yaml-cf-hidden" data-panel="2">
+        <div class="yaml-cf-panel yaml-cf-spaced-bottom">
+          <h3><?php esc_html_e('How should the other website find each page?', 'yaml-custom-fields'); ?></h3>
           <label class="yaml-cf-radio-label">
             <input type="radio" name="match_by" value="slug" checked>
             <strong><?php esc_html_e('By web address', 'yaml-custom-fields'); ?></strong>
@@ -77,173 +169,105 @@ if (!defined('ABSPATH')) {
             <strong><?php esc_html_e('By post ID', 'yaml-custom-fields'); ?></strong>
             <span class="yaml-cf-radio-hint">(<?php esc_html_e('Only for the same website', 'yaml-custom-fields'); ?>)</span>
           </label>
-        </p>
-      </div>
+        </div>
 
-      <div id="yaml-cf-posts-loading" class="yaml-cf-loading">
-        <span class="spinner is-active"></span>
-        <p><?php esc_html_e('Loading posts…', 'yaml-custom-fields'); ?></p>
-      </div>
+        <div id="yaml-cf-posts-loading" class="yaml-cf-loading">
+          <span class="spinner is-active"></span>
+          <p><?php esc_html_e('Loading pages and posts…', 'yaml-custom-fields'); ?></p>
+        </div>
 
-      <form method="post" id="yaml-cf-export-form">
-        <?php wp_nonce_field('yaml_cf_export_page_data', 'yaml_cf_export_page_data_nonce'); ?>
-        <input type="hidden" name="match_by" id="yaml-cf-export-match-by" value="slug">
-
-      <div id="yaml-cf-posts-list" class="yaml-cf-hidden">
-        <div class="yaml-cf-posts-header yaml-cf-card-header">
-          <div>
-            <button type="button" class="button" id="yaml-cf-select-all"><?php esc_html_e('Select all on this page', 'yaml-custom-fields'); ?></button>
-            <button type="button" class="button" id="yaml-cf-deselect-all"><?php esc_html_e('Clear selection', 'yaml-custom-fields'); ?></button>
+        <div id="yaml-cf-posts-list" class="yaml-cf-hidden">
+          <div class="yaml-cf-posts-header yaml-cf-card-header">
+            <div>
+              <button type="button" class="button" id="yaml-cf-select-all"><?php esc_html_e('Select all on this page', 'yaml-custom-fields'); ?></button>
+              <button type="button" class="button" id="yaml-cf-deselect-all"><?php esc_html_e('Clear selection', 'yaml-custom-fields'); ?></button>
+            </div>
+            <div>
+              <span id="yaml-cf-selected-count">0</span> <?php esc_html_e('selected', 'yaml-custom-fields'); ?>
+            </div>
           </div>
-          <div>
-            <span id="yaml-cf-selected-count">0</span> <?php esc_html_e('selected', 'yaml-custom-fields'); ?>
+
+          <table class="wp-list-table widefat striped">
+            <thead>
+              <tr>
+                <td class="check-column"><input type="checkbox" id="yaml-cf-select-all-checkbox" aria-label="<?php esc_attr_e('Select all on this page', 'yaml-custom-fields'); ?>"></td>
+                <th><?php esc_html_e('Title', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('Short name', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('Type', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('Status', 'yaml-custom-fields'); ?></th>
+                <th><?php esc_html_e('ID', 'yaml-custom-fields'); ?></th>
+              </tr>
+            </thead>
+            <tbody id="yaml-cf-posts-tbody"></tbody>
+          </table>
+
+          <div class="tablenav bottom">
+            <div class="tablenav-pages" id="yaml-cf-posts-pagination">
+              <span class="displaying-num" id="yaml-cf-posts-total"></span>
+              <span class="pagination-links">
+                <button type="button" class="button" id="yaml-cf-posts-prev" aria-label="<?php esc_attr_e('Previous page', 'yaml-custom-fields'); ?>">&lsaquo;</button>
+                <span class="paging-input" id="yaml-cf-posts-page-info"></span>
+                <button type="button" class="button" id="yaml-cf-posts-next" aria-label="<?php esc_attr_e('Next page', 'yaml-custom-fields'); ?>">&rsaquo;</button>
+              </span>
+            </div>
           </div>
         </div>
 
-        <table class="wp-list-table widefat striped">
-          <thead>
-            <tr>
-              <td class="check-column"><input type="checkbox" id="yaml-cf-select-all-checkbox" aria-label="<?php esc_attr_e('Select all on this page', 'yaml-custom-fields'); ?>"></td>
-              <th><?php esc_html_e('Title', 'yaml-custom-fields'); ?></th>
-              <th><?php esc_html_e('Short name', 'yaml-custom-fields'); ?></th>
-              <th><?php esc_html_e('Type', 'yaml-custom-fields'); ?></th>
-              <th><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
-              <th><?php esc_html_e('Status', 'yaml-custom-fields'); ?></th>
-              <th><?php esc_html_e('ID', 'yaml-custom-fields'); ?></th>
-            </tr>
-          </thead>
-          <tbody id="yaml-cf-posts-tbody">
-          </tbody>
-        </table>
-
-        <div class="tablenav bottom">
-          <div class="tablenav-pages" id="yaml-cf-posts-pagination">
-            <span class="displaying-num" id="yaml-cf-posts-total"></span>
-            <span class="pagination-links">
-              <button type="button" class="button" id="yaml-cf-posts-prev" aria-label="<?php esc_attr_e('Previous page', 'yaml-custom-fields'); ?>">&lsaquo;</button>
-              <span class="paging-input" id="yaml-cf-posts-page-info"></span>
-              <button type="button" class="button" id="yaml-cf-posts-next" aria-label="<?php esc_attr_e('Next page', 'yaml-custom-fields'); ?>">&rsaquo;</button>
-            </span>
-          </div>
+        <div id="yaml-cf-no-posts" class="yaml-cf-hidden yaml-cf-empty-state">
+          <p><?php esc_html_e('No pages or posts have field content yet.', 'yaml-custom-fields'); ?></p>
         </div>
 
-        <div id="yaml-cf-export-post-ids"></div>
+        <div class="yaml-cf-wizard-actions">
+          <button type="button" class="button" data-wizard-back="1"><?php esc_html_e('Back', 'yaml-custom-fields'); ?></button>
+          <button type="button" class="button button-primary" id="yaml-cf-step2-next"><?php esc_html_e('Next', 'yaml-custom-fields'); ?></button>
+        </div>
+      </div>
 
-        <div class="yaml-cf-spaced-top">
-          <button type="submit" class="button button-primary" id="yaml-cf-export-selected" disabled>
-            <?php esc_html_e('Export selected', 'yaml-custom-fields'); ?>
+      <!-- Step 3: review -->
+      <div class="yaml-cf-wizard-panel yaml-cf-hidden" data-panel="3">
+        <div class="yaml-cf-panel" id="yaml-cf-export-summary"></div>
+
+        <div class="yaml-cf-wizard-actions">
+          <button type="button" class="button" id="yaml-cf-step3-back"><?php esc_html_e('Back', 'yaml-custom-fields'); ?></button>
+          <button type="button" class="button button-primary" id="yaml-cf-do-export">
+            <span class="dashicons dashicons-download" aria-hidden="true"></span>
+            <?php esc_html_e('Export file', 'yaml-custom-fields'); ?>
           </button>
+          <span id="yaml-cf-export-message" class="yaml-cf-inline-message"></span>
         </div>
       </div>
-      </form>
+    </section>
 
-      <div id="yaml-cf-no-posts" class="yaml-cf-hidden yaml-cf-empty-state">
-        <p><?php esc_html_e('No posts or pages have field content yet.', 'yaml-custom-fields'); ?></p>
-      </div>
-    </div>
+    <!-- ================= Import ================= -->
+    <section class="yaml-cf-card yaml-cf-card-wide" aria-labelledby="yaml-cf-import-title">
+      <h2 id="yaml-cf-import-title">
+        <span class="dashicons dashicons-upload" aria-hidden="true"></span>
+        <?php esc_html_e('Import', 'yaml-custom-fields'); ?>
+      </h2>
+      <p><?php esc_html_e('Choose an export file. Nothing is changed until the list below is confirmed.', 'yaml-custom-fields'); ?></p>
 
-    <div class="card yaml-cf-card-wide">
-      <h3><?php esc_html_e('Import post content', 'yaml-custom-fields'); ?></h3>
-      <p><?php esc_html_e('Load post and page content from an export file.', 'yaml-custom-fields'); ?></p>
-
-      <div class="yaml-cf-callout is-info yaml-cf-spaced-bottom">
-        <p><strong><?php esc_html_e('How it works:', 'yaml-custom-fields'); ?></strong></p>
-        <ul>
-          <li><?php esc_html_e('Choose a .json file exported from YAML Custom Fields.', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('Each post is matched by its web address or ID, as chosen when exporting.', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('Images and files that do not exist on this website are left empty.', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('Afterwards, open Content Check to find missing images or files.', 'yaml-custom-fields'); ?></li>
-        </ul>
+      <div class="yaml-cf-button-row">
+        <input type="file" id="yaml-cf-bundle-file" accept=".json" class="yaml-cf-file-input">
+        <span id="yaml-cf-inspect-message" class="yaml-cf-inline-message"></span>
       </div>
 
-      <div>
-        <input type="file" id="yaml-cf-import-file" accept=".json" class="yaml-cf-file-input">
-        <br>
-        <button type="button" class="button button-primary" id="yaml-cf-import-data">
-          <?php esc_html_e('Import post content', 'yaml-custom-fields'); ?>
-        </button>
-        <span id="yaml-cf-import-message" class="yaml-cf-inline-message"></span>
+      <div id="yaml-cf-import-preview" class="yaml-cf-hidden yaml-cf-spaced-top">
+        <p class="yaml-cf-import-source" id="yaml-cf-import-source"></p>
+
+        <div id="yaml-cf-import-groups"></div>
+
+        <div class="yaml-cf-wizard-actions">
+          <button type="button" class="button button-primary" id="yaml-cf-do-import"></button>
+          <span id="yaml-cf-overwrite-count" class="yaml-cf-overwrite-count"></span>
+          <span id="yaml-cf-import-message" class="yaml-cf-inline-message"></span>
+        </div>
       </div>
 
       <div id="yaml-cf-import-results" class="yaml-cf-hidden yaml-cf-panel yaml-cf-spaced-top">
         <h3><?php esc_html_e('Result', 'yaml-custom-fields'); ?></h3>
         <div id="yaml-cf-import-results-content"></div>
       </div>
-    </div>
-
-    <!-- Data Objects Export -->
-    <div class="card yaml-cf-card-wide yaml-cf-section-gap">
-      <h2><?php esc_html_e('Reusable lists', 'yaml-custom-fields'); ?></h2>
-      <p><?php esc_html_e('Save the reusable lists and their items to a file.', 'yaml-custom-fields'); ?></p>
-
-      <h3 class="yaml-cf-spaced-top"><?php esc_html_e('Export fields', 'yaml-custom-fields'); ?></h3>
-
-      <div class="yaml-cf-callout is-warning yaml-cf-spaced-bottom">
-        <p>
-          <strong><?php esc_html_e('Good to know:', 'yaml-custom-fields'); ?></strong>
-          <?php esc_html_e('This saves every list and its items. Images and files are saved as links only.', 'yaml-custom-fields'); ?>
-        </p>
-      </div>
-
-      <?php
-      $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
-      if (empty($yaml_cf_data_object_types)) :
-      ?>
-        <div class="notice notice-info inline">
-          <p><?php esc_html_e('No lists yet.', 'yaml-custom-fields'); ?> <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>"><?php esc_html_e('Make the first list', 'yaml-custom-fields'); ?></a></p>
-        </div>
-      <?php else : ?>
-        <form method="post" id="yaml-cf-export-data-objects-form">
-          <?php wp_nonce_field('yaml_cf_export_data_objects', 'yaml_cf_export_data_objects_nonce'); ?>
-          <button type="submit" class="button button-primary">
-            <?php esc_html_e('Export all lists', 'yaml-custom-fields'); ?>
-          </button>
-          <p class="description yaml-cf-description-spaced">
-            <?php
-            $yaml_cf_total_types = count($yaml_cf_data_object_types);
-            $yaml_cf_total_entries = 0;
-            foreach ($yaml_cf_data_object_types as $yaml_cf_type_slug => $yaml_cf_type_data) {
-              $yaml_cf_entries = get_option('yaml_cf_data_object_entries_' . $yaml_cf_type_slug, []);
-              $yaml_cf_total_entries += count($yaml_cf_entries);
-            }
-            /* translators: 1: number of types, 2: number of entries */
-            printf(esc_html__('This exports %1$d lists with %2$d items.', 'yaml-custom-fields'), absint($yaml_cf_total_types), absint($yaml_cf_total_entries));
-            ?>
-          </p>
-        </form>
-      <?php
-      endif;
-      ?>
-    </div>
-
-    <div class="card yaml-cf-card-wide">
-      <h3><?php esc_html_e('Import lists', 'yaml-custom-fields'); ?></h3>
-      <p><?php esc_html_e('Load reusable lists from an export file.', 'yaml-custom-fields'); ?></p>
-
-      <div class="yaml-cf-callout is-info yaml-cf-spaced-bottom">
-        <p><strong><?php esc_html_e('How it works:', 'yaml-custom-fields'); ?></strong></p>
-        <ul>
-          <li><?php esc_html_e('Choose a .json file exported from YAML Custom Fields.', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('A list with the same short name is replaced.', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('Images and files that do not exist on this website are left empty.', 'yaml-custom-fields'); ?></li>
-          <li><?php esc_html_e('All items in each list are imported.', 'yaml-custom-fields'); ?></li>
-        </ul>
-      </div>
-
-      <div>
-        <input type="file" id="yaml-cf-import-data-objects-file" accept=".json" class="yaml-cf-file-input">
-        <br>
-        <button type="button" class="button button-primary" id="yaml-cf-import-data-objects">
-          <?php esc_html_e('Import lists', 'yaml-custom-fields'); ?>
-        </button>
-        <span id="yaml-cf-import-data-objects-message" class="yaml-cf-inline-message"></span>
-      </div>
-
-      <div id="yaml-cf-import-data-objects-results" class="yaml-cf-hidden yaml-cf-panel yaml-cf-spaced-top">
-        <h3><?php esc_html_e('Result', 'yaml-custom-fields'); ?></h3>
-        <div id="yaml-cf-import-data-objects-results-content"></div>
-      </div>
-    </div>
-  </div>
+    </section>
   </div>
 </div>

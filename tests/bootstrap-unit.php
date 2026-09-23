@@ -8,6 +8,11 @@ if (!defined('ABSPATH')) {
 	define('ABSPATH', dirname(dirname(__FILE__)) . '/');
 }
 
+// Export files stamp the plugin version into their header
+if (!defined('YAML_CF_VERSION')) {
+	define('YAML_CF_VERSION', 'test');
+}
+
 // Load Composer autoloader (includes both PHPUnit and Symfony packages)
 // In tests, we use the unscoped Symfony libraries from vendor/
 // The scoped version in build/vendor is only used in production WordPress environment
@@ -239,5 +244,93 @@ if (!function_exists('__')) {
 	// Alias to WordPress core function name for mocking
 	function __($text, $domain = 'default') {
 		return yaml_cf_test_translate($text, $domain);
+	}
+}
+
+/**
+ * Options, stored in memory for the duration of a test
+ *
+ * Reset with yaml_cf_test_reset_options() in setUp().
+ */
+$GLOBALS['yaml_cf_test_options'] = [];
+
+if (!function_exists('yaml_cf_test_reset_options')) {
+	function yaml_cf_test_reset_options($options = []) {
+		$GLOBALS['yaml_cf_test_options'] = $options;
+	}
+}
+
+if (!function_exists('get_option')) {
+	function yaml_cf_test_get_option($option, $default_value = false) {
+		return array_key_exists($option, $GLOBALS['yaml_cf_test_options'])
+			? $GLOBALS['yaml_cf_test_options'][$option]
+			: $default_value;
+	}
+	function get_option($option, $default_value = false) {
+		return yaml_cf_test_get_option($option, $default_value);
+	}
+}
+
+if (!function_exists('update_option')) {
+	function yaml_cf_test_update_option($option, $value) {
+		$GLOBALS['yaml_cf_test_options'][$option] = $value;
+		return true;
+	}
+	function update_option($option, $value, $autoload = null) {
+		return yaml_cf_test_update_option($option, $value);
+	}
+}
+
+if (!function_exists('_n')) {
+	function yaml_cf_test_n($single, $plural, $number) {
+		return (int) $number === 1 ? $single : $plural;
+	}
+	function _n($single, $plural, $number, $domain = null) {
+		return yaml_cf_test_n($single, $plural, $number);
+	}
+}
+
+if (!function_exists('current_time')) {
+	function yaml_cf_test_current_time($type = 'mysql') {
+		return $type === 'timestamp' ? time() : gmdate('Y-m-d H:i:s');
+	}
+	function current_time($type = 'mysql', $gmt = 0) {
+		return yaml_cf_test_current_time($type);
+	}
+}
+
+if (!function_exists('get_site_url')) {
+	function yaml_cf_test_get_site_url() {
+		return 'https://example.test';
+	}
+	function get_site_url($blog_id = null, $path = '', $scheme = null) {
+		return yaml_cf_test_get_site_url();
+	}
+}
+
+if (!function_exists('absint')) {
+	function yaml_cf_test_absint($maybeint) {
+		return abs((int) $maybeint);
+	}
+	function absint($maybeint) {
+		return yaml_cf_test_absint($maybeint);
+	}
+}
+
+if (!function_exists('sanitize_file_name')) {
+	function yaml_cf_test_sanitize_file_name($filename) {
+		return preg_replace('/[^a-zA-Z0-9._-]/', '', (string) $filename);
+	}
+	function sanitize_file_name($filename) {
+		return yaml_cf_test_sanitize_file_name($filename);
+	}
+}
+
+if (!function_exists('get_posts')) {
+	function yaml_cf_test_get_posts($args = []) {
+		return isset($GLOBALS['yaml_cf_test_posts']) ? $GLOBALS['yaml_cf_test_posts'] : [];
+	}
+	function get_posts($args = null) {
+		return yaml_cf_test_get_posts($args);
 	}
 }

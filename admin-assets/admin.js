@@ -1659,6 +1659,48 @@
     });
   };
 
+  /**
+   * Fold the custom fields box away
+   *
+   * The box is printed on edit_form_after_title rather than registered with
+   * add_meta_box(), so core's postbox script does not manage it. The open or
+   * closed state is remembered in this browser only.
+   */
+  const BOX_STATE_KEY = 'yamlCFMetaBoxClosed';
+
+  function setMetaBoxClosed($box, closed) {
+    $box.toggleClass('closed', closed);
+    $box.find('.yaml-cf-box-toggle').attr('aria-expanded', closed ? 'false' : 'true');
+  }
+
+  $(function() {
+    const $box = $('#yaml-cf-meta-box');
+    if (!$box.length) {
+      return;
+    }
+
+    try {
+      if (window.localStorage.getItem(BOX_STATE_KEY) === '1') {
+        setMetaBoxClosed($box, true);
+      }
+    } catch (e) {
+      // Private windows and blocked storage: the box just starts open
+    }
+
+    // One handler on the whole header: a click on the caret bubbles up to it,
+    // so the title and the caret behave the same and neither toggles twice.
+    $box.on('click', '.yaml-cf-box-header', function() {
+      const closed = !$box.hasClass('closed');
+      setMetaBoxClosed($box, closed);
+
+      try {
+        window.localStorage.setItem(BOX_STATE_KEY, closed ? '1' : '0');
+      } catch (e) {
+        // Not remembering the state is fine
+      }
+    });
+  });
+
   // Make YamlCF globally accessible
   window.YamlCF = YamlCF;
 })(jQuery);

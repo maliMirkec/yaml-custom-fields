@@ -18,8 +18,8 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
       <div class="yaml-cf-header-content">
         <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
-          <h1><?php esc_html_e('Reusable lists', 'yaml-custom-fields'); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Lists filled in once and used on many pages', 'yaml-custom-fields'); ?></p>
+          <h1><?php esc_html_e('Collections', 'yaml-custom-fields'); ?></h1>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Things filled in once and used on many pages', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
@@ -28,21 +28,21 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type')); ?>" class="button button-primary">
-          <?php esc_html_e('Add a list', 'yaml-custom-fields'); ?>
+          <?php esc_html_e('Add a collection', 'yaml-custom-fields'); ?>
         </a>
       </p>
-      <p><?php esc_html_e('A reusable list holds items that are filled in once, like team members or partner companies. Pages can pick items from the list.', 'yaml-custom-fields'); ?></p>
+      <p><?php esc_html_e('A collection holds items that are filled in once, like team members or partner companies. Pages can pick items from a collection.', 'yaml-custom-fields'); ?></p>
     </div>
 
   <?php if (empty($yaml_cf_data_object_types)) : ?>
     <div class="notice notice-info inline">
-      <p><?php esc_html_e('No lists yet. Click "Add a list" to make the first one.', 'yaml-custom-fields'); ?></p>
+      <p><?php esc_html_e('No collections yet. Click "Add a collection" to make the first one.', 'yaml-custom-fields'); ?></p>
     </div>
   <?php else : ?>
     <table class="wp-list-table widefat striped">
       <thead>
         <tr>
-          <th><?php esc_html_e('List name', 'yaml-custom-fields'); ?></th>
+          <th><?php esc_html_e('Collection name', 'yaml-custom-fields'); ?></th>
           <th><?php esc_html_e('Short name', 'yaml-custom-fields'); ?></th>
           <th><?php esc_html_e('Items', 'yaml-custom-fields'); ?></th>
           <th><?php esc_html_e('Schema', 'yaml-custom-fields'); ?></th>
@@ -77,8 +77,8 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
               </a>
               <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php
                 echo esc_attr(sprintf(
-                  /* translators: %1$s: data object type name, %2$d: number of entries */
-                  __('Delete the list "%1$s" and all %2$d items? This cannot be undone.', 'yaml-custom-fields'),
+                  /* translators: %1$s: collection name, %2$d: number of entries */
+                  __('Delete the collection "%1$s" and all %2$d items? This cannot be undone.', 'yaml-custom-fields'),
                   $yaml_cf_type['name'],
                   $yaml_cf_entry_count
                 ));

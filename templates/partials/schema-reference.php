@@ -32,12 +32,10 @@ fields:
   - name: featured_image
     label: Featured Image
     type: image
-
   - break: true
   - name: category_note
     label: Note for editors
     type: string
-
   - type: section
     label: Categories
     description: Used for filtering and listings
@@ -112,7 +110,7 @@ YAML;
         <dt>date</dt><dd><?php esc_html_e('A date. Can include a time.', 'yaml-custom-fields'); ?></dd>
         <dt>select</dt><dd><?php esc_html_e('A dropdown with a fixed set of choices.', 'yaml-custom-fields'); ?></dd>
         <dt>taxonomy</dt><dd><?php esc_html_e('A choice of categories or tags.', 'yaml-custom-fields'); ?></dd>
-        <dt>data_object</dt><dd><?php esc_html_e('A choice from a reusable list.', 'yaml-custom-fields'); ?></dd>
+        <dt>data_object</dt><dd><?php esc_html_e('A choice from a collection.', 'yaml-custom-fields'); ?></dd>
         <dt>image</dt><dd><?php esc_html_e('An image from the media library.', 'yaml-custom-fields'); ?></dd>
         <dt>file</dt><dd><?php esc_html_e('Any file from the media library, like a PDF.', 'yaml-custom-fields'); ?></dd>
         <dt>object</dt><dd><?php esc_html_e('A group of fields that belong together.', 'yaml-custom-fields'); ?></dd>

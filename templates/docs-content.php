@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
     <li><a href="#site-parts">Site parts: header, footer and more</a></li>
     <li><a href="#shared">Shared fields</a></li>
     <li><a href="#site-details">Site details</a></li>
-    <li><a href="#lists">Reusable lists</a></li>
+    <li><a href="#lists">Collections</a></li>
     <li><a href="#theme">Showing fields on the website</a></li>
     <li><a href="#moving">Backups and moving to another website</a></li>
     <li><a href="#problems">When something does not work</a></li>
@@ -54,8 +54,8 @@ if (!defined('ABSPATH')) {
   <dt>Site details</dt>
   <dd>Details used across the whole website, like a phone number. Filled in once, under Site details.</dd>
 
-  <dt>Reusable list</dt>
-  <dd>A list filled in once, like the team members. Pages can pick items from it.</dd>
+  <dt>Collection</dt>
+  <dd>A set of items filled in once, like the team members. Pages can pick items from it.</dd>
 </dl>
 
 <h2 id="writers">Filling in fields</h2>
@@ -213,13 +213,13 @@ if (!defined('ABSPATH')) {
   label: What to show
   type: post_type</code></pre>
 
-<h3>Item from a reusable list: <code>data_object</code></h3>
+<h3>Item from a collection: <code>data_object</code></h3>
 <pre><code>- name: speaker
   label: Speaker
   type: data_object
   options:
     object_type: team-members</code></pre>
-<p><code>object_type</code> is the short name of the list. <code>list: true</code> allows more than one item. See <a href="#lists">Reusable lists</a>.</p>
+<p><code>object_type</code> is the short name of the collection. <code>list: true</code> allows more than one item. See <a href="#lists">Collections</a>.</p>
 
 <h3>Image: <code>image</code></h3>
 <pre><code>- name: photo
@@ -362,13 +362,13 @@ if (!defined('ABSPATH')) {
   <li><strong>Edit site details</strong> opens the boxes to fill in.</li>
 </ol>
 
-<h2 id="lists">Reusable lists</h2>
+<h2 id="lists">Collections</h2>
 
-<p>A reusable list holds items used on many pages: team members, partners or locations. Each item is filled in once, and pages pick items from the list.</p>
+<p>A collection holds items used on many pages: team members, partners or locations. Each item is filled in once, and pages pick items from the collection.</p>
 
 <ol>
-  <li>Open <strong>YAML Custom Fields → Reusable lists</strong>.</li>
-  <li><strong>Add a list</strong> asks for a name, like "Team members", and a short name, like <code>team-members</code>.</li>
+  <li>Open <strong>YAML Custom Fields → Collections</strong>.</li>
+  <li><strong>Add a collection</strong> asks for a name, like "Team members", and a short name, like <code>team-members</code>.</li>
   <li>The schema describes one item:
 <pre><code>fields:
   - name: name
@@ -437,7 +437,7 @@ if (!defined('ABSPATH')) {
   &lt;a href="&lt;?php echo esc_url(get_term_link($topic)); ?&gt;"&gt;&lt;?php echo esc_html($topic-&gt;name); ?&gt;&lt;/a&gt;
 &lt;?php endif; ?&gt;</code></pre>
 
-<h3>Items from a reusable list</h3>
+<h3>Items from a collection</h3>
 <pre><code>&lt;?php $speaker = ycf_get_data_object('speaker'); ?&gt;
 &lt;?php if ($speaker) : ?&gt;
   &lt;p&gt;&lt;?php echo esc_html($speaker['name']); ?&gt;&lt;/p&gt;
@@ -474,8 +474,8 @@ if (!defined('ABSPATH')) {
     <tr><td><code>ycf_get_file('name')</code></td><td>A file with its link, name and size</td></tr>
     <tr><td><code>ycf_get_term('name')</code></td><td>The chosen category or tag</td></tr>
     <tr><td><code>ycf_get_post_type('name')</code></td><td>The chosen kind of content</td></tr>
-    <tr><td><code>ycf_get_data_object('name')</code></td><td>The chosen item from a reusable list</td></tr>
-    <tr><td><code>ycf_get_data_objects('short-name')</code></td><td>Every item in a reusable list</td></tr>
+    <tr><td><code>ycf_get_data_object('name')</code></td><td>The chosen item from a collection</td></tr>
+    <tr><td><code>ycf_get_data_objects('short-name')</code></td><td>Every item in a collection</td></tr>
     <tr><td><code>ycf_get_global_field('name')</code></td><td>One of the site details</td></tr>
     <tr><td><code>ycf_get_global_fields()</code></td><td>All site details</td></tr>
   </tbody>
@@ -484,13 +484,26 @@ if (!defined('ABSPATH')) {
 
 <h2 id="moving">Backups and moving to another website</h2>
 
-<p><strong>YAML Custom Fields → Export &amp; Import</strong> saves three things to a file:</p>
+<p><strong>YAML Custom Fields → Export &amp; Import</strong> writes one file holding whatever is chosen:</p>
 <ul>
-  <li><strong>Setup</strong>: the schemas and which templates are switched on.</li>
-  <li><strong>Post content</strong>: the fields of the chosen posts and pages.</li>
-  <li><strong>Reusable lists</strong>: the lists and their items.</li>
+  <li><strong>Setup</strong>: each template schema, shared fields and content, site details, and which templates are switched on. Every piece is ticked on its own, so a single template can be exported by itself.</li>
+  <li><strong>Pages and posts</strong>: the fields filled in on each of the chosen pages and posts.</li>
+  <li><strong>Collections</strong>: the chosen collections and their items.</li>
 </ul>
-<p>The same page on the other website imports the files. The setup goes first.</p>
+
+<h3>Exporting</h3>
+<p>The export runs in three steps: tick what to include, choose the pages and posts (only if they were ticked), then review and save the file.</p>
+
+<h3>Importing</h3>
+<p>Choose the file on the same page of the other website. <strong>Nothing changes when the file is chosen.</strong> The page first lists everything the file holds and marks each row:</p>
+<ul>
+  <li><strong>new</strong>: this website does not have it yet.</li>
+  <li><strong>exists here - will overwrite</strong>: this website already has it, and importing replaces it.</li>
+  <li><strong>not on this website</strong>: a post in the file that has no match here. It cannot be imported and is greyed out.</li>
+</ul>
+<p>Untick anything that should be left alone, then import. Whatever is not ticked stays exactly as it is, so importing one template's schema never disturbs the others.</p>
+
+<p>Files exported by older versions of the plugin still import, and so do the separate setup, post and list files.</p>
 
 <p><strong>Images and files are not inside the export file.</strong> Only links to them are, so the media library has to be copied as well. <strong>Content Check</strong> then lists posts with missing images or files.</p>
 
@@ -548,7 +561,7 @@ if (!defined('ABSPATH')) {
     <li>Site parts: option <code>yaml_cf_partial_data</code>.</li>
     <li>Shared fields: options <code>yaml_cf_template_global_schemas</code> and <code>yaml_cf_template_global_data</code>.</li>
     <li>Site details: options <code>yaml_cf_global_schema</code> and <code>yaml_cf_global_data</code>.</li>
-    <li>Reusable lists: option <code>yaml_cf_data_object_types</code>, items in <code>yaml_cf_data_object_entries_{short-name}</code>.</li>
+    <li>Collections: option <code>yaml_cf_data_object_types</code>, items in <code>yaml_cf_data_object_entries_{short-name}</code>.</li>
   </ul>
   <p>Image and file fields store attachment IDs. Code fields are stored base64-encoded and decoded by the functions above.</p>
 

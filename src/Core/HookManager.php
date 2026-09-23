@@ -194,6 +194,9 @@ class HookManager {
       'yaml_cf_export_page_data' => 'ajax_export_page_data',
       'yaml_cf_import_page_data' => 'ajax_import_page_data',
       'yaml_cf_import_data_objects' => 'ajax_import_data_objects',
+      'yaml_cf_export_bundle' => 'ajax_export_bundle',
+      'yaml_cf_inspect_bundle' => 'ajax_inspect_bundle',
+      'yaml_cf_import_bundle' => 'ajax_import_bundle',
     ];
 
     foreach ($handlers as $action => $service) {

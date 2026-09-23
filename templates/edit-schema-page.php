@@ -79,7 +79,6 @@ fields:
   - name: hero_image
     label: Hero Image
     type: image
-
   - break: true
   - name: category
     label: Category

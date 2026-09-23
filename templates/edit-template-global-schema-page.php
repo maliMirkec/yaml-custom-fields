@@ -66,7 +66,6 @@ fields:
   - name: default_background
     label: Default Background Image
     type: image
-
   - break: true
   - name: page_layout_settings
     label: Page Layout Settings
@@ -84,7 +83,6 @@ fields:
               label: Left
             - value: right
               label: Right
-
   - section: Defaults
   - name: default_category
     label: Default Category

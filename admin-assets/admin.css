@@ -3180,14 +3180,64 @@
   color: var(--ycf-muted);
 }
 
-/* The editor box wears the same icon as the sidebar menu */
-#yaml-cf-meta-box .postbox-header .hndle {
+/* ---------------------------------------------------------------------------
+ * The custom fields box in the post editor
+ *
+ * It wears the sidebar's icon and folds away. The whole header is the toggle,
+ * so the caret and the title behave alike.
+ * ------------------------------------------------------------------------ */
+#yaml-cf-meta-box .yaml-cf-box-header {
   display: flex;
   align-items: center;
-  /* Core spreads the handle's children apart; keep the icon next to the text */
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+/*
+ * The title carries its own class, not core's .hndle, so that postboxes.js
+ * leaves this box alone. That means restating what .hndle would have given it.
+ */
+#yaml-cf-meta-box .yaml-cf-box-title {
+  display: flex;
+  align-items: center;
   justify-content: flex-start;
   gap: 8px;
+  flex-grow: 1;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.4;
   text-align: left;
+}
+
+#yaml-cf-meta-box .yaml-cf-box-toggle {
+  flex: 0 0 auto;
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  cursor: pointer;
+  color: var(--ycf-muted);
+}
+
+#yaml-cf-meta-box .yaml-cf-box-toggle:hover,
+#yaml-cf-meta-box .yaml-cf-box-toggle:focus-visible {
+  color: var(--ycf-purple);
+}
+
+#yaml-cf-meta-box .yaml-cf-box-toggle .toggle-indicator::before {
+  content: '\f142';
+  font-family: dashicons;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+}
+
+#yaml-cf-meta-box.closed .yaml-cf-box-toggle .toggle-indicator::before {
+  content: '\f140';
+}
+
+#yaml-cf-meta-box.closed .inside {
+  display: none;
 }
 
 #yaml-cf-meta-box .yaml-cf-box-icon {
@@ -3196,4 +3246,236 @@
   width: 20px;
   height: 20px;
   line-height: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * Export wizard and import preview
+ * ------------------------------------------------------------------------ */
+.yaml-cf-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0 0 20px;
+  padding: 0 0 16px;
+  list-style: none;
+  counter-reset: yaml-cf-step;
+  border-bottom: 1px solid var(--ycf-line);
+}
+
+.yaml-cf-wizard-steps li {
+  counter-increment: yaml-cf-step;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-wizard-steps li::before {
+  content: counter(yaml-cf-step);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f0eef5;
+  color: var(--ycf-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.yaml-cf-wizard-steps li.is-current {
+  color: var(--ycf-ink);
+  font-weight: 600;
+}
+
+.yaml-cf-wizard-steps li.is-current::before {
+  background: var(--ycf-purple);
+  color: #fff;
+}
+
+.yaml-cf-wizard-steps li.is-done::before {
+  content: '\2713';
+  background: var(--ycf-lavender);
+  color: var(--ycf-purple-dark);
+}
+
+.yaml-cf-wizard-steps li.is-skipped {
+  opacity: 0.45;
+}
+
+.yaml-cf-wizard-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ycf-line);
+}
+
+/* Tick lists, shared by the wizard and the import preview */
+.yaml-cf-pick-group {
+  margin-bottom: 18px;
+}
+
+.yaml-cf-pick-list {
+  margin-left: 26px;
+  border-left: 1px solid var(--ycf-line);
+  padding-left: 14px;
+}
+
+.yaml-cf-pick-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 7px 0;
+  cursor: pointer;
+}
+
+.yaml-cf-pick-row.is-group {
+  font-size: 14px;
+  font-weight: 600;
+  padding-bottom: 10px;
+}
+
+.yaml-cf-pick-row input[type='checkbox'] {
+  margin: 0;
+}
+
+.yaml-cf-pick-label {
+  color: var(--ycf-ink);
+}
+
+.yaml-cf-pick-row.is-group .yaml-cf-pick-label {
+  font-weight: 600;
+}
+
+.yaml-cf-pick-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ycf-muted);
+}
+
+/* A template and the pieces folded inside it */
+.yaml-cf-pick-node {
+  border-bottom: 1px solid #f4f2f8;
+}
+
+.yaml-cf-pick-node:last-child {
+  border-bottom: 0;
+}
+
+.yaml-cf-pick-row.is-branch {
+  font-weight: 500;
+}
+
+.yaml-cf-pick-expand {
+  margin-left: auto;
+  padding: 2px 6px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ycf-muted);
+  line-height: 1;
+}
+
+.yaml-cf-pick-expand:hover,
+.yaml-cf-pick-expand:focus-visible {
+  color: var(--ycf-purple);
+}
+
+.yaml-cf-pick-caret::before {
+  content: '\f347';
+  font-family: dashicons;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.15s;
+}
+
+.yaml-cf-pick-expand[aria-expanded='true'] .yaml-cf-pick-caret::before {
+  transform: rotate(180deg);
+}
+
+/* A flag sitting next to a caret must not fight it for the right edge */
+.yaml-cf-pick-row.is-branch .yaml-cf-pick-flag {
+  margin-left: auto;
+}
+
+.yaml-cf-pick-row.is-branch .yaml-cf-pick-flag + .yaml-cf-pick-expand {
+  margin-left: 4px;
+}
+
+.yaml-cf-pick-children {
+  margin: 0 0 8px 26px;
+  padding-left: 14px;
+  border-left: 1px solid var(--ycf-line);
+}
+
+.yaml-cf-pick-children .yaml-cf-pick-row {
+  padding: 5px 0;
+}
+
+.yaml-cf-pick-children .yaml-cf-pick-label {
+  color: var(--ycf-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yaml-cf-pick-caret::before {
+    transition: none;
+  }
+}
+
+/* What will happen to this item on import */
+.yaml-cf-pick-flag {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.yaml-cf-pick-flag.is-new {
+  background: #e6f4ea;
+  color: #04533a;
+}
+
+.yaml-cf-pick-flag.is-overwrite {
+  background: #fcf0e1;
+  color: #8a4b00;
+}
+
+.yaml-cf-pick-flag.is-missing {
+  background: #f0f0f1;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-pick-row.is-missing {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.yaml-cf-import-source {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--ycf-muted);
+}
+
+.yaml-cf-overwrite-count {
+  font-size: 13px;
+  color: #8a4b00;
+}
+
+.yaml-cf-summary-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.yaml-cf-summary-list li {
+  margin: 4px 0;
 }

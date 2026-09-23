@@ -194,6 +194,27 @@ class Plugin {
       );
     });
 
+    $this->container->register('bundle_catalog', function($c) {
+      return new \YamlCF\ImportExport\BundleCatalog(
+        $c->get('schema_parser'),
+        $c->get('template_name_formatter')
+      );
+    });
+
+    $this->container->register('bundle_exporter', function($c) {
+      return new \YamlCF\ImportExport\BundleExporter(
+        $c->get('page_data_exporter')
+      );
+    });
+
+    $this->container->register('bundle_importer', function($c) {
+      return new \YamlCF\ImportExport\BundleImporter(
+        $c->get('settings_importer'),
+        $c->get('page_data_importer'),
+        $c->get('data_object_importer')
+      );
+    });
+
     // AJAX Handlers (wired to wp_ajax_* actions by HookManager)
     $this->container->register('ajax_save_template_settings', function($c) {
       return new \YamlCF\Ajax\Handlers\SaveTemplateSettings();
@@ -255,6 +276,21 @@ class Plugin {
 
     $this->container->register('ajax_import_data_objects', function($c) {
       return new \YamlCF\Ajax\Handlers\ImportDataObjects($c->get('data_object_importer'));
+    });
+
+    $this->container->register('ajax_export_bundle', function($c) {
+      return new \YamlCF\Ajax\Handlers\ExportBundle($c->get('bundle_exporter'));
+    });
+
+    $this->container->register('ajax_inspect_bundle', function($c) {
+      return new \YamlCF\Ajax\Handlers\InspectBundle(
+        $c->get('bundle_catalog'),
+        $c->get('bundle_importer')
+      );
+    });
+
+    $this->container->register('ajax_import_bundle', function($c) {
+      return new \YamlCF\Ajax\Handlers\ImportBundle($c->get('bundle_importer'));
     });
 
     // Admin Management
@@ -328,7 +364,7 @@ class Plugin {
     });
 
     $this->container->register('export_import_controller', function($c) {
-      return new \YamlCF\Admin\Controllers\ExportImportController();
+      return new \YamlCF\Admin\Controllers\ExportImportController($c->get('bundle_catalog'));
     });
 
     $this->container->register('docs_controller', function($c) {

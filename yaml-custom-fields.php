@@ -1123,12 +1123,24 @@ class YAML_Custom_Fields {
     // Add link to edit schema
     $edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template));
 
+    // This box is printed by the plugin, not registered with add_meta_box(), so
+    // its open/closed state is ours to handle (admin.js).
+    //
+    // The title deliberately avoids core's "hndle" class and the button avoids
+    // "handlediv": postboxes.js binds to '.postbox .hndle, .postbox .handlediv'
+    // across the whole screen, and its toggle would undo ours on every click.
     echo '<div id="yaml-cf-meta-box" class="postbox">';
-    echo '<div class="postbox-header"><h2 class="hndle">';
+    echo '<div class="postbox-header yaml-cf-box-header">';
+    echo '<h2 class="yaml-cf-box-title" id="yaml-cf-meta-box-title">';
     echo '<span class="dashicons dashicons-forms yaml-cf-box-icon" aria-hidden="true"></span>';
     echo esc_html__('Custom fields', 'yaml-custom-fields');
-    echo '</h2></div>';
-    echo '<div class="inside">';
+    echo '</h2>';
+    echo '<button type="button" class="yaml-cf-box-toggle" aria-expanded="true" aria-controls="yaml-cf-meta-box-inside">';
+    echo '<span class="screen-reader-text">' . esc_html__('Hide or show the custom fields', 'yaml-custom-fields') . '</span>';
+    echo '<span class="toggle-indicator" aria-hidden="true"></span>';
+    echo '</button>';
+    echo '</div>';
+    echo '<div class="inside" id="yaml-cf-meta-box-inside">';
 
     $export_url = wp_nonce_url(
       add_query_arg('yaml_cf_export_post', $post->ID, admin_url('post.php')),

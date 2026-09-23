@@ -66,7 +66,7 @@ if ($yaml_cf_action === 'edit') {
         <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
           <h1><?php echo esc_html($yaml_cf_type_name); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Add and edit the items in this list', 'yaml-custom-fields'); ?></p>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Add and edit the items in this collection', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
@@ -77,7 +77,7 @@ if ($yaml_cf_action === 'edit') {
         <?php if ($yaml_cf_action === 'list') : ?>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>" class="button">
             <span class="dashicons dashicons-arrow-left-alt2"></span>
-            <?php esc_html_e('Back to Reusable lists', 'yaml-custom-fields'); ?>
+            <?php esc_html_e('Back to Collections', 'yaml-custom-fields'); ?>
           </a>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
             <span class="dashicons dashicons-admin-generic"></span>
@@ -93,14 +93,14 @@ if ($yaml_cf_action === 'edit') {
           </a>
         <?php endif; ?>
       </p>
-      <p><strong><?php esc_html_e('List:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($yaml_cf_type_slug); ?></code></p>
+      <p><strong><?php esc_html_e('Collection:', 'yaml-custom-fields'); ?></strong> <code><?php echo esc_html($yaml_cf_type_slug); ?></code></p>
     </div>
 
     <?php if ($yaml_cf_action === 'list') : ?>
       <!-- List View -->
       <?php if (empty($yaml_cf_entries)) : ?>
         <div class="notice notice-info inline">
-          <p><?php esc_html_e('This list is empty. Click "Add an item" to add the first one.', 'yaml-custom-fields'); ?></p>
+          <p><?php esc_html_e('This collection is empty. Click "Add an item" to add the first one.', 'yaml-custom-fields'); ?></p>
         </div>
       <?php else : ?>
         <table class="wp-list-table widefat fixed striped">

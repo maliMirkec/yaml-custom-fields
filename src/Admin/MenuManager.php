@@ -113,8 +113,8 @@ class MenuManager {
     // Data Objects
     add_submenu_page(
       'yaml-custom-fields',
-      __('Reusable lists', 'yaml-custom-fields'),
-      __('Reusable lists', 'yaml-custom-fields'),
+      __('Collections', 'yaml-custom-fields'),
+      __('Collections', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-data-objects',
       [$this, 'renderDataObjectsPage']
@@ -123,8 +123,8 @@ class MenuManager {
     // Hidden pages for Data Objects
     add_submenu_page(
       'yaml-custom-fields',
-      __('Edit list', 'yaml-custom-fields'),
-      __('Edit list', 'yaml-custom-fields'),
+      __('Edit collection', 'yaml-custom-fields'),
+      __('Edit collection', 'yaml-custom-fields'),
       'manage_options',
       'yaml-cf-edit-data-object-type',
       [$this, 'renderEditDataObjectTypePage']
@@ -272,7 +272,7 @@ class MenuManager {
 
       if ($page === 'yaml-cf-edit-data-object-type') {
         /* translators: %s: Data object type name */
-        return sprintf(__('Edit list: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
+        return sprintf(__('Edit collection: %s', 'yaml-custom-fields'), $type_name) . ' ' . $admin_title;
       }
 
       if ($page === 'yaml-cf-manage-data-object-entries') {
