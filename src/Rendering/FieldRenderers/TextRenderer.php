@@ -22,7 +22,7 @@ class TextRenderer extends BaseFieldRenderer {
 
     $options = isset($field['options']) ? $field['options'] : [];
     $attrs = [
-      'name' => 'yaml_cf[' . $field['name'] . ']',
+      'name' => $this->getInputName($field['name'], $context),
       'id' => $field_id,
       'rows' => 5,
       'class' => 'large-text',

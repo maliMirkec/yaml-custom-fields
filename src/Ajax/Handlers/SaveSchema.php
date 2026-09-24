@@ -15,9 +15,13 @@ use YamlCF\Ajax\AjaxHandler;
  */
 class SaveSchema extends AjaxHandler {
   private $validator;
+  private $parser;
+  private $diff;
 
-  public function __construct($validator) {
+  public function __construct($validator, $parser = null, $diff = null) {
     $this->validator = $validator;
+    $this->parser = $parser;
+    $this->diff = $diff;
   }
 
   public function handle() {
@@ -35,9 +39,38 @@ class SaveSchema extends AjaxHandler {
     }
 
     $schemas = (array) get_option('yaml_cf_schemas', []);
+
+    // Work out what this change strands before the old schema is overwritten
+    $removed_fields = $this->getRemovedFields(
+      isset($schemas[$template]) ? $schemas[$template] : '',
+      $schema
+    );
+
     $schemas[$template] = $schema;
     update_option('yaml_cf_schemas', $schemas);
 
-    $this->sendSuccess();
+    $this->sendSuccess(['removed_fields' => $removed_fields]);
+  }
+
+  /**
+   * Field names the new schema drops, whose content nothing will display
+   *
+   * @param string $old_yaml Schema being replaced
+   * @param string $new_yaml Schema being saved
+   * @return string[]
+   */
+  private function getRemovedFields($old_yaml, $new_yaml) {
+    if ($this->parser === null || $this->diff === null) {
+      return [];
+    }
+
+    if (!is_string($old_yaml) || trim($old_yaml) === '') {
+      return [];
+    }
+
+    return $this->diff->removedFieldNames(
+      $this->parser->parse($old_yaml),
+      is_string($new_yaml) && trim($new_yaml) !== '' ? $this->parser->parse($new_yaml) : null
+    );
   }
 }

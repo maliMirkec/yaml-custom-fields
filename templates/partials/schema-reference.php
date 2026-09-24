@@ -111,11 +111,16 @@ YAML;
         <dt>select</dt><dd><?php esc_html_e('A dropdown with a fixed set of choices.', 'yaml-custom-fields'); ?></dd>
         <dt>taxonomy</dt><dd><?php esc_html_e('A choice of categories or tags.', 'yaml-custom-fields'); ?></dd>
         <dt>data_object</dt><dd><?php esc_html_e('A choice from a collection.', 'yaml-custom-fields'); ?></dd>
-        <dt>image</dt><dd><?php esc_html_e('An image from the media library.', 'yaml-custom-fields'); ?></dd>
-        <dt>file</dt><dd><?php esc_html_e('Any file from the media library, like a PDF.', 'yaml-custom-fields'); ?></dd>
+        <dt>image</dt><dd><?php esc_html_e('An image from the media library. Add "list: true" for a gallery of several images.', 'yaml-custom-fields'); ?></dd>
+        <dt>file</dt><dd><?php esc_html_e('Any file from the media library, like a PDF. Add "list: true" for several files.', 'yaml-custom-fields'); ?></dd>
         <dt>object</dt><dd><?php esc_html_e('A group of fields that belong together.', 'yaml-custom-fields'); ?></dd>
         <dt>block</dt><dd><?php esc_html_e('Sections that can be added, removed and reordered.', 'yaml-custom-fields'); ?></dd>
       </dl>
+
+      <h3 class="yaml-cf-reference-subhead"><?php esc_html_e('Naming a section in its header', 'yaml-custom-fields'); ?></h3>
+      <p class="yaml-cf-reference-note">
+        <?php esc_html_e('Each repeating section shows the text of its first field in its header, so a long page is easy to scan. To use a different field, add "summaryField: field_name" to the block.', 'yaml-custom-fields'); ?>
+      </p>
 
       <h3 class="yaml-cf-reference-subhead"><?php esc_html_e('Splitting up a long form', 'yaml-custom-fields'); ?></h3>
       <p class="yaml-cf-reference-note">

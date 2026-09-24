@@ -12,7 +12,7 @@
 
 // Exit if accessed directly or not uninstalling
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
-	exit;
+  exit;
 }
 
 /**
@@ -22,73 +22,73 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * (no direct DELETE queries and no global cache flush).
  */
 function yaml_cf_uninstall_site() {
-	global $wpdb;
+  global $wpdb;
 
-	// Fixed options
-	$yaml_cf_options = array(
-		'yaml_cf_schemas',
-		'yaml_cf_global_schema',
-		'yaml_cf_global_data',
-		'yaml_cf_partial_data',
-		'yaml_cf_template_settings',
-		'yaml_cf_template_global_schemas',
-		'yaml_cf_template_global_data',
-		'yaml_cf_data_object_types',
-		'yaml_cf_tracked_posts',
-	);
-	foreach ( $yaml_cf_options as $yaml_cf_option ) {
-		delete_option( $yaml_cf_option );
-	}
+  // Fixed options
+  $yaml_cf_options = array(
+    'yaml_cf_schemas',
+    'yaml_cf_global_schema',
+    'yaml_cf_global_data',
+    'yaml_cf_partial_data',
+    'yaml_cf_template_settings',
+    'yaml_cf_template_global_schemas',
+    'yaml_cf_template_global_data',
+    'yaml_cf_data_object_types',
+    'yaml_cf_tracked_posts',
+  );
+  foreach ( $yaml_cf_options as $yaml_cf_option ) {
+    delete_option( $yaml_cf_option );
+  }
 
-	// Data object entries (one option per type) - names are looked up, then deleted via the API
-	// Direct SQL is required to find dynamic option names (documented exception in Rule #5)
-	$yaml_cf_entry_options = $wpdb->get_col(
-		$wpdb->prepare(
-			"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-			$wpdb->esc_like( 'yaml_cf_data_object_entries_' ) . '%'
-		)
-	);
-	foreach ( $yaml_cf_entry_options as $yaml_cf_option ) {
-		delete_option( $yaml_cf_option );
-	}
+  // Data object entries (one option per type) - names are looked up, then deleted via the API
+  // Direct SQL is required to find dynamic option names (documented exception in Rule #5)
+  $yaml_cf_entry_options = $wpdb->get_col(
+    $wpdb->prepare(
+      "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+      $wpdb->esc_like( 'yaml_cf_data_object_entries_' ) . '%'
+    )
+  );
+  foreach ( $yaml_cf_entry_options as $yaml_cf_option ) {
+    delete_option( $yaml_cf_option );
+  }
 
-	// Transients (template cache, notices, import status, invalid schema drafts)
-	$yaml_cf_transients = $wpdb->get_col(
-		$wpdb->prepare(
-			"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-			$wpdb->esc_like( '_transient_yaml_cf_' ) . '%'
-		)
-	);
-	foreach ( $yaml_cf_transients as $yaml_cf_transient ) {
-		delete_transient( substr( $yaml_cf_transient, strlen( '_transient_' ) ) );
-	}
+  // Transients (template cache, notices, import status, invalid schema drafts)
+  $yaml_cf_transients = $wpdb->get_col(
+    $wpdb->prepare(
+      "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+      $wpdb->esc_like( '_transient_yaml_cf_' ) . '%'
+    )
+  );
+  foreach ( $yaml_cf_transients as $yaml_cf_transient ) {
+    delete_transient( substr( $yaml_cf_transient, strlen( '_transient_' ) ) );
+  }
 
-	// Post meta
-	$yaml_cf_meta_keys = array(
-		'_yaml_cf_data',
-		'_yaml_cf_schema',
-		'_yaml_cf_imported',
-		'_yaml_cf_use_template_global',
-		'_yaml_cf_use_template_global_fields',
-	);
-	foreach ( $yaml_cf_meta_keys as $yaml_cf_meta_key ) {
-		delete_post_meta_by_key( $yaml_cf_meta_key );
-	}
+  // Post meta
+  $yaml_cf_meta_keys = array(
+    '_yaml_cf_data',
+    '_yaml_cf_schema',
+    '_yaml_cf_imported',
+    '_yaml_cf_use_template_global',
+    '_yaml_cf_use_template_global_fields',
+  );
+  foreach ( $yaml_cf_meta_keys as $yaml_cf_meta_key ) {
+    delete_post_meta_by_key( $yaml_cf_meta_key );
+  }
 }
 
 if ( is_multisite() ) {
-	$yaml_cf_sites = get_sites(
-		array(
-			'number' => 0,
-			'fields' => 'ids',
-		)
-	);
+  $yaml_cf_sites = get_sites(
+    array(
+      'number' => 0,
+      'fields' => 'ids',
+    )
+  );
 
-	foreach ( $yaml_cf_sites as $yaml_cf_site_id ) {
-		switch_to_blog( $yaml_cf_site_id );
-		yaml_cf_uninstall_site();
-		restore_current_blog();
-	}
+  foreach ( $yaml_cf_sites as $yaml_cf_site_id ) {
+    switch_to_blog( $yaml_cf_site_id );
+    yaml_cf_uninstall_site();
+    restore_current_blog();
+  }
 } else {
-	yaml_cf_uninstall_site();
+  yaml_cf_uninstall_site();
 }

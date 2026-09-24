@@ -69,10 +69,10 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
               <?php endif; ?>
             </td>
             <td>
-              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_slug))); ?>" class="button">
+              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . rawurlencode($yaml_cf_slug))); ?>" class="button">
                 <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
               </a>
-              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_slug))); ?>" class="button">
+              <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_slug))); ?>" class="button">
                 <?php esc_html_e('Edit items', 'yaml-custom-fields'); ?>
               </a>
               <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php

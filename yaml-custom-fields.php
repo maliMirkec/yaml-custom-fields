@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: Add your own fields to pages, posts and every part of your site. You choose the fields; writers fill them in.
- * Version: 1.2.9
+ * Version: 1.3.0
  * Author: Studio Cita
  * Author URI: https://www.cita.hr
  * License: GPL v2 or later
@@ -166,6 +166,63 @@ class YAML_Custom_Fields {
   }
 
   /**
+   * Field names that a schema change is about to strand
+   *
+   * @param string $old_yaml The schema being replaced
+   * @param string $new_yaml The schema being saved
+   * @return string[] Field names present in the old schema but not the new one
+   */
+  private function get_removed_schema_fields($old_yaml, $new_yaml) {
+    if (!is_string($old_yaml) || trim($old_yaml) === '') {
+      return [];
+    }
+
+    $plugin = \YamlCF\Core\Plugin::getInstance();
+
+    return $plugin->get('schema_diff')->removedFieldNames(
+      yaml_cf_parse_schema_cached($old_yaml),
+      is_string($new_yaml) && trim($new_yaml) !== '' ? yaml_cf_parse_schema_cached($new_yaml) : null
+    );
+  }
+
+  /**
+   * Say which fields lost their place, so vanished content is never a surprise
+   *
+   * The values stay in the database, so putting the field name back brings the
+   * content back with it. That is worth saying: the alternative is an editor
+   * who thinks the text is gone.
+   *
+   * @param string[] $removed_fields Field names no longer in the schema
+   * @return void
+   */
+  private function notify_removed_schema_fields($removed_fields) {
+    if (empty($removed_fields)) {
+      return;
+    }
+
+    $this->notify(
+      'warning',
+      sprintf(
+        /* translators: %s: comma-separated list of field names */
+        _n(
+          'The field %s is no longer in this schema.',
+          'These fields are no longer in this schema: %s',
+          count($removed_fields),
+          'yaml-custom-fields'
+        ),
+        implode(', ', $removed_fields)
+      ),
+      [
+        'title' => __('Content is no longer shown:', 'yaml-custom-fields'),
+        'details' => [
+          __('Whatever was filled in for them is still saved, but nothing displays it any more.', 'yaml-custom-fields'),
+          __('Adding a field back under the same name brings its content back too.', 'yaml-custom-fields'),
+        ],
+      ]
+    );
+  }
+
+  /**
    * Track post ID that has YAML custom field data
    * This maintains a list for efficient cache clearing without slow meta_query
    *
@@ -255,17 +312,16 @@ class YAML_Custom_Fields {
     add_action('admin_init', [$this, 'handle_data_objects_export']);
     add_action('admin_init', [$this, 'handle_data_object_type_submissions']);
 
-    // NOTE: Admin menu, assets, and menu customization now handled by new architecture (HookManager)
-    // add_action('admin_menu', [$this, 'add_admin_menu']);
-    // add_action('admin_head', [$this, 'hide_submenu_items']);
-    // add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
-    // add_filter('admin_title', [$this, 'customize_admin_title'], 10, 2);
-    // add_filter('parent_file', [$this, 'set_parent_file']);
-    // add_filter('submenu_file', [$this, 'set_submenu_file']);
-    // add_action('switch_theme', [$this, 'clear_template_cache']);
+    // Not registered here any more: the admin menu (admin_menu), the submenu and
+    // title customisation (admin_head, admin_title, parent_file, submenu_file),
+    // asset enqueuing (admin_enqueue_scripts) and template cache invalidation
+    // (switch_theme). YamlCF\Core\HookManager owns all of those now.
 
-    // Only use edit_form_after_title to avoid duplicate rendering
-    add_action('edit_form_after_title', [$this, 'render_schema_meta_box_after_title']);
+    // Registered as a real meta box so the fields appear in the block editor too.
+    // edit_form_after_title never fires there, which used to make the plugin
+    // classic-editor-only; core posts meta boxes from the block editor as well,
+    // so save_schema_data() keeps receiving $_POST['yaml_cf'] unchanged.
+    add_action('add_meta_boxes', [$this, 'register_meta_box'], 10, 2);
     add_action('save_post', [$this, 'save_schema_data']);
     add_action('delete_post', [$this, 'handle_post_deletion']);
     // AJAX handlers live in src/Ajax/Handlers and are registered by YamlCF\Core\HookManager
@@ -480,7 +536,8 @@ class YAML_Custom_Fields {
       if (function_exists('finfo_open')) {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime_type = finfo_file($finfo, $tmp_file_path);
-        finfo_close($finfo);
+        // No finfo_close(): deprecated in PHP 8.5, and the finfo object is
+        // released when $finfo goes out of scope
 
         if (!in_array($mime_type, ['application/json', 'text/plain'], true)) {
           $redirect_with_error('invalid_mime');
@@ -557,7 +614,7 @@ class YAML_Custom_Fields {
           ]);
           wp_safe_redirect(add_query_arg([
             'page' => 'yaml-cf-edit-schema',
-            'template' => urlencode($template),
+            'template' => rawurlencode($template),
             'error' => '1'
           ], admin_url('admin.php')));
           exit;
@@ -565,6 +622,13 @@ class YAML_Custom_Fields {
       }
 
       $schemas = get_option('yaml_cf_schemas', []);
+
+      // Work out what is about to be stranded before the old schema is gone
+      $removed_fields = $this->get_removed_schema_fields(
+        isset($schemas[$template]) ? $schemas[$template] : '',
+        $schema
+      );
+
       $schemas[$template] = $schema;
       update_option('yaml_cf_schemas', $schemas);
 
@@ -574,9 +638,11 @@ class YAML_Custom_Fields {
       /* translators: %s: template file name */
       $this->notify('success', sprintf(__('Schema for %s saved.', 'yaml-custom-fields'), $template));
 
+      $this->notify_removed_schema_fields($removed_fields);
+
       wp_safe_redirect(add_query_arg([
         'page' => 'yaml-cf-edit-schema',
-        'template' => urlencode($template)
+        'template' => rawurlencode($template)
       ], admin_url('admin.php')));
       exit;
     }
@@ -619,7 +685,7 @@ class YAML_Custom_Fields {
 
       wp_safe_redirect(add_query_arg([
         'page' => 'yaml-cf-edit-partial',
-        'template' => urlencode($template)
+        'template' => rawurlencode($template)
       ], admin_url('admin.php')));
       exit;
     }
@@ -730,7 +796,7 @@ class YAML_Custom_Fields {
           ]);
           wp_safe_redirect(add_query_arg([
             'page' => 'yaml-cf-edit-template-global',
-            'template' => urlencode($template),
+            'template' => rawurlencode($template),
             'error' => '1'
           ], admin_url('admin.php')));
           exit;
@@ -749,7 +815,7 @@ class YAML_Custom_Fields {
 
       wp_safe_redirect(add_query_arg([
         'page' => 'yaml-cf-edit-template-global',
-        'template' => urlencode($template)
+        'template' => rawurlencode($template)
       ], admin_url('admin.php')));
       exit;
     }
@@ -792,7 +858,7 @@ class YAML_Custom_Fields {
 
       wp_safe_redirect(add_query_arg([
         'page' => 'yaml-cf-manage-template-global',
-        'template' => urlencode($template)
+        'template' => rawurlencode($template)
       ], admin_url('admin.php')));
       exit;
     }
@@ -1060,8 +1126,8 @@ class YAML_Custom_Fields {
     // Delegate to new architecture if available
     if (class_exists('\YamlCF\Core\Plugin')) {
       $plugin = \YamlCF\Core\Plugin::getInstance();
-      $cacheManager = $plugin->get('cache_manager');
-      $cacheManager->clearTemplateCache();
+      $cache_manager = $plugin->get('cache_manager');
+      $cache_manager->clearTemplateCache();
       return;
     }
 
@@ -1086,61 +1152,97 @@ class YAML_Custom_Fields {
     return \YamlCF\Core\Plugin::getInstance()->get('template_resolver')->getTemplateForPost($post);
   }
 
-  public function render_schema_meta_box_after_title($post) {
-    // Only render for public post types
+  /**
+   * Find the schema that applies to a post, if any
+   *
+   * Shared by the meta box registration and its render callback so the box is
+   * never registered for a post that would render nothing.
+   *
+   * @param WP_Post $post Post being edited
+   * @return array|null ['template' => string, 'schema' => array] or null
+   */
+  private function get_schema_for_post($post) {
     $post_type_object = get_post_type_object($post->post_type);
     if (!$post_type_object || !$post_type_object->public) {
-      return;
+      return null;
     }
 
-    wp_nonce_field('yaml_cf_meta_box', 'yaml_cf_meta_box_nonce');
-
-    // Determine the template based on post type
     $template = $this->get_template_for_post($post);
 
     $template_settings = get_option('yaml_cf_template_settings', []);
-
     if (!isset($template_settings[$template]) || !$template_settings[$template]) {
-      return;
+      return null;
     }
 
     $schemas = get_option('yaml_cf_schemas', []);
-
     if (!isset($schemas[$template]) || empty($schemas[$template])) {
-      return;
+      return null;
     }
 
-    $schema_yaml = $schemas[$template];
-    $schema = $this->parse_yaml_schema($schema_yaml);
-
+    $schema = $this->parse_yaml_schema($schemas[$template]);
     if (!$schema || !isset($schema['fields'])) {
-      return;
+      return null;
     }
 
     // Normalize shorthand syntax (info boxes, section breaks)
     $schema['fields'] = $this->normalize_field_shorthand($schema['fields']);
 
-    // Add link to edit schema
-    $edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template));
+    return ['template' => $template, 'schema' => $schema];
+  }
 
-    // This box is printed by the plugin, not registered with add_meta_box(), so
-    // its open/closed state is ours to handle (admin.js).
-    //
-    // The title deliberately avoids core's "hndle" class and the button avoids
-    // "handlediv": postboxes.js binds to '.postbox .hndle, .postbox .handlediv'
-    // across the whole screen, and its toggle would undo ours on every click.
-    echo '<div id="yaml-cf-meta-box" class="postbox">';
-    echo '<div class="postbox-header yaml-cf-box-header">';
-    echo '<h2 class="yaml-cf-box-title" id="yaml-cf-meta-box-title">';
-    echo '<span class="dashicons dashicons-forms yaml-cf-box-icon" aria-hidden="true"></span>';
-    echo esc_html__('Custom fields', 'yaml-custom-fields');
-    echo '</h2>';
-    echo '<button type="button" class="yaml-cf-box-toggle" aria-expanded="true" aria-controls="yaml-cf-meta-box-inside">';
-    echo '<span class="screen-reader-text">' . esc_html__('Hide or show the custom fields', 'yaml-custom-fields') . '</span>';
-    echo '<span class="toggle-indicator" aria-hidden="true"></span>';
-    echo '</button>';
-    echo '</div>';
-    echo '<div class="inside" id="yaml-cf-meta-box-inside">';
+  /**
+   * Register the custom fields meta box for posts that have a schema
+   *
+   * A real meta box works in both editors: the block editor renders classic
+   * meta boxes in its bottom panel and submits them with the post, so the
+   * existing $_POST['yaml_cf'] save path is unchanged.
+   *
+   * @param string $post_type Post type being edited
+   * @param WP_Post $post Post being edited
+   * @return void
+   */
+  public function register_meta_box($post_type, $post) {
+    if (!($post instanceof WP_Post)) {
+      return;
+    }
+
+    if ($this->get_schema_for_post($post) === null) {
+      return;
+    }
+
+    add_meta_box(
+      'yaml-cf-meta-box',
+      __('Custom fields', 'yaml-custom-fields'),
+      [$this, 'render_schema_meta_box'],
+      $post_type,
+      'normal',
+      'high'
+    );
+  }
+
+  /**
+   * Print the custom fields meta box
+   *
+   * Core prints the .postbox wrapper, its heading and the collapse toggle, and
+   * remembers the open or closed state per user.
+   *
+   * @param WP_Post $post Post being edited
+   * @return void
+   */
+  public function render_schema_meta_box($post) {
+    $resolved = $this->get_schema_for_post($post);
+    if ($resolved === null) {
+      return;
+    }
+
+    $template = $resolved['template'];
+    $schema = $resolved['schema'];
+    $template_settings = get_option('yaml_cf_template_settings', []);
+
+    wp_nonce_field('yaml_cf_meta_box', 'yaml_cf_meta_box_nonce');
+
+    // Add link to edit schema
+    $edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . rawurlencode($template));
 
     $export_url = wp_nonce_url(
       add_query_arg('yaml_cf_export_post', $post->ID, admin_url('post.php')),
@@ -1235,7 +1337,7 @@ class YAML_Custom_Fields {
 
     // Render template-global-only fields as readonly
     if ($has_template_global && $template_global_schema && isset($template_global_schema['fields']) && isset($schema['fields'])) {
-      $manage_template_global_url = admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template));
+      $manage_template_global_url = admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . rawurlencode($template));
 
       $has_global_only_fields = false;
 
@@ -1298,9 +1400,17 @@ class YAML_Custom_Fields {
         }
       }
     }
+  }
 
-    echo '</div>';
-    echo '</div>';
+  /**
+   * Print the custom fields box on edit_form_after_title
+   *
+   * @deprecated Use render_schema_meta_box(), registered via add_meta_boxes.
+   * @param WP_Post $post Post being edited
+   * @return void
+   */
+  public function render_schema_meta_box_after_title($post) {
+    $this->render_schema_meta_box($post);
   }
 
   /**
@@ -1324,7 +1434,7 @@ class YAML_Custom_Fields {
     $template_global_value = isset($template_global_data[$field_name]) ? $template_global_data[$field_name] : '';
     $use_global = isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1';
 
-    $manage_template_global_url = admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template));
+    $manage_template_global_url = admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . rawurlencode($template));
 
     echo '<div class="yaml-cf-dual-field" data-field-name="' . esc_attr($field_name) . '">';
 
@@ -1561,9 +1671,12 @@ class YAML_Custom_Fields {
         }
 
         $is_file_list_field = ($field['type'] === 'file') && isset($field['list']) && $field['list'];
+        $is_image_list_field = ($field['type'] === 'image') && isset($field['list']) && $field['list'];
 
         if ($is_file_list_field) {
           $code_snippet = "\$files = ycf_get_file('" . esc_js($field['name']) . "'" . $post_id_param . ");\nif (!empty(\$files)) {\n  foreach (\$files as \$file) {\n    echo '<a href=\"' . esc_url(\$file['url']) . '\">' . esc_html(\$file['filename']) . '</a>';\n  }\n}";
+        } elseif ($is_image_list_field) {
+          $code_snippet = "\$images = ycf_get_image('" . esc_js($field['name']) . "'" . $post_id_param . ", 'medium');\nif (!empty(\$images)) {\n  foreach (\$images as \$image) {\n    echo '<img src=\"' . esc_url(\$image['url']) . '\" alt=\"' . esc_attr(\$image['alt']) . '\" />';\n  }\n}";
         } else {
           $code_snippet = $function_name . "('" . esc_js($field['name']) . "'" . $post_id_param . $extra_params . ")";
         }
@@ -1778,6 +1891,25 @@ class YAML_Custom_Fields {
           $taxonomy = isset($options['taxonomy']) ? $options['taxonomy'] : 'category';
           $multiple = isset($field['multiple']) && $field['multiple'];
 
+          // Count first: a big taxonomy gets a search box instead of every term,
+          // so the page does not carry thousands of checkboxes or options.
+          $term_count = (int) wp_count_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
+
+          if ($term_count > self::get_picker_threshold('taxonomy', $taxonomy)) {
+            $selected_values = is_array($field_value) ? $field_value : ($field_value !== '' ? [$field_value] : []);
+            $this->render_picker([
+              'field_name' => $field_name,
+              'field_id' => $field_id,
+              'source' => 'taxonomy',
+              'key' => $taxonomy,
+              'multiple' => $multiple,
+              'selected' => $this->get_selected_term_labels($selected_values),
+              'readonly' => $readonly,
+              'total' => $term_count,
+            ]);
+            break;
+          }
+
           // Get terms for the specified taxonomy
           $terms = get_terms([
             'taxonomy' => $taxonomy,
@@ -1867,6 +1999,22 @@ class YAML_Custom_Fields {
             break;
           }
 
+          // A big collection gets a search box instead of every entry
+          if (count($data_entries) > self::get_picker_threshold('data_object', $object_type)) {
+            $selected_values = is_array($field_value) ? $field_value : ($field_value !== '' ? [$field_value] : []);
+            $this->render_picker([
+              'field_name' => $field_name,
+              'field_id' => $field_id,
+              'source' => 'data_object',
+              'key' => $object_type,
+              'multiple' => $multiple,
+              'selected' => $this->get_selected_data_object_labels($selected_values, $object_type),
+              'readonly' => $readonly,
+              'total' => count($data_entries),
+            ]);
+            break;
+          }
+
           if ($multiple) {
             // Use checkboxes for better UX with multiple selection
             $field_value = is_array($field_value) ? $field_value : ($field_value ? [$field_value] : []);
@@ -1907,7 +2055,7 @@ class YAML_Custom_Fields {
                 // translators: %1$s is the data object type name, %2$s is the URL to manage entries
                 esc_html__('The list %1$s is empty. %2$sAdd items%3$s first.', 'yaml-custom-fields'),
                 esc_html($data_types[$object_type]['name']),
-                '<a href="' . esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($object_type))) . '">',
+                '<a href="' . esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($object_type))) . '">',
                 '</a>'
               ) . '</p>';
             }
@@ -1953,6 +2101,15 @@ class YAML_Custom_Fields {
           break;
 
         case 'image':
+          $is_image_list = isset($field['list']) && $field['list'];
+
+          if ($is_image_list) {
+            // A gallery: many images in one field, picked in one trip to the
+            // media library and reordered by dragging.
+            $this->render_image_list($field_name, $field_value, $readonly);
+            break;
+          }
+
           echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($field_value) . '" />';
           echo '<div class="yaml-cf-media-buttons">';
           echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">' . esc_html__('Choose image', 'yaml-custom-fields') . '</button>';
@@ -2021,7 +2178,16 @@ class YAML_Custom_Fields {
           if ($is_list) {
             $block_snippet = "<?php\n// Get all blocks\n\$blocks = ycf_get_field('" . esc_js($field['name']) . "', null);\n\nif (!empty(\$blocks)) {\n  foreach (\$blocks as \$block) {\n    // Access block fields using context parameter:\n    // \$value = ycf_get_field('field_name', null, \$block);\n    // \$image = ycf_get_image('image_field', null, 'thumbnail', \$block);\n    // \$file = ycf_get_file('file_field', null, \$block);\n    // \$term = ycf_get_term('taxonomy_field', null, \$block);\n    // \$post_type = ycf_get_post_type('post_type_field', null, \$block);\n    // \$data_object = ycf_get_data_object('data_object_field', null, \$block);\n  }\n}\n?>";
             $block_popover_id = 'snippet-' . sanitize_html_class($field_id);
+            echo '<div class="yaml-cf-block-heading-row">';
             echo '<h4 class="yaml-cf-block-heading">' . esc_html($field_label) . '</h4>';
+            // Folding every section at once is the difference between a wall of
+            // fields and a list you can scan
+            if (!$readonly && is_array($field_value) && count($field_value) > 1) {
+              echo '<button type="button" class="button-link yaml-cf-collapse-all" aria-pressed="false">';
+              echo esc_html__('Collapse all', 'yaml-custom-fields');
+              echo '</button>';
+            }
+            echo '</div>';
           }
 
           echo '<div class="yaml-cf-block-container" data-field-name="' . esc_attr($field['name']) . '">';
@@ -2114,6 +2280,355 @@ class YAML_Custom_Fields {
     echo '</div>';
   }
 
+  /**
+   * Print a gallery field: an image field with "list: true"
+   *
+   * The images are picked in one trip to the media library and reordered by
+   * dragging, or with the two buttons on each image for anyone not using a
+   * mouse. Every image posts its attachment ID in yaml_cf[<field>][], so the
+   * order in the markup is the order that is saved.
+   *
+   * @param string $field_name Field name, already namespaced for nested fields
+   * @param mixed $field_value Stored value: an array of attachment IDs
+   * @param bool $readonly Whether the field is display-only
+   * @return void
+   */
+  private function render_image_list($field_name, $field_value, $readonly = false) {
+    $image_ids = is_array($field_value) ? $field_value : [];
+
+    echo '<div class="yaml-cf-image-list" data-field-name="' . esc_attr($field_name) . '">';
+
+    // Keeps the field submittable after the last image is removed, so emptying
+    // a gallery saves as empty instead of leaving the old images in place.
+    if (!$readonly) {
+      echo '<input type="hidden" class="yaml-cf-image-list-placeholder" name="yaml_cf[' . esc_attr($field_name) . '][]" value="" />';
+    }
+
+    echo '<ul class="yaml-cf-image-list-items' . ($readonly ? '' : ' is-sortable') . '">';
+    foreach ($image_ids as $image_id) {
+      if ($image_id === '' || $image_id === null) {
+        continue;
+      }
+      $this->render_image_list_item($field_name, $image_id, $readonly);
+    }
+    echo '</ul>';
+
+    if (!$readonly) {
+      echo '<button type="button" class="button yaml-cf-add-image-list-item" data-target-name="' . esc_attr($field_name) . '">';
+      echo esc_html__('Add images', 'yaml-custom-fields');
+      echo '</button>';
+      echo '<p class="yaml-cf-field-help">' . esc_html__('Drag the images to change their order.', 'yaml-custom-fields') . '</p>';
+    }
+
+    echo '</div>';
+  }
+
+  /**
+   * Print one image inside a gallery field
+   *
+   * @param string $field_name Field name
+   * @param int|string $image_id Attachment ID
+   * @param bool $readonly Whether the field is display-only
+   * @return void
+   */
+  private function render_image_list_item($field_name, $image_id, $readonly = false) {
+    $thumb = wp_get_attachment_image_url($image_id, 'thumbnail');
+    $alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
+
+    echo '<li class="yaml-cf-image-list-item" data-id="' . esc_attr($image_id) . '">';
+    echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . '][]" value="' . esc_attr($image_id) . '" />';
+
+    if ($thumb) {
+      echo '<img src="' . esc_url($thumb) . '" alt="' . esc_attr($alt) . '" class="yaml-cf-image-list-thumb" />';
+    } else {
+      // The attachment is gone from the media library, which is what an import
+      // from another site looks like. Say so rather than showing a broken image.
+      echo '<span class="yaml-cf-image-list-missing">';
+      /* translators: %s: attachment ID */
+      echo esc_html(sprintf(__('Image %s is missing', 'yaml-custom-fields'), $image_id));
+      echo '</span>';
+    }
+
+    if (!$readonly) {
+      echo '<span class="yaml-cf-image-list-actions">';
+      echo '<button type="button" class="button button-small yaml-cf-move-image-earlier" title="' . esc_attr__('Move earlier', 'yaml-custom-fields') . '">';
+      echo '<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>';
+      echo '<span class="screen-reader-text">' . esc_html__('Move earlier', 'yaml-custom-fields') . '</span>';
+      echo '</button>';
+      echo '<button type="button" class="button button-small yaml-cf-move-image-later" title="' . esc_attr__('Move later', 'yaml-custom-fields') . '">';
+      echo '<span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span>';
+      echo '<span class="screen-reader-text">' . esc_html__('Move later', 'yaml-custom-fields') . '</span>';
+      echo '</button>';
+      echo '<button type="button" class="button button-small yaml-cf-remove-image-list-item" title="' . esc_attr__('Remove', 'yaml-custom-fields') . '">';
+      echo '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';
+      echo '<span class="screen-reader-text">' . esc_html__('Remove this image', 'yaml-custom-fields') . '</span>';
+      echo '</button>';
+      echo '</span>';
+    }
+
+    echo '</li>';
+  }
+
+  /**
+   * How many choices a taxonomy or collection may have before its field turns
+   * into a search box instead of listing every option
+   *
+   * Listing 30 categories as checkboxes is friendlier than making someone type.
+   * Listing 3,000 is a megabyte of markup nobody can read, so past this many
+   * the field becomes a picker that searches over AJAX.
+   *
+   * @param string $type Field type: 'taxonomy' or 'data_object'
+   * @param string $key Taxonomy name or collection slug
+   * @return int Threshold
+   */
+  public static function get_picker_threshold($type, $key) {
+    /**
+     * Filter the number of choices at which a field becomes a search box.
+     *
+     * @param int $threshold Default 50.
+     * @param string $type Field type: 'taxonomy' or 'data_object'.
+     * @param string $key Taxonomy name or collection slug.
+     */
+    return (int) apply_filters('yaml_cf_picker_threshold', 50, $type, $key);
+  }
+
+  /**
+   * Print a search-backed picker for a taxonomy or collection field
+   *
+   * Only the chosen values are in the markup; everything else is searched over
+   * AJAX. That keeps a field over a 5,000-term taxonomy the same size as one
+   * over five.
+   *
+   * @param array $args {
+   *   @type string $field_name Field name, already namespaced for nested fields
+   *   @type string $field_id Element ID base
+   *   @type string $source 'taxonomy' or 'data_object'
+   *   @type string $key Taxonomy name or collection slug
+   *   @type bool $multiple Whether more than one value can be chosen
+   *   @type array $selected Chosen values as [id => label]
+   *   @type bool $readonly Whether the field is display-only
+   *   @type int $total How many choices exist in total
+   * }
+   * @return void
+   */
+  private function render_picker($args) {
+    $field_name = $args['field_name'];
+    $field_id = $args['field_id'];
+    $multiple = !empty($args['multiple']);
+    $readonly = !empty($args['readonly']);
+    $selected = isset($args['selected']) ? $args['selected'] : [];
+    $results_id = $field_id . '_results';
+
+    echo '<div class="yaml-cf-picker"';
+    echo ' data-source="' . esc_attr($args['source']) . '"';
+    echo ' data-key="' . esc_attr($args['key']) . '"';
+    echo ' data-field-name="' . esc_attr($field_name) . '"';
+    echo ' data-multiple="' . ($multiple ? '1' : '0') . '"';
+    echo '>';
+
+    // Keeps the field submittable once the last value is removed
+    if (!$readonly && $multiple) {
+      echo '<input type="hidden" class="yaml-cf-picker-placeholder" name="yaml_cf[' . esc_attr($field_name) . '][]" value="" />';
+    }
+
+    echo '<ul class="yaml-cf-picker-selected">';
+    foreach ($selected as $value => $label) {
+      $this->render_picker_chip($field_name, $value, $label, $multiple, $readonly);
+    }
+    echo '</ul>';
+
+    // A single-value picker still needs an input to post an empty value
+    if (!$readonly && !$multiple && empty($selected)) {
+      echo '<input type="hidden" class="yaml-cf-picker-value" name="yaml_cf[' . esc_attr($field_name) . ']" value="" />';
+    }
+
+    if (!$readonly) {
+      echo '<div class="yaml-cf-picker-search-row">';
+      echo '<input type="search" class="yaml-cf-picker-search" id="' . esc_attr($field_id) . '"';
+      echo ' role="combobox" aria-expanded="false" aria-autocomplete="list"';
+      echo ' aria-controls="' . esc_attr($results_id) . '"';
+      echo ' autocomplete="off"';
+      echo ' placeholder="' . esc_attr__('Type to search…', 'yaml-custom-fields') . '" />';
+      echo '</div>';
+
+      echo '<ul class="yaml-cf-picker-results" id="' . esc_attr($results_id) . '" role="listbox" hidden></ul>';
+
+      echo '<p class="yaml-cf-field-help">';
+      /* translators: %d: number of available choices */
+      echo esc_html(sprintf(_n('%d choice, so search for the one you want.', '%d choices, so search for the one you want.', (int) $args['total'], 'yaml-custom-fields'), (int) $args['total']));
+      echo '</p>';
+    }
+
+    echo '</div>';
+  }
+
+  /**
+   * Print one chosen value inside a picker
+   *
+   * @param string $field_name Field name
+   * @param string|int $value Stored value
+   * @param string $label Human-readable label
+   * @param bool $multiple Whether the field holds more than one value
+   * @param bool $readonly Whether the field is display-only
+   * @return void
+   */
+  private function render_picker_chip($field_name, $value, $label, $multiple, $readonly = false) {
+    $name = $multiple
+      ? 'yaml_cf[' . $field_name . '][]'
+      : 'yaml_cf[' . $field_name . ']';
+
+    echo '<li class="yaml-cf-picker-chip" data-id="' . esc_attr($value) . '">';
+    if (!$readonly) {
+      echo '<input type="hidden" class="yaml-cf-picker-value" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '" />';
+    }
+    echo '<span class="yaml-cf-picker-chip-label">' . esc_html($label) . '</span>';
+    if (!$readonly) {
+      echo '<button type="button" class="yaml-cf-picker-remove">';
+      echo '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';
+      echo '<span class="screen-reader-text">';
+      /* translators: %s: the chosen value's name */
+      echo esc_html(sprintf(__('Remove %s', 'yaml-custom-fields'), $label));
+      echo '</span>';
+      echo '</button>';
+    }
+    echo '</li>';
+  }
+
+  /**
+   * Look up the names of the terms already chosen in a taxonomy field
+   *
+   * @param array $values Term IDs
+   * @return array [term_id => name], skipping terms that no longer exist
+   */
+  private function get_selected_term_labels($values) {
+    $labels = [];
+    foreach ($values as $value) {
+      if ($value === '' || $value === null) {
+        continue;
+      }
+      $term = get_term((int) $value);
+      if ($term && !is_wp_error($term)) {
+        $labels[$term->term_id] = $term->name;
+      }
+    }
+    return $labels;
+  }
+
+  /**
+   * Look up the labels of the collection entries already chosen
+   *
+   * @param array $values Entry IDs
+   * @param string $object_type Collection slug
+   * @return array [entry_id => label]
+   */
+  private function get_selected_data_object_labels($values, $object_type) {
+    $entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+    $types = get_option('yaml_cf_data_object_types', []);
+
+    $label_field = '';
+    if (isset($types[$object_type]['schema'])) {
+      $schema = $this->parse_yaml_schema($types[$object_type]['schema']);
+      if (!empty($schema['fields'][0]['name'])) {
+        $label_field = $schema['fields'][0]['name'];
+      }
+    }
+
+    $labels = [];
+    foreach ($values as $value) {
+      if ($value === '' || $value === null) {
+        continue;
+      }
+      if (!isset($entries[$value])) {
+        // An entry that was deleted, or came from another site with the import
+        /* translators: %s: entry ID */
+        $labels[$value] = sprintf(__('%s (missing)', 'yaml-custom-fields'), $value);
+        continue;
+      }
+      $label = isset($entries[$value][$label_field]) ? $entries[$value][$label_field] : $value;
+      $labels[$value] = is_string($label) && $label !== '' ? $label : $value;
+    }
+    return $labels;
+  }
+
+  /**
+   * Pick the field whose text stands in for a block in its header
+   *
+   * The schema can name one with "summaryField"; otherwise the first string or
+   * text field is used, which is the title in nearly every block.
+   *
+   * @param array $block_def Block definition
+   * @return string Field name, or '' when the block has no text field
+   */
+  private function get_block_summary_field($block_def) {
+    if (!empty($block_def['summaryField']) && is_string($block_def['summaryField'])) {
+      return $block_def['summaryField'];
+    }
+
+    if (empty($block_def['fields']) || !is_array($block_def['fields'])) {
+      return '';
+    }
+
+    foreach ($block_def['fields'] as $block_field) {
+      $type = isset($block_field['type']) ? $block_field['type'] : 'string';
+      if (($type === 'string' || $type === 'text') && !empty($block_field['name'])) {
+        return $block_field['name'];
+      }
+    }
+
+    return '';
+  }
+
+  /**
+   * Print one empty block item, for the "Add section" button
+   *
+   * The admin script used to build this markup itself, in parallel with
+   * render_block_item(). The two drifted: taxonomy, post_type and data_object
+   * fields rendered differently in a section added on the page than in one that
+   * came with it. Rendering both here means there is only one implementation to
+   * keep right.
+   *
+   * @param array|null $schema Parsed schema holding the block field
+   * @param string $field_name Name of the block field
+   * @param string $block_type Which block type to add
+   * @param int $index Position of the new block in the list
+   * @param array|null $context Rendering context
+   * @return bool Whether anything was printed
+   */
+  public function render_new_block_item($schema, $field_name, $block_type, $index, $context = null) {
+    if (!is_array($schema) || empty($schema['fields']) || !is_array($schema['fields'])) {
+      return false;
+    }
+
+    $fields = $this->normalize_field_shorthand($schema['fields']);
+
+    $field = null;
+    foreach ($fields as $candidate) {
+      if (isset($candidate['name']) && $candidate['name'] === $field_name) {
+        $field = $candidate;
+        break;
+      }
+    }
+
+    if (!$field || !isset($field['type']) || $field['type'] !== 'block') {
+      return false;
+    }
+
+    $blocks = isset($field['blocks']) ? $field['blocks'] : [];
+    $block_key = isset($field['blockKey']) ? $field['blockKey'] : 'type';
+
+    // render_block_item() returns without printing when the type is unknown
+    $this->render_block_item(
+      $field,
+      $blocks,
+      [$block_key => $block_type],
+      $index,
+      $block_key,
+      $context
+    );
+
+    return true;
+  }
+
   private function render_block_item($field, $blocks, $block_data, $index, $block_key, $context = null) {
     $block_type = isset($block_data[$block_key]) ? $block_data[$block_key] : '';
     $block_def = null;
@@ -2135,9 +2650,31 @@ class YAML_Custom_Fields {
       return;
     }
 
-    echo '<div class="yaml-cf-block-item" data-block-type="' . esc_attr($block_type) . '">';
+    // Which field's text stands in for the block in its header, so that a page
+    // of twenty sections does not read "Feature Block" twenty times
+    $summary_field = $this->get_block_summary_field($block_def);
+    $summary = '';
+    if ($summary_field !== '' && isset($block_data[$summary_field]) && is_string($block_data[$summary_field])) {
+      $summary = wp_trim_words($block_data[$summary_field], 12);
+    }
+
+    $fields_id = 'ycf_block_' . sanitize_html_class($field['name'] . '_' . $index) . $id_suffix;
+
+    echo '<div class="yaml-cf-block-item" data-block-type="' . esc_attr($block_type) . '"';
+    if ($summary_field !== '') {
+      echo ' data-summary-field="' . esc_attr($summary_field) . '"';
+    }
+    echo '>';
     echo '<div class="yaml-cf-block-header">';
+    echo '<button type="button" class="yaml-cf-block-toggle" aria-expanded="true" aria-controls="' . esc_attr($fields_id) . '">';
+    echo '<span class="yaml-cf-block-caret" aria-hidden="true"></span>';
+    echo '<span class="screen-reader-text">';
+    /* translators: %s: block type name */
+    echo esc_html(sprintf(__('Hide or show %s', 'yaml-custom-fields'), $block_def['label']));
+    echo '</span>';
+    echo '</button>';
     echo '<strong>' . esc_html($block_def['label']) . '</strong>';
+    echo '<span class="yaml-cf-block-summary">' . esc_html($summary) . '</span>';
     if (!$readonly) {
       echo '<span class="yaml-cf-block-actions">';
       echo '<button type="button" class="button button-small yaml-cf-move-up" title="' . esc_attr__('Move up', 'yaml-custom-fields') . '"><span class="dashicons dashicons-arrow-up-alt"></span></button>';
@@ -2159,7 +2696,7 @@ class YAML_Custom_Fields {
           echo ' />';
 
     if (isset($block_def['fields']) && is_array($block_def['fields'])) {
-      echo '<div class="yaml-cf-block-fields">';
+      echo '<div class="yaml-cf-block-fields" id="' . esc_attr($fields_id) . '">';
 
       foreach ($block_def['fields'] as $block_field) {
         $block_field_id = 'ycf_' . $field['name'] . '_' . $index . '_' . $block_field['name'] . $id_suffix;
@@ -2324,36 +2861,54 @@ class YAML_Custom_Fields {
           $taxonomy = isset($block_field_options['taxonomy']) ? $block_field_options['taxonomy'] : 'category';
           $multiple = isset($block_field['multiple']) && $block_field['multiple'];
 
-          // Get terms for the specified taxonomy
-          $terms = get_terms([
-            'taxonomy' => $taxonomy,
-            'hide_empty' => false,
-          ]);
+          // A big taxonomy gets a search box. It matters more inside a block:
+          // the options would otherwise be repeated for every block on the page.
+          $term_count = (int) wp_count_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
 
-          if ($multiple) {
-            $block_field_value = is_array($block_field_value) ? $block_field_value : ($block_field_value ? [$block_field_value] : []);
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . '][]" id="' . esc_attr($block_field_id) . '" multiple class="regular-text yaml-cf-multi-select"' . disabled($readonly, true, false) . '>';
+          if ($term_count > self::get_picker_threshold('taxonomy', $taxonomy)) {
+            $selected_values = is_array($block_field_value) ? $block_field_value : ($block_field_value !== '' ? [$block_field_value] : []);
+            $this->render_picker([
+              'field_name' => $field['name'] . '][' . $index . '][' . $block_field['name'],
+              'field_id' => $block_field_id,
+              'source' => 'taxonomy',
+              'key' => $taxonomy,
+              'multiple' => $multiple,
+              'selected' => $this->get_selected_term_labels($selected_values),
+              'readonly' => $readonly,
+              'total' => $term_count,
+            ]);
           } else {
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . disabled($readonly, true, false) . '>';
-            echo '<option value="">' . esc_html(sprintf(
-              /* translators: %s: field label */
-              __('-- Select %s --', 'yaml-custom-fields'),
-              $block_field['label']
-            )) . '</option>';
-          }
+            // Get terms for the specified taxonomy
+            $terms = get_terms([
+              'taxonomy' => $taxonomy,
+              'hide_empty' => false,
+            ]);
 
-          if (!is_wp_error($terms) && !empty($terms)) {
-            foreach ($terms as $term) {
-              if ($multiple) {
-                $selected = in_array($term->term_id, $block_field_value) ? 'selected' : '';
-              } else {
-                $selected = ($block_field_value == $term->term_id) ? 'selected' : '';
-              }
-              echo '<option value="' . esc_attr($term->term_id) . '" ' . esc_attr($selected) . '>' . esc_html($term->name) . '</option>';
+            if ($multiple) {
+              $block_field_value = is_array($block_field_value) ? $block_field_value : ($block_field_value ? [$block_field_value] : []);
+              echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . '][]" id="' . esc_attr($block_field_id) . '" multiple class="regular-text yaml-cf-multi-select"' . disabled($readonly, true, false) . '>';
+            } else {
+              echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . disabled($readonly, true, false) . '>';
+              echo '<option value="">' . esc_html(sprintf(
+                /* translators: %s: field label */
+                __('-- Select %s --', 'yaml-custom-fields'),
+                $block_field['label']
+              )) . '</option>';
             }
-          }
 
-          echo '</select>';
+            if (!is_wp_error($terms) && !empty($terms)) {
+              foreach ($terms as $term) {
+                if ($multiple) {
+                  $selected = in_array($term->term_id, $block_field_value) ? 'selected' : '';
+                } else {
+                  $selected = ($block_field_value == $term->term_id) ? 'selected' : '';
+                }
+                echo '<option value="' . esc_attr($term->term_id) . '" ' . esc_attr($selected) . '>' . esc_html($term->name) . '</option>';
+              }
+            }
+
+            echo '</select>';
+          }
         } elseif ($block_field_type === 'post_type') {
           // Get all public post types
           $post_types = get_post_types(['public' => true], 'objects');
@@ -2389,28 +2944,51 @@ class YAML_Custom_Fields {
               $label_field = $parsed_schema['fields'][0]['name'];
             }
 
-            echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . disabled($readonly, true, false) . '>';
-            echo '<option value="">' . esc_html(sprintf(
-              /* translators: %s: field label */
-              __('-- Select %s --', 'yaml-custom-fields'),
-              $type_name
-            )) . '</option>';
+            // A big collection gets a search box rather than an option per entry
+            // repeated in every block on the page.
+            if (count($data_object_entries) > self::get_picker_threshold('data_object', $object_type)) {
+              $selected_values = is_array($block_field_value) ? $block_field_value : ($block_field_value !== '' ? [$block_field_value] : []);
+              $this->render_picker([
+                'field_name' => $field['name'] . '][' . $index . '][' . $block_field['name'],
+                'field_id' => $block_field_id,
+                'source' => 'data_object',
+                'key' => $object_type,
+                'multiple' => !empty($block_field['multiple']),
+                'selected' => $this->get_selected_data_object_labels($selected_values, $object_type),
+                'readonly' => $readonly,
+                'total' => count($data_object_entries),
+              ]);
+            } else {
+              echo '<select name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" class="regular-text"' . disabled($readonly, true, false) . '>';
+              echo '<option value="">' . esc_html(sprintf(
+                /* translators: %s: field label */
+                __('-- Select %s --', 'yaml-custom-fields'),
+                $type_name
+              )) . '</option>';
 
-            if (!empty($data_object_entries) && is_array($data_object_entries)) {
-              foreach ($data_object_entries as $entry_id => $entry_data) {
-                $selected = ($block_field_value === $entry_id) ? 'selected' : '';
-                $label = $entry_id;
-                if ($label_field && isset($entry_data[$label_field])) {
-                  $label = $entry_data[$label_field];
+              if (!empty($data_object_entries) && is_array($data_object_entries)) {
+                foreach ($data_object_entries as $entry_id => $entry_data) {
+                  $selected = ($block_field_value === $entry_id) ? 'selected' : '';
+                  $label = $entry_id;
+                  if ($label_field && isset($entry_data[$label_field])) {
+                    $label = $entry_data[$label_field];
+                  }
+                  echo '<option value="' . esc_attr($entry_id) . '" ' . esc_attr($selected) . '>' . esc_html($label) . '</option>';
                 }
-                echo '<option value="' . esc_attr($entry_id) . '" ' . esc_attr($selected) . '>' . esc_html($label) . '</option>';
               }
-            }
 
-            echo '</select>';
+              echo '</select>';
+            }
           } else {
             echo '<p class="description yaml-cf-status-bad">' . esc_html__('This field needs a list to choose from. Add object_type to the schema.', 'yaml-custom-fields') . '</p>';
           }
+        } elseif ($block_field_type === 'image' && !empty($block_field['list'])) {
+          // A gallery inside a block
+          $this->render_image_list(
+            $field['name'] . '][' . $index . '][' . $block_field['name'],
+            $block_field_value,
+            $readonly
+          );
         } elseif ($block_field_type === 'image') {
           echo '<input type="hidden" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="' . esc_attr($block_field_value) . '"' . disabled($readonly, true, false) . ' />';
           if (!$readonly) {
@@ -2501,16 +3079,16 @@ class YAML_Custom_Fields {
 
         // Render snippet below the input field (administrators only; writers do not edit theme files)
         if (current_user_can('manage_options')) {
-        echo '<span class="yaml-cf-snippet-wrapper">';
-        echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($block_snippet) . '" data-popover="' . esc_attr($block_popover_id) . '">';
-        echo '<span class="dashicons dashicons-editor-code"></span>';
-        echo '<span class="snippet-text">' . esc_html__('Copy code', 'yaml-custom-fields') . '</span>';
-        echo '</button>';
-        echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($block_popover_id) . '" role="tooltip">';
-        echo '<code>' . esc_html($block_snippet) . '</code>';
-        echo '<span class="snippet-hint">' . esc_html__('Click to copy', 'yaml-custom-fields') . '</span>';
-        echo '</span>';
-        echo '</span>';
+          echo '<span class="yaml-cf-snippet-wrapper">';
+          echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($block_snippet) . '" data-popover="' . esc_attr($block_popover_id) . '">';
+          echo '<span class="dashicons dashicons-editor-code"></span>';
+          echo '<span class="snippet-text">' . esc_html__('Copy code', 'yaml-custom-fields') . '</span>';
+          echo '</button>';
+          echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($block_popover_id) . '" role="tooltip">';
+          echo '<code>' . esc_html($block_snippet) . '</code>';
+          echo '<span class="snippet-hint">' . esc_html__('Click to copy', 'yaml-custom-fields') . '</span>';
+          echo '</span>';
+          echo '</span>';
         }
 
         echo '</div>';
@@ -2627,7 +3205,6 @@ class YAML_Custom_Fields {
     $exporter = \YamlCF\Core\Plugin::getInstance()->get('data_object_exporter');
     $exporter->download($exporter->export());
   }
-
 }
 
 function yaml_cf_init() {
@@ -2671,6 +3248,34 @@ add_action('plugins_loaded', 'yaml_cf_init_new_architecture', 11);
  *   }
  */
 function yaml_cf_get_field($field_name, $post_id = null, $context_data = null) {
+  $value = yaml_cf_get_field_unfiltered($field_name, $post_id, $context_data);
+
+  /**
+   * Filter a field's value on the way out to the theme.
+   *
+   * Runs for every way a value can be found: post data, template global data,
+   * site details and block context alike.
+   *
+   * @param mixed $value The value, or null when the field has none.
+   * @param string $field_name The field's name.
+   * @param int|string|null $post_id Post ID, 'partial:<file>', or null for the current post.
+   * @param array|null $context_data Block data the value was read from, if any.
+   */
+  return apply_filters('yaml_cf_field_value', $value, $field_name, $post_id, $context_data);
+}
+
+/**
+ * Find a field's value, before the yaml_cf_field_value filter runs
+ *
+ * Kept separate so that every route to a value passes through one filter, and
+ * so that internal callers can opt out of filtering.
+ *
+ * @param string $field_name The name of the field
+ * @param int|string|null $post_id Post ID, 'partial:<file>', or null for the current post
+ * @param array|null $context_data Block data to read from instead of the post
+ * @return mixed The value, or null
+ */
+function yaml_cf_get_field_unfiltered($field_name, $post_id = null, $context_data = null) {
   $value = null;
   $schema = null;
   $plugin = null;
@@ -2999,7 +3604,7 @@ function yaml_cf_decode_all_code_fields($data, $schema = null) {
   foreach ($data as $key => $value) {
     if (is_array($value)) {
       $data[$key] = yaml_cf_decode_all_code_fields($value);
-    } else if (is_string($value)) {
+    } elseif (is_string($value)) {
       $data[$key] = $schema ? yaml_cf_auto_decode_if_code_field($value, $schema, (string) $key) : yaml_cf_maybe_decode_code_field($value);
     }
   }
@@ -3108,7 +3713,7 @@ if (!function_exists('ycf_has_field')) {
  * @param int|string|null $post_id Optional. Post ID or 'partial:filename' for partials. Defaults to current post.
  * @param string $size Optional. Image size (thumbnail, medium, large, full). Defaults to 'full'.
  * @param array|null $context_data Optional. Array data to search in (useful for nested blocks). Defaults to null.
- * @return array|null Array with 'id', 'url', 'alt', 'title', 'caption', 'description', 'width', 'height' keys or null if not found
+ * @return array|null Array with 'id', 'url', 'alt', 'title', 'caption', 'description', 'width', 'height' keys, an array of such arrays if the field has list: true, or null if not found
  *
  * Usage Examples:
  *
@@ -3116,6 +3721,14 @@ if (!function_exists('ycf_has_field')) {
  *   $hero = yaml_cf_get_image('hero_image', null, 'large');
  *   if ($hero) {
  *     echo '<img src="' . esc_url($hero['url']) . '" alt="' . esc_attr($hero['alt']) . '" />';
+ *   }
+ *
+ * Gallery (image field with list: true):
+ *   $gallery = yaml_cf_get_image('gallery', null, 'medium');
+ *   if ($gallery) {
+ *     foreach ($gallery as $image) {
+ *       echo '<img src="' . esc_url($image['url']) . '" alt="' . esc_attr($image['alt']) . '" />';
+ *     }
  *   }
  *
  * With Different Sizes:
@@ -3137,34 +3750,63 @@ if (!function_exists('ycf_has_field')) {
  *   $logo = yaml_cf_get_image('site_logo', 'partial:header.php', 'medium');
  */
 function yaml_cf_get_image($field_name, $post_id = null, $size = 'full', $context_data = null) {
-  $attachment_id = yaml_cf_get_field($field_name, $post_id, $context_data);
+  $attachment_ids = yaml_cf_get_field($field_name, $post_id, $context_data);
 
-  if (!$attachment_id || !is_numeric($attachment_id)) {
+  if (!$attachment_ids) {
     return null;
   }
 
-  $image_data = [
-    'id' => $attachment_id,
-    'url' => wp_get_attachment_image_url($attachment_id, $size),
-    'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
-    'title' => get_the_title($attachment_id),
-    'caption' => wp_get_attachment_caption($attachment_id),
-    'description' => get_post_field('post_content', $attachment_id),
-  ];
-
-  $metadata = wp_get_attachment_metadata($attachment_id);
-  if ($metadata && isset($metadata['width']) && isset($metadata['height'])) {
-    $image_data['width'] = $metadata['width'];
-    $image_data['height'] = $metadata['height'];
+  // Handle a gallery (image field with list: true)
+  if (is_array($attachment_ids)) {
+    $images = [];
+    foreach ($attachment_ids as $attachment_id) {
+      $image_data = yaml_cf_resolve_image_data($attachment_id, $size);
+      if ($image_data) {
+        $images[] = $image_data;
+      }
+    }
+    return !empty($images) ? $images : null;
   }
 
-  // Get specific size dimensions if not full
-  if ($size !== 'full' && isset($metadata['sizes'][$size])) {
-    $image_data['width'] = $metadata['sizes'][$size]['width'];
-    $image_data['height'] = $metadata['sizes'][$size]['height'];
-  }
+  return yaml_cf_resolve_image_data($attachment_ids, $size);
+}
 
-  return $image_data;
+if (!function_exists('yaml_cf_resolve_image_data')) {
+  /**
+   * Build the image-info array for a single attachment ID
+   *
+   * @param int|string $attachment_id Attachment ID
+   * @param string $size Image size
+   * @return array|null Image data, or null when the ID is not an attachment
+   */
+  function yaml_cf_resolve_image_data($attachment_id, $size = 'full') {
+    if (!$attachment_id || !is_numeric($attachment_id)) {
+      return null;
+    }
+
+    $image_data = [
+      'id' => $attachment_id,
+      'url' => wp_get_attachment_image_url($attachment_id, $size),
+      'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true),
+      'title' => get_the_title($attachment_id),
+      'caption' => wp_get_attachment_caption($attachment_id),
+      'description' => get_post_field('post_content', $attachment_id),
+    ];
+
+    $metadata = wp_get_attachment_metadata($attachment_id);
+    if ($metadata && isset($metadata['width']) && isset($metadata['height'])) {
+      $image_data['width'] = $metadata['width'];
+      $image_data['height'] = $metadata['height'];
+    }
+
+    // Get specific size dimensions if not full
+    if ($size !== 'full' && isset($metadata['sizes'][$size])) {
+      $image_data['width'] = $metadata['sizes'][$size]['width'];
+      $image_data['height'] = $metadata['sizes'][$size]['height'];
+    }
+
+    return $image_data;
+  }
 }
 
 if (!function_exists('ycf_get_image')) {

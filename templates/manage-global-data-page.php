@@ -42,9 +42,9 @@ if (!defined('ABSPATH')) {
       <div class="yaml-cf-fields yaml-cf-surface">
         <?php
         if (!empty($global_schema['fields'])) {
-          $plugin = YAML_Custom_Fields::get_instance();
+          $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
           $yaml_cf_context = ['type' => 'global'];
-          $plugin->render_schema_fields($global_schema['fields'], $global_data, '', $yaml_cf_context);
+          $yaml_cf_plugin->render_schema_fields($global_schema['fields'], $global_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('There are no site details yet. Create the schema first.', 'yaml-custom-fields') . '</p>';
         }

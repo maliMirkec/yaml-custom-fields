@@ -29,7 +29,7 @@ if (!function_exists('humbug_phpscoper_expose_class')) {
         }
     }
 }
-humbug_phpscoper_expose_class('ComposerAutoloaderInit97f0b70405c00922b9e29d6b2d7ebc39', 'YamlCF\Vendor\ComposerAutoloaderInit97f0b70405c00922b9e29d6b2d7ebc39');
+humbug_phpscoper_expose_class('ComposerAutoloaderInitced7609510c613799dc1c5bf72339a10', 'YamlCF\Vendor\ComposerAutoloaderInitced7609510c613799dc1c5bf72339a10');
 
 // Function aliases. For more information see:
 // https://github.com/humbug/php-scoper/blob/master/docs/further-reading.md#function-aliases

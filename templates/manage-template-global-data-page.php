@@ -33,7 +33,7 @@ if (!defined('ABSPATH')) {
           <span class="dashicons dashicons-arrow-left-alt2"></span>
           <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-template-global&template=' . urlencode($template))); ?>" class="button button-secondary yaml-cf-button-gap">
+        <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-template-global&template=' . rawurlencode($template))); ?>" class="button button-secondary yaml-cf-button-gap">
           <span class="dashicons dashicons-admin-generic"></span>
           <?php esc_html_e('Shared fields schema', 'yaml-custom-fields'); ?>
         </a>
@@ -49,11 +49,11 @@ if (!defined('ABSPATH')) {
       <div class="yaml-cf-fields yaml-cf-surface">
         <?php
         if (!empty($template_global_schema['fields'])) {
-          $plugin = YAML_Custom_Fields::get_instance();
+          $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
           // Add template-specific ID suffix to prevent browser autocomplete conflicts between templates
           $yaml_cf_template_id_suffix = '_' . sanitize_title($template);
           $yaml_cf_context = ['type' => 'template_global', 'template' => $template, 'id_suffix' => $yaml_cf_template_id_suffix];
-          $plugin->render_schema_fields($template_global_schema['fields'], $template_global_data, '', $yaml_cf_context);
+          $yaml_cf_plugin->render_schema_fields($template_global_schema['fields'], $template_global_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('There are no shared fields yet. Create the schema first.', 'yaml-custom-fields') . '</p>';
         }

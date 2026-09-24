@@ -42,7 +42,7 @@ $yaml_cf_schema_yaml = $schema_yaml;
           <?php esc_html_e('Back to Collections', 'yaml-custom-fields'); ?>
         </a>
         <?php if ($yaml_cf_is_editing) : ?>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
             <span class="dashicons dashicons-edit"></span>
             <?php esc_html_e('Edit items', 'yaml-custom-fields'); ?>
           </a>

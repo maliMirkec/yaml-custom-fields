@@ -15,19 +15,27 @@ if (!defined('ABSPATH')) {
 class FieldRenderer {
   private $renderers = [];
 
+  /**
+   * Field types this factory can actually render end to end.
+   *
+   * Everything outside this list either has no renderer at all (boolean,
+   * select, number, date) or has one that still refuses to render
+   * (see BaseFieldRenderer::notImplemented()). Both cases throw rather than
+   * quietly substituting a text input, which would drop the stored value.
+   */
+  const IMPLEMENTED = ['string', 'text', 'rich-text', 'code', 'info'];
+
   public function __construct() {
-    // Register all field type renderers
-    // TODO: In Phase 14, these will be instantiated via dependency injection
+    // Registered but NOT yet usable as a whole: the post editor renders fields
+    // through YAML_Custom_Fields::render_fields_flat(). Nothing resolves the
+    // 'field_renderer' service, and render() below refuses any type that is not
+    // in self::IMPLEMENTED so a partial migration cannot silently eat data.
     $this->renderers = [
       'string' => new FieldRenderers\StringRenderer(),
       'text' => new FieldRenderers\TextRenderer(),
       'rich-text' => new FieldRenderers\RichTextRenderer(),
       'code' => new FieldRenderers\CodeRenderer(),
       'info' => new FieldRenderers\InfoRenderer(),
-      'number' => new FieldRenderers\StringRenderer(), // Uses same as string with type="number"
-      'date' => new FieldRenderers\StringRenderer(), // Uses same as string with type="date"
-      'boolean' => new FieldRenderers\StringRenderer(), // Simplified for now
-      'select' => new FieldRenderers\StringRenderer(), // Simplified for now
       'image' => new FieldRenderers\ImageRenderer(),
       'file' => new FieldRenderers\FileRenderer(),
       'taxonomy' => new FieldRenderers\TaxonomyRenderer(),
@@ -39,21 +47,49 @@ class FieldRenderer {
   }
 
   /**
+   * Whether this factory can render a field type end to end
+   *
+   * @param string $type Field type
+   * @return bool
+   */
+  public function supports($type) {
+    return in_array($type, self::IMPLEMENTED, true);
+  }
+
+  /**
    * Render a field
    *
    * @param array $field Field configuration
    * @param mixed $value Field value
    * @param array $context Rendering context
+   * @throws \LogicException When the field type has no finished renderer
    * @return void Outputs HTML
    */
   public function render($field, $value, $context = []) {
     $type = isset($field['type']) ? $field['type'] : 'string';
 
-    if (isset($this->renderers[$type])) {
-      $this->renderers[$type]->render($field, $value, $context);
-    } else {
-      // Fallback to string renderer
-      $this->renderers['string']->render($field, $value, $context);
+    if (!$this->supports($type)) {
+      // No silent fallback: a text input in place of an image or a block field
+      // submits a value that overwrites the real one.
+      if (isset($this->renderers[$type])) {
+        $this->renderers[$type]->render($field, $value, $context);
+        return;
+      }
+
+      $message = sprintf(
+        'YamlCF\Rendering\FieldRenderer has no renderer for the "%s" field type. Field rendering lives in YAML_Custom_Fields::render_fields_flat(); do not resolve the field_renderer service for this type.',
+        $type
+      );
+
+      if (defined('WP_DEBUG') && WP_DEBUG) {
+        // Escaped because an uncaught exception message is rendered to the page
+        throw new \LogicException(esc_html($message));
+      }
+
+      do_action('yaml_cf_log_error', $message);
+      return;
     }
+
+    $this->renderers[$type]->render($field, $value, $context);
   }
 }

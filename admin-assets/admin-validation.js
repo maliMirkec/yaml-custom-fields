@@ -18,9 +18,13 @@
 
     filterBtns.forEach(btn => {
       btn.addEventListener('click', function() {
-        // Update active state
-        filterBtns.forEach(b => b.classList.remove('active'));
+        // Update active state, in the class the styles use and for screen readers
+        filterBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
         this.classList.add('active');
+        this.setAttribute('aria-pressed', 'true');
 
         const filter = this.dataset.filter;
 

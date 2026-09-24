@@ -225,6 +225,11 @@ if (!defined('ABSPATH')) {
 <pre><code>- name: photo
   label: Photo
   type: image</code></pre>
+<p><code>list: true</code> turns the field into a gallery: several images picked in one go, shown as thumbnails and reordered by dragging.</p>
+<pre><code>- name: gallery
+  label: Gallery
+  type: image
+  list: true</code></pre>
 
 <h3>File: <code>file</code></h3>
 <pre><code>- name: brochure
@@ -408,6 +413,17 @@ if (!defined('ABSPATH')) {
   &lt;img src="&lt;?php echo esc_url($photo['url']); ?&gt;" alt="&lt;?php echo esc_attr($photo['alt']); ?&gt;"&gt;
 &lt;?php endif; ?&gt;</code></pre>
 <p>The size can be <code>thumbnail</code>, <code>medium</code>, <code>large</code> or <code>full</code>. The result also holds <code>width</code>, <code>height</code>, <code>title</code> and <code>caption</code>.</p>
+
+<h3>Galleries</h3>
+<p>With <code>list: true</code>, the result is a list of images in the order they were arranged, shown with <code>foreach</code>.</p>
+<pre><code>&lt;?php $gallery = ycf_get_image('gallery', null, 'medium'); ?&gt;
+&lt;?php if ($gallery) : ?&gt;
+  &lt;ul class="gallery"&gt;
+    &lt;?php foreach ($gallery as $image) : ?&gt;
+      &lt;li&gt;&lt;img src="&lt;?php echo esc_url($image['url']); ?&gt;" alt="&lt;?php echo esc_attr($image['alt']); ?&gt;"&gt;&lt;/li&gt;
+    &lt;?php endforeach; ?&gt;
+  &lt;/ul&gt;
+&lt;?php endif; ?&gt;</code></pre>
 
 <h3>Files</h3>
 <pre><code>&lt;?php $file = ycf_get_file('brochure'); ?&gt;

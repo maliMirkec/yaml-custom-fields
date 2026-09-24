@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
           <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
         <?php if (!empty($template_global_schema)) : ?>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . urlencode($template))); ?>" class="button button-secondary yaml-cf-button-gap">
+        <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . rawurlencode($template))); ?>" class="button button-secondary yaml-cf-button-gap">
           <span class="dashicons dashicons-edit"></span>
           <?php esc_html_e('Shared content', 'yaml-custom-fields'); ?>
         </a>

@@ -45,7 +45,7 @@ class AssetManager {
     if ($current_screen) {
       // Check if editing any public post type
       $post_type_object = get_post_type_object($current_screen->post_type);
-      $is_post_edit = in_array($current_screen->base, ['post', 'post-new']) &&
+      $is_post_edit = in_array($current_screen->base, ['post', 'post-new'], true) &&
                       $post_type_object && $post_type_object->public;
     }
 
@@ -58,7 +58,8 @@ class AssetManager {
     wp_enqueue_media();
 
     wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.css', [], YAML_CF_VERSION);
-    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery', 'wp-i18n'], YAML_CF_VERSION, true);
+    // jquery-ui-sortable: reordering a gallery (image field with list: true) by dragging
+    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery', 'jquery-ui-sortable', 'wp-i18n'], YAML_CF_VERSION, true);
     $this->setScriptTranslations('yaml-cf-admin');
 
     // Enqueue page initialization script (replaces inline scripts in templates)
@@ -73,8 +74,9 @@ class AssetManager {
 
     // Get current template and schema for post edit screens
     $schema_data = null;
-    $taxonomy_terms = [];
-    $data_objects = [];
+    // Which schema this screen is editing, so that adding a section can ask the
+    // server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem)
+    $schema_source = null;
     $post_id = RequestHelper::getParamInt('post', 0);
 
     if ($is_post_edit && $post_id) {
@@ -86,19 +88,14 @@ class AssetManager {
         $schemas = get_option('yaml_cf_schemas', []);
 
         if (isset($schemas[$template]) && !empty($schemas[$template])) {
+          $schema_source = ['source' => 'template', 'key' => $template];
           $schema_data = $this->schemaParser->parse($schemas[$template]);
-
-          // Collect taxonomy terms for all taxonomy fields in the schema
-          if ($schema_data && isset($schema_data['fields'])) {
-            $taxonomy_terms = $this->collectTaxonomyTerms($schema_data['fields']);
-            $data_objects = $this->collectDataObjects($schema_data['fields']);
-          }
         }
       }
     }
 
-    // Also collect taxonomy terms for YAML CF admin pages
-    if ($is_plugin_page && empty($taxonomy_terms)) {
+    // The plugin's own screens render fields too, each from a different schema
+    if ($is_plugin_page && $schema_source === null) {
       $current_page = RequestHelper::getParam('page');
 
       // Get schema based on which admin page we're on
@@ -108,6 +105,7 @@ class AssetManager {
         $global_schema_yaml = get_option('yaml_cf_global_schema', '');
         if (!empty($global_schema_yaml)) {
           $admin_schema = $this->schemaParser->parse($global_schema_yaml);
+          $schema_source = ['source' => 'global', 'key' => ''];
         }
       } elseif ($current_page === 'yaml-cf-manage-template-global-data') {
         $template = RequestHelper::getParam('template');
@@ -115,6 +113,7 @@ class AssetManager {
           $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
           if (isset($template_global_schemas[$template])) {
             $admin_schema = $this->schemaParser->parse($template_global_schemas[$template]);
+            $schema_source = ['source' => 'template_global', 'key' => $template];
           }
         }
       } elseif ($current_page === 'yaml-cf-edit-partial') {
@@ -123,13 +122,9 @@ class AssetManager {
           $schemas = get_option('yaml_cf_schemas', []);
           if (isset($schemas[$template])) {
             $admin_schema = $this->schemaParser->parse($schemas[$template]);
+            $schema_source = ['source' => 'partial', 'key' => $template];
           }
         }
-      }
-
-      if ($admin_schema && isset($admin_schema['fields'])) {
-        $taxonomy_terms = $this->collectTaxonomyTerms($admin_schema['fields']);
-        $data_objects = $this->collectDataObjects($admin_schema['fields']);
       }
     }
 
@@ -138,8 +133,7 @@ class AssetManager {
       'admin_url' => admin_url(),
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
       'schema' => $schema_data,
-      'taxonomyTerms' => $taxonomy_terms,
-      'dataObjects' => $data_objects
+      'schemaSource' => $schema_source,
     ]);
 
     // Page-specific conditional enqueuing
@@ -181,116 +175,5 @@ class AssetManager {
    */
   private function setScriptTranslations($handle) {
     wp_set_script_translations($handle, 'yaml-custom-fields', YAML_CF_PLUGIN_DIR . 'languages');
-  }
-
-  /**
-   * Recursively collect taxonomy terms for all taxonomy fields in the schema
-   *
-   * @param array $fields Schema fields array
-   * @return array Associative array of taxonomy => terms
-   */
-  private function collectTaxonomyTerms($fields) {
-    $taxonomy_terms = [];
-
-    foreach ($fields as $field) {
-      // Check if this is a taxonomy field
-      if (isset($field['type']) && $field['type'] === 'taxonomy') {
-        $taxonomy = isset($field['options']['taxonomy']) ? $field['options']['taxonomy'] : 'category';
-
-        // Fetch terms if not already fetched
-        if (!isset($taxonomy_terms[$taxonomy])) {
-          $terms = get_terms([
-            'taxonomy' => $taxonomy,
-            'hide_empty' => false,
-          ]);
-
-          if (!is_wp_error($terms) && !empty($terms)) {
-            $taxonomy_terms[$taxonomy] = array_map(function($term) {
-              return [
-                'id' => $term->term_id,
-                'name' => $term->name,
-                'slug' => $term->slug
-              ];
-            }, $terms);
-          }
-        }
-      }
-
-      // Recursively check block fields
-      if (isset($field['type']) && $field['type'] === 'block' && isset($field['blocks'])) {
-        foreach ($field['blocks'] as $block) {
-          if (isset($block['fields'])) {
-            $block_terms = $this->collectTaxonomyTerms($block['fields']);
-            $taxonomy_terms = array_merge($taxonomy_terms, $block_terms);
-          }
-        }
-      }
-
-      // Recursively check object fields
-      if (isset($field['type']) && $field['type'] === 'object' && isset($field['fields'])) {
-        $object_terms = $this->collectTaxonomyTerms($field['fields']);
-        $taxonomy_terms = array_merge($taxonomy_terms, $object_terms);
-      }
-    }
-
-    return $taxonomy_terms;
-  }
-
-  /**
-   * Recursively collect data object entries for all data_object fields in the schema
-   *
-   * @param array $fields Schema fields array
-   * @return array Associative array of object_type => formatted entries
-   */
-  private function collectDataObjects($fields) {
-    $data_objects = [];
-
-    foreach ($fields as $field) {
-      if (isset($field['type']) && $field['type'] === 'data_object') {
-        $object_type = isset($field['options']['object_type']) ? $field['options']['object_type'] : '';
-
-        if (!empty($object_type) && !isset($data_objects[$object_type])) {
-          $entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
-          $data_types = get_option('yaml_cf_data_object_types', []);
-
-          if (isset($data_types[$object_type]) && !empty($entries)) {
-            $object_schema_yaml = $data_types[$object_type]['schema'];
-            $object_schema = $this->schemaParser->parse($object_schema_yaml);
-            $label_field = '';
-
-            if (!empty($object_schema['fields'])) {
-              $label_field = $object_schema['fields'][0]['name'];
-            }
-
-            $formatted_entries = [];
-            foreach ($entries as $entry_id => $entry_data) {
-              $entry_label = isset($entry_data[$label_field]) ? $entry_data[$label_field] : $entry_id;
-              if (is_array($entry_label)) {
-                $entry_label = $entry_id;
-              }
-              $formatted_entries[] = ['id' => $entry_id, 'label' => $entry_label];
-            }
-
-            $data_objects[$object_type] = $formatted_entries;
-          }
-        }
-      }
-
-      // Recursively check block fields
-      if (isset($field['type']) && $field['type'] === 'block' && isset($field['blocks'])) {
-        foreach ($field['blocks'] as $block) {
-          if (isset($block['fields'])) {
-            $data_objects = array_merge($data_objects, $this->collectDataObjects($block['fields']));
-          }
-        }
-      }
-
-      // Recursively check object fields
-      if (isset($field['type']) && $field['type'] === 'object' && isset($field['fields'])) {
-        $data_objects = array_merge($data_objects, $this->collectDataObjects($field['fields']));
-      }
-    }
-
-    return $data_objects;
   }
 }

@@ -63,8 +63,12 @@ class PartialController extends AdminController {
     // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
 
-    // Localize schema data for JavaScript
-    $this->localizeScript(['schema' => $schema]);
+    // Localize the schema and which one it is, so that adding a section can ask
+    // the server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem)
+    $this->localizeScript([
+      'schema' => $schema,
+      'schemaSource' => ['source' => 'partial', 'key' => $template],
+    ]);
 
     // Pass page initialization data (replaces inline scripts)
     $page_data = [

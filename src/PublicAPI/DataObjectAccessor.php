@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
  * Accessor for data object field data
  */
 class DataObjectAccessor {
+  use UnimplementedAccessor;
+
   private $fieldAccessor;
   private $dataObjectRepository;
 
@@ -28,8 +30,7 @@ class DataObjectAccessor {
    * @return array|null Data object entry data
    */
   public function getDataObject($field_name, $post_id = null, $context_data = null) {
-    // TODO: Phase 14 - Implement DataObjectAccessor::getDataObject
-    return null;
+    $this->notImplemented('getDataObject');
   }
 
   /**
@@ -39,7 +40,6 @@ class DataObjectAccessor {
    * @return array All entries for the object type
    */
   public function getDataObjects($object_type) {
-    // TODO: Phase 14 - Implement DataObjectAccessor::getDataObjects
-    return [];
+    $this->notImplemented('getDataObjects');
   }
 }

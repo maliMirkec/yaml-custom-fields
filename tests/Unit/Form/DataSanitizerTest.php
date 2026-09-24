@@ -504,6 +504,48 @@ class DataSanitizerTest extends TestCase {
 	}
 
 	/**
+	 * A gallery (image field with list: true) carries the same clearing
+	 * placeholder as a file list, so emptying one saves as empty.
+	 */
+	public function testImageListDropsEmptyPlaceholders() {
+		$schema = $this->schema([
+			['name' => 'gallery', 'type' => 'image', 'list' => true],
+		]);
+
+		$result = $this->sanitizer->sanitize(['gallery' => ['', '31', '42']], $schema);
+
+		$this->assertSame(['31', '42'], $result['gallery']);
+	}
+
+	/**
+	 * Emptying a gallery leaves only the placeholder, which has to sanitize to
+	 * an empty array rather than an array holding one empty string.
+	 */
+	public function testEmptiedImageListSanitizesToAnEmptyArray() {
+		$schema = $this->schema([
+			['name' => 'gallery', 'type' => 'image', 'list' => true],
+		]);
+
+		$result = $this->sanitizer->sanitize(['gallery' => ['']], $schema);
+
+		$this->assertSame([], $result['gallery']);
+	}
+
+	/**
+	 * A single image field keeps its scalar value: only list: true turns it
+	 * into a gallery.
+	 */
+	public function testSingleImageFieldIsUntouched() {
+		$schema = $this->schema([
+			['name' => 'hero', 'type' => 'image'],
+		]);
+
+		$result = $this->sanitizer->sanitize(['hero' => '77'], $schema);
+
+		$this->assertSame('77', $result['hero']);
+	}
+
+	/**
 	 * Test list items never become code even if they carry the marker
 	 */
 	public function testListItemsAreNeverCode() {

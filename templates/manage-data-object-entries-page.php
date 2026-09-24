@@ -79,15 +79,15 @@ if ($yaml_cf_action === 'edit') {
             <span class="dashicons dashicons-arrow-left-alt2"></span>
             <?php esc_html_e('Back to Collections', 'yaml-custom-fields'); ?>
           </a>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
             <span class="dashicons dashicons-admin-generic"></span>
             <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
           </a>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=add')); ?>" class="button button-primary yaml-cf-button-gap">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . '&action=add')); ?>" class="button button-primary yaml-cf-button-gap">
             <?php esc_html_e('Add an item', 'yaml-custom-fields'); ?>
           </a>
         <?php else : ?>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button">
             <span class="dashicons dashicons-arrow-left-alt2"></span>
             <?php esc_html_e('Back to items', 'yaml-custom-fields'); ?>
           </a>
@@ -130,7 +130,7 @@ if ($yaml_cf_action === 'edit') {
                   ?>
                 </td>
                 <td>
-                  <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug) . '&action=edit&entry=' . urlencode($yaml_cf_entry_id))); ?>" class="button">
+                  <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . '&action=edit&entry=' . rawurlencode($yaml_cf_entry_id))); ?>" class="button">
                     <?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
                   </a>
                   <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php esc_attr_e('Delete this item? This cannot be undone.', 'yaml-custom-fields'); ?>');">
@@ -168,7 +168,7 @@ if ($yaml_cf_action === 'edit') {
           <button type="submit" class="button button-primary button-large">
             <?php esc_html_e('Save item', 'yaml-custom-fields'); ?>
           </button>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . urlencode($yaml_cf_type_slug))); ?>" class="button button-large">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button button-large">
             <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
           </a>
         </p>

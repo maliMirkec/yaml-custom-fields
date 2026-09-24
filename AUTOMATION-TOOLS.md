@@ -125,14 +125,16 @@ Status: ✅ GOOD with 3 warnings
 
 ### Before Every Commit
 ```bash
-# 1. Run unit tests
-php composer.phar test:unit
+# Syntax, coding standards and unit tests in one go
+composer check
+```
 
-# 2. Check for PHP syntax errors
-find src/ -name "*.php" -exec php -l {} \;
-
-# 3. Format check (if you have prettier/beautify)
-# npm run format:check
+Or the pieces separately:
+```bash
+composer lint:syntax    # php -l over src/ and templates/
+composer lint           # WordPress Coding Standards
+composer lint:diff      # only the files changed since the last commit
+composer test:unit
 ```
 
 ### Before Creating Release
@@ -185,11 +187,16 @@ bash bin/security-audit.sh
 # Code quality
 bash bin/code-quality-check.sh
 
-# WordPress Coding Standards (if installed)
-phpcs --standard=WordPress src/
+# WordPress Coding Standards
+# Uses phpcs.xml.dist, which records which parts of WPCS this plugin enforces
+# and why the rest are excluded. Do not pass --standard=WordPress by hand: it
+# bypasses that file and reports ~40,000 house-style findings.
+composer lint
+composer lint:fix       # apply the auto-fixable ones
+composer lint:report    # remaining findings grouped by sniff
 
 # PHP syntax check
-find . -name "*.php" -not -path "./vendor/*" -not -path "./build/*" -exec php -l {} \;
+composer lint:syntax
 ```
 
 ### Building
@@ -324,8 +331,8 @@ jobs:
 ## 💡 Tips for Maintaining Quality
 
 ### Before Every Commit
-1. Run unit tests: `php composer.phar test:unit`
-2. Check for PHP errors: `find src/ -name "*.php" -exec php -l {} \;`
+1. Run `composer check` (syntax, coding standards, unit tests)
+2. Run `composer lint:diff` to see standards findings only in what you changed
 3. Review changed files for security issues
 
 ### Weekly
@@ -366,7 +373,11 @@ jobs:
 | Code quality | `bash bin/code-quality-check.sh` |
 | Build plugin | `bash build-scoped.sh` |
 | Create ZIP | `bash package-for-wporg.sh` |
-| Check syntax | `find src/ -name "*.php" -exec php -l {} \;` |
+| Check syntax | `composer lint:syntax` |
+| Coding standards | `composer lint` |
+| Fix standards | `composer lint:fix` |
+| Pre-commit gate | `composer check` |
+| Pre-release gate | `composer check:release` |
 
 ---
 

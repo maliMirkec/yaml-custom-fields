@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
  * Accessor for global custom fields
  */
 class GlobalFieldAccessor {
+  use UnimplementedAccessor;
+
   private $globalDataRepository;
   private $schemaStorage;
 
@@ -26,8 +28,7 @@ class GlobalFieldAccessor {
    * @return mixed Field value
    */
   public function getField($field_name) {
-    // TODO: Phase 14 - Implement GlobalFieldAccessor::getField
-    return null;
+    $this->notImplemented('getField');
   }
 
   /**
@@ -36,8 +37,7 @@ class GlobalFieldAccessor {
    * @return array All global field values
    */
   public function getFields() {
-    // TODO: Phase 14 - Implement GlobalFieldAccessor::getFields
-    return [];
+    $this->notImplemented('getFields');
   }
 
   /**
@@ -47,7 +47,6 @@ class GlobalFieldAccessor {
    * @return bool True if field exists
    */
   public function hasField($field_name) {
-    // TODO: Phase 14 - Implement GlobalFieldAccessor::hasField
-    return false;
+    $this->notImplemented('hasField');
   }
 }

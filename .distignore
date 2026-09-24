@@ -15,6 +15,7 @@ desktop.ini
 # Development files (not needed in distribution)
 node_modules
 .phpcs.xml
+.phpcs.cache
 phpcs.xml.dist
 .eslintrc
 composer.lock

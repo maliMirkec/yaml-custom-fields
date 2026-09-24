@@ -79,6 +79,10 @@ class Plugin {
       return new \YamlCF\Schema\FieldNormalizer();
     });
 
+    $this->container->register('schema_diff', function($c) {
+      return new \YamlCF\Schema\SchemaDiff();
+    });
+
     $this->container->register('section_grouper', function($c) {
       return new \YamlCF\Schema\SectionGrouper();
     });
@@ -232,7 +236,11 @@ class Plugin {
     });
 
     $this->container->register('ajax_save_schema', function($c) {
-      return new \YamlCF\Ajax\Handlers\SaveSchema($c->get('schema_validator'));
+      return new \YamlCF\Ajax\Handlers\SaveSchema(
+        $c->get('schema_validator'),
+        $c->get('schema_parser'),
+        $c->get('schema_diff')
+      );
     });
 
     $this->container->register('ajax_get_schema', function($c) {
@@ -291,6 +299,22 @@ class Plugin {
 
     $this->container->register('ajax_import_bundle', function($c) {
       return new \YamlCF\Ajax\Handlers\ImportBundle($c->get('bundle_importer'));
+    });
+
+    $this->container->register('ajax_render_block_item', function($c) {
+      return new \YamlCF\Ajax\Handlers\RenderBlockItem($c->get('schema_parser'));
+    });
+
+    // Search behind the taxonomy and data_object pickers
+    $this->container->register('ajax_search_terms', function($c) {
+      return new \YamlCF\Ajax\Handlers\SearchTerms();
+    });
+
+    $this->container->register('ajax_search_data_objects', function($c) {
+      return new \YamlCF\Ajax\Handlers\SearchDataObjects(
+        $c->get('data_object_repository'),
+        $c->get('schema_parser')
+      );
     });
 
     // Admin Management

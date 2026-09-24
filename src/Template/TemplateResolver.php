@@ -14,6 +14,18 @@ if (!defined('ABSPATH')) {
 }
 class TemplateResolver {
   /**
+   * Whether a template file exists in the theme, keyed by file name
+   *
+   * Without this, resolving the template hit the filesystem once per call, and
+   * every yaml_cf_get_field() call resolves the template: ten fields across a
+   * fifty-post archive meant five hundred stat calls. Theme files do not appear
+   * or vanish part-way through a request, so one lookup each is enough.
+   *
+   * @var array<string, bool>
+   */
+  private $template_exists = [];
+
+  /**
    * Get template file for a post
    *
    * @param \WP_Post $post Post object
@@ -34,9 +46,8 @@ class TemplateResolver {
     // For posts and custom post types, use the single template
     // Check for specific template: single-{post_type}.php
     $specific_template = "single-{$post_type}.php";
-    $theme_dir = get_template_directory();
 
-    if (file_exists($theme_dir . '/' . $specific_template)) {
+    if ($this->themeHasTemplate($specific_template)) {
       return $specific_template;
     }
 
@@ -48,6 +59,32 @@ class TemplateResolver {
     // For custom post types without a specific template, return the expected name
     // This allows the user to create the template and schema
     return $specific_template;
+  }
+
+  /**
+   * Whether the theme has a template file, remembered for this request
+   *
+   * @param string $template Template file name
+   * @return bool
+   */
+  private function themeHasTemplate($template) {
+    if (!array_key_exists($template, $this->template_exists)) {
+      $this->template_exists[$template] = file_exists(get_template_directory() . '/' . $template);
+    }
+
+    return $this->template_exists[$template];
+  }
+
+  /**
+   * Forget which template files exist
+   *
+   * Only needed when the theme changes inside one request, which is what
+   * switching themes and the tests do.
+   *
+   * @return void
+   */
+  public function flushTemplateExistsCache() {
+    $this->template_exists = [];
   }
 
   /**

@@ -135,13 +135,13 @@ $yaml_cf_pagination = paginate_links([
       <div class="yaml-cf-card-header">
         <h2><?php esc_html_e('Posts', 'yaml-custom-fields'); ?></h2>
         <div>
-          <button type="button" class="button yaml-cf-filter-btn active" data-filter="all">
+          <button type="button" class="button yaml-cf-filter-btn active" data-filter="all" aria-pressed="true">
             <?php esc_html_e('All', 'yaml-custom-fields'); ?> (<?php echo esc_html($page_posts); ?>)
           </button>
-          <button type="button" class="button yaml-cf-filter-btn" data-filter="issues">
+          <button type="button" class="button yaml-cf-filter-btn" data-filter="issues" aria-pressed="false">
             <?php esc_html_e('Issues', 'yaml-custom-fields'); ?> (<?php echo esc_html($posts_with_issues); ?>)
           </button>
-          <button type="button" class="button yaml-cf-filter-btn" data-filter="healthy">
+          <button type="button" class="button yaml-cf-filter-btn" data-filter="healthy" aria-pressed="false">
             <?php esc_html_e('OK', 'yaml-custom-fields'); ?> (<?php echo esc_html($yaml_cf_healthy); ?>)
           </button>
         </div>

@@ -140,23 +140,38 @@ echo ""
 echo "4. Checking Code Standards..."
 echo "------------------------------"
 
-# Check if phpcs is available
-if command -v phpcs &> /dev/null; then
-    print_info "Running WordPress Coding Standards check..."
+# Prefer the project-local binary. A global phpcs is often a different major
+# version without the WordPress standard installed, which cannot run this ruleset.
+PHPCS_BIN=""
+if [ -x "vendor/bin/phpcs" ]; then
+    PHPCS_BIN="vendor/bin/phpcs"
+elif command -v phpcs &> /dev/null; then
+    PHPCS_BIN="phpcs"
+fi
 
-    # Run PHPCS if config exists
+if [ -n "$PHPCS_BIN" ]; then
     if [ -f "phpcs.xml.dist" ] || [ -f "phpcs.xml" ]; then
-        PHPCS_ERRORS=$(phpcs --report=summary 2>&1 | grep "FOUND" | awk '{print $2}')
-        if [ -z "$PHPCS_ERRORS" ] || [ "$PHPCS_ERRORS" == "0" ]; then
+        print_info "Running WordPress Coding Standards check ($PHPCS_BIN)..."
+
+        # Trust the exit status, not the report text: --report=summary prints one
+        # "FOUND x ERRORS" line per offending file, so parsing it with grep/awk
+        # yielded a multi-line string and the comparison never meant anything.
+        PHPCS_OUTPUT=$("$PHPCS_BIN" -q --report=summary 2>&1)
+        PHPCS_STATUS=$?
+
+        if [ $PHPCS_STATUS -eq 0 ]; then
             print_check "WordPress Coding Standards passed" 0
         else
-            print_warning "PHPCS found $PHPCS_ERRORS issues"
+            echo "$PHPCS_OUTPUT" | tail -n 12
+            print_check "WordPress Coding Standards failed (run: composer lint)" 1
         fi
     else
-        print_info "phpcs.xml not found, skipping PHPCS check"
+        print_check "phpcs.xml.dist is missing" 1
     fi
 else
-    print_info "phpcs not installed, skipping code standards check"
+    # A missing linter used to pass silently, which let "all checks green" mean
+    # "the check never ran".
+    print_check "phpcs is not installed (run: composer install)" 1
 fi
 
 echo ""

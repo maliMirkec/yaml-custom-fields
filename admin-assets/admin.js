@@ -17,7 +17,7 @@
       this.initMediaUploader();
       this.initMetaBoxChangeTracking();
       this.initFieldGlobalLocal();
-      this.initPostboxes();
+      this.initGallerySorting();
     },
 
     bindEvents: function () {
@@ -44,6 +44,31 @@
 
       // File List Controls
       $(document).off('click' + ns, '.yaml-cf-remove-file-list-item').on('click' + ns, '.yaml-cf-remove-file-list-item', this.removeFileListItem);
+
+      // Folding a section away, and keeping its header text up to date
+      $(document).off('click' + ns, '.yaml-cf-block-toggle').on('click' + ns, '.yaml-cf-block-toggle', this.toggleBlock);
+      $(document).off('click' + ns, '.yaml-cf-collapse-all').on('click' + ns, '.yaml-cf-collapse-all', this.toggleAllBlocks);
+      $(document).off('input' + ns, '.yaml-cf-block-fields input, .yaml-cf-block-fields textarea').on('input' + ns, '.yaml-cf-block-fields input, .yaml-cf-block-fields textarea', this.updateBlockSummary);
+
+      // Picker (taxonomy or data_object field with too many choices to list)
+      $(document).off('input' + ns, '.yaml-cf-picker-search').on('input' + ns, '.yaml-cf-picker-search', this.searchPicker);
+      $(document).off('focus' + ns, '.yaml-cf-picker-search').on('focus' + ns, '.yaml-cf-picker-search', this.searchPicker);
+      $(document).off('keydown' + ns, '.yaml-cf-picker-search').on('keydown' + ns, '.yaml-cf-picker-search', this.navigatePicker);
+      $(document).off('click' + ns, '.yaml-cf-picker-result').on('click' + ns, '.yaml-cf-picker-result', this.choosePickerResult);
+      $(document).off('click' + ns, '.yaml-cf-picker-remove').on('click' + ns, '.yaml-cf-picker-remove', this.removePickerChip);
+
+      // Clicking away closes any open result list
+      $(document).off('click' + ns + '-picker').on('click' + ns + '-picker', function (e) {
+        if (!$(e.target).closest('.yaml-cf-picker').length) {
+          $('.yaml-cf-picker-results').attr('hidden', true).empty();
+          $('.yaml-cf-picker-search').attr('aria-expanded', 'false');
+        }
+      });
+
+      // Gallery Controls (image field with list: true)
+      $(document).off('click' + ns, '.yaml-cf-remove-image-list-item').on('click' + ns, '.yaml-cf-remove-image-list-item', this.removeImageListItem);
+      $(document).off('click' + ns, '.yaml-cf-move-image-earlier').on('click' + ns, '.yaml-cf-move-image-earlier', this.moveImageEarlier);
+      $(document).off('click' + ns, '.yaml-cf-move-image-later').on('click' + ns, '.yaml-cf-move-image-later', this.moveImageLater);
 
       // Reset All Data
       $(document).off('click' + ns, '.yaml-cf-reset-data').on('click' + ns, '.yaml-cf-reset-data', this.resetAllData);
@@ -191,27 +216,6 @@
       });
     },
 
-    initPostboxes: function () {
-      const $metaBox = $('#yaml-cf-meta-box');
-
-      if (!$metaBox.length) {
-        return;
-      }
-
-      // Restore collapsed state from localStorage
-      const isCollapsed = localStorage.getItem('yaml_cf_metabox_collapsed') === 'true';
-      if (isCollapsed) {
-        $metaBox.addClass('closed');
-      }
-
-      // Toggle on header click
-      $metaBox.find('.hndle').on('click', function() {
-        // Save state to localStorage
-        const isClosed = $metaBox.hasClass('closed');
-        localStorage.setItem('yaml_cf_metabox_collapsed', isClosed);
-      });
-    },
-
     enableOverride: function () {
       const $button = $(this);
       const fieldName = $button.data('field');
@@ -276,8 +280,18 @@
       location.reload();
     },
 
+    /**
+     * Add a section, rendered by the server
+     *
+     * The markup comes from YAML_Custom_Fields::render_block_item(), the same
+     * code that renders the sections already on the page. Building it here in
+     * JavaScript meant maintaining every field type twice, and the two drifted:
+     * taxonomy, post_type and data_object fields used to come out wrong in a
+     * section added on the page.
+     */
     addBlock: function () {
-      const $container = $(this).closest('.yaml-cf-block-container');
+      const $button = $(this);
+      const $container = $button.closest('.yaml-cf-block-container');
       const $select = $container.find('.yaml-cf-block-type-select');
       const blockType = $select.val();
 
@@ -286,469 +300,75 @@
         return;
       }
 
-      const $blockList = $container.find('.yaml-cf-block-list');
-      const fieldName = $container.data('field-name');
-      const index = $blockList.find('.yaml-cf-block-item').length;
-
-      // Generate unique ID for this block instance
-      const uniqueId =
-        Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-      // Get block definition from schema
-      let blockDef = null;
-      if (yamlCF.schema && yamlCF.schema.fields) {
-        for (let field of yamlCF.schema.fields) {
-          if (field.name === fieldName && field.blocks) {
-            for (let block of field.blocks) {
-              if (block.name === blockType) {
-                blockDef = block;
-                break;
-              }
-            }
-            break;
-          }
-        }
-      }
-
-      if (!blockDef) {
-        alert(__('This section type no longer exists in the schema.', 'yaml-custom-fields'));
+      const source = yamlCF.schemaSource;
+      if (!source || !source.source) {
+        alert(__('The schema for this screen could not be found. Reload the page and try again.', 'yaml-custom-fields'));
         return;
       }
 
-      const blockLabel = blockDef.label || blockType;
+      const $blockList = $container.find('.yaml-cf-block-list');
+      const fieldName = $container.data('field-name');
+      const index = $blockList.children('.yaml-cf-block-item').length;
 
-      // Create new block item
-      const $blockItem = $('<div>', {
-        class: 'yaml-cf-block-item',
-        'data-block-type': blockType,
-      });
+      $button.prop('disabled', true);
 
-      const $header = $('<div>', { class: 'yaml-cf-block-header' });
-      $header.append($('<strong>').text(blockLabel));
+      $.post(yamlCF.ajax_url, {
+        action: 'yaml_cf_render_block_item',
+        nonce: yamlCF.nonce,
+        source: source.source,
+        key: source.key || '',
+        field_name: fieldName,
+        block_type: blockType,
+        index: index,
+      })
+        .done(function (response) {
+          if (!response || !response.success) {
+            alert(
+              (response && response.data) ||
+                __('The section could not be added.', 'yaml-custom-fields')
+            );
+            return;
+          }
 
-      const $actions = $('<span>', { class: 'yaml-cf-block-actions' });
-      $actions.append(
-        $('<button>', {
-          type: 'button',
-          class: 'button button-small yaml-cf-move-up',
-          title: __('Move up', 'yaml-custom-fields'),
-          html: '<span class="dashicons dashicons-arrow-up-alt"></span>',
+          const $item = $(response.data.html);
+          $blockList.append($item);
+
+          // Rich text and galleries need wiring up once they are in the page
+          YamlCF.initAddedBlock($item);
         })
-      );
-      $actions.append(
-        $('<button>', {
-          type: 'button',
-          class: 'button button-small yaml-cf-move-down',
-          title: __('Move down', 'yaml-custom-fields'),
-          html: '<span class="dashicons dashicons-arrow-down-alt"></span>',
+        .fail(function () {
+          alert(__('The section could not be added. Try again.', 'yaml-custom-fields'));
         })
-      );
-      $actions.append(
-        $('<button>', {
-          type: 'button',
-          class: 'button button-small yaml-cf-remove-block',
-          text: __('Remove', 'yaml-custom-fields'),
-        })
-      );
-      $header.append($actions);
-
-      $blockItem.append($header);
-      $blockItem.append(
-        $('<input>', {
-          type: 'hidden',
-          name: 'yaml_cf[' + fieldName + '][' + index + '][type]',
-          value: blockType,
-        })
-      );
-
-      // Add fields from block definition
-      if (blockDef.fields && blockDef.fields.length > 0) {
-        const $fieldsContainer = $('<div>', {
-          class: 'yaml-cf-block-fields',
+        .always(function () {
+          $button.prop('disabled', false);
         });
-
-        for (let blockField of blockDef.fields) {
-          const $field = $('<div>', { class: 'yaml-cf-field', 'data-type': blockField.type });
-          const blockFieldId = 'ycf_' + uniqueId + '_' + blockField.name;
-
-          $field.append(
-            $('<label>', {
-              for: blockFieldId,
-              text: blockField.label || blockField.name,
-            })
-          );
-
-          // Help text for writers (the optional "description" in the schema)
-          if (blockField.description) {
-            $field.append($('<p>', { 'class': 'yaml-cf-field-help', text: blockField.description }));
-          }
-
-          // Render field based on type
-          if (blockField.type === 'boolean') {
-            $field.append(
-              $('<input>', {
-                type: 'checkbox',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                value: '1',
-              })
-            );
-          } else if (blockField.type === 'rich-text') {
-            // For rich-text, we need to use WordPress editor which requires page reload
-            $field.append(
-              $('<div>', { 'class': 'yaml-cf-richtext-notice' }).append(
-                $('<strong>').text('ℹ️ ' + __('Text editor', 'yaml-custom-fields')),
-                $('<br>'),
-                document.createTextNode(__('Save this post to see the full text editor here.', 'yaml-custom-fields'))
-              )
-            );
-            // Add hidden input to preserve the field structure
-            $field.append(
-              $('<input>', {
-                type: 'hidden',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                value: '',
-              })
-            );
-          } else if (
-            blockField.type === 'text' ||
-            blockField.type === 'textarea'
-          ) {
-            $field.append(
-              $('<textarea>', {
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                rows: 5,
-                class: 'large-text',
-              })
-            );
-          } else if (blockField.type === 'code') {
-            const options = blockField.options || {};
-            const language = options.language || 'html';
-            $field.append(
-              $('<textarea>', {
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                rows: 10,
-                class: 'large-text code',
-                'data-language': language,
-              })
-            );
-          } else if (blockField.type === 'number') {
-            const options = blockField.options || {};
-            $field.append(
-              $('<input>', {
-                type: 'number',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                class: 'small-text',
-                min: options.min || '',
-                max: options.max || '',
-              })
-            );
-          } else if (blockField.type === 'date') {
-            const options = blockField.options || {};
-            const hasTime = options.time || false;
-            $field.append(
-              $('<input>', {
-                type: hasTime ? 'datetime-local' : 'date',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-              })
-            );
-          } else if (blockField.type === 'select') {
-            const options = blockField.options || {};
-            const multiple = blockField.multiple || false;
-            // Check for values in options.values first, then fallback to root level values
-            const values = (options.values && Array.isArray(options.values)) ? options.values : (blockField.values || []);
-
-            const $select = $('<select>', {
-              name:
-                'yaml_cf[' +
-                fieldName +
-                '][' +
-                index +
-                '][' +
-                blockField.name +
-                ']' +
-                (multiple ? '[]' : ''),
-              id: blockFieldId,
-              multiple: multiple,
-            });
-
-            $select.append($('<option>', { value: '', text: __('-- Select --', 'yaml-custom-fields') }));
-
-            if (Array.isArray(values)) {
-              values.forEach(function (option) {
-                const optValue =
-                  typeof option === 'object' ? option.value || '' : option;
-                const optLabel =
-                  typeof option === 'object' ? option.label || optValue : option;
-                $select.append(
-                  $('<option>', { value: optValue, text: optLabel })
-                );
-              });
-            }
-
-            $field.append($select);
-          } else if (blockField.type === 'taxonomy') {
-            // Taxonomy field - renders as select dropdown
-            const options = blockField.options || {};
-            const taxonomy = options.taxonomy || 'category';
-            const multiple = blockField.multiple || false;
-
-            const $select = $('<select>', {
-              name:
-                'yaml_cf[' +
-                fieldName +
-                '][' +
-                index +
-                '][' +
-                blockField.name +
-                ']' +
-                (multiple ? '[]' : ''),
-              id: blockFieldId,
-              class: 'regular-text',
-              multiple: multiple,
-            });
-
-            const fieldLabel = blockField.label || blockField.name;
-            $select.append($('<option>', { value: '', text: sprintf(
-              /* translators: %s: field label */
-              __('-- Select %s --', 'yaml-custom-fields'), fieldLabel) }));
-
-            // Get taxonomy terms from pre-loaded data
-            if (typeof yamlCF !== 'undefined' && yamlCF.taxonomyTerms && yamlCF.taxonomyTerms[taxonomy]) {
-              yamlCF.taxonomyTerms[taxonomy].forEach(function (term) {
-                $select.append(
-                  $('<option>', { value: term.id, text: term.name })
-                );
-              });
-            }
-
-            $field.append($select);
-          } else if (blockField.type === 'post_type') {
-            // Post type field - renders as select dropdown
-            const $select = $('<select>', {
-              name:
-                'yaml_cf[' +
-                fieldName +
-                '][' +
-                index +
-                '][' +
-                blockField.name +
-                ']',
-              id: blockFieldId,
-              class: 'regular-text',
-            });
-
-            const fieldLabel = blockField.label || blockField.name;
-            $select.append($('<option>', { value: '', text: sprintf(
-              /* translators: %s: field label */
-              __('-- Select %s --', 'yaml-custom-fields'), fieldLabel) }));
-
-            // Get post types from pre-loaded data
-            if (typeof yamlCF !== 'undefined' && yamlCF.postTypes && Array.isArray(yamlCF.postTypes)) {
-              yamlCF.postTypes.forEach(function (postType) {
-                $select.append(
-                  $('<option>', { value: postType.name, text: postType.label })
-                );
-              });
-            }
-
-            $field.append($select);
-          } else if (blockField.type === 'data_object') {
-            // Data object field - renders as select dropdown
-            const options = blockField.options || {};
-            const objectType = options.object_type || '';
-            const multiple = blockField.multiple || false;
-
-            if (!objectType) {
-              $field.append(
-                $('<p>', {
-                  'class': 'yaml-cf-status-bad',
-                  text: __('This field needs a list to choose from. Add object_type to the schema.', 'yaml-custom-fields')
-                })
-              );
-            } else {
-              const $select = $('<select>', {
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']' +
-                  (multiple ? '[]' : ''),
-                id: blockFieldId,
-                class: 'regular-text',
-                multiple: multiple,
-              });
-
-              const fieldLabel = blockField.label || blockField.name;
-              $select.append($('<option>', { value: '', text: sprintf(
-              /* translators: %s: field label */
-              __('-- Select %s --', 'yaml-custom-fields'), fieldLabel) }));
-
-              // Get data object entries from pre-loaded data
-              if (typeof yamlCF !== 'undefined' && yamlCF.dataObjects && yamlCF.dataObjects[objectType]) {
-                yamlCF.dataObjects[objectType].forEach(function (entry) {
-                  $select.append(
-                    $('<option>', { value: entry.id, text: entry.label })
-                  );
-                });
-              }
-
-              $field.append($select);
-            }
-          } else if (blockField.type === 'image') {
-            // Image upload field
-            $field.append(
-              $('<input>', {
-                type: 'hidden',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                value: '',
-              })
-            );
-            const $mediaButtons = $('<div>', {
-              class: 'yaml-cf-media-buttons',
-            });
-            $mediaButtons.append(
-              $('<button>', {
-                type: 'button',
-                class: 'button yaml-cf-upload-image',
-                'data-target': blockFieldId,
-                text: __('Choose image', 'yaml-custom-fields'),
-              })
-            );
-            $field.append($mediaButtons);
-          } else if (blockField.type === 'file') {
-            // File upload field
-            $field.append(
-              $('<input>', {
-                type: 'hidden',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                value: '',
-              })
-            );
-            const $mediaButtons = $('<div>', {
-              class: 'yaml-cf-media-buttons',
-            });
-            $mediaButtons.append(
-              $('<button>', {
-                type: 'button',
-                class: 'button yaml-cf-upload-file',
-                'data-target': blockFieldId,
-                text: __('Choose file', 'yaml-custom-fields'),
-              })
-            );
-            $field.append($mediaButtons);
-          } else if (blockField.type === 'string') {
-            const options = blockField.options || {};
-            $field.append(
-              $('<input>', {
-                type: 'text',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                class: 'regular-text',
-                minlength: options.minlength || '',
-                maxlength: options.maxlength || '',
-              })
-            );
-          } else {
-            // Default to text input for unknown types
-            $field.append(
-              $('<input>', {
-                type: 'text',
-                name:
-                  'yaml_cf[' +
-                  fieldName +
-                  '][' +
-                  index +
-                  '][' +
-                  blockField.name +
-                  ']',
-                id: blockFieldId,
-                class: 'regular-text',
-              })
-            );
-          }
-
-          $fieldsContainer.append($field);
-        }
-
-        $blockItem.append($fieldsContainer);
-      }
-
-      $blockList.append($blockItem);
       // Keep the select value for easier adding of multiple blocks of same type
     },
+
+    /**
+     * Start up the parts of a freshly added section that need JavaScript
+     *
+     * @param {jQuery} $item The block item just put into the page
+     */
+    initAddedBlock: function ($item) {
+      // wp_editor() markup arrives inert over AJAX, so TinyMCE is started here
+      if (window.tinymce && window.wp && wp.editor && wp.editor.initialize) {
+        $item.find('.wp-editor-area').each(function () {
+          const id = this.id;
+          if (!id || window.tinymce.get(id)) {
+            return;
+          }
+          try {
+            wp.editor.initialize(id, { tinymce: true, quicktags: true });
+          } catch (e) {
+            // A plain textarea still submits its value
+          }
+        });
+      }
+
+      YamlCF.initGallerySorting();
+    },
+
 
     removeBlock: function (e) {
       e.preventDefault();
@@ -999,6 +619,395 @@
 
         mediaUploader.open();
       });
+
+      // Gallery (image field with list: true): pick many images in one go
+      $(document).on('click', '.yaml-cf-add-image-list-item', function (e) {
+        e.preventDefault();
+
+        const $button = $(this);
+        const targetName = $button.data('target-name');
+        const $list = $button.siblings('.yaml-cf-image-list-items');
+
+        const mediaUploader = wp.media({
+          title: __('Choose images', 'yaml-custom-fields'),
+          button: {
+            text: __('Add images', 'yaml-custom-fields'),
+          },
+          library: { type: 'image' },
+          multiple: 'add',
+        });
+
+        mediaUploader.on('select', function () {
+          const attachments = mediaUploader.state().get('selection').toJSON();
+
+          attachments.forEach(function (attachment) {
+            // The same image twice in one gallery is almost always a misclick
+            if ($list.find('.yaml-cf-image-list-item[data-id="' + attachment.id + '"]').length) {
+              return;
+            }
+            $list.append(YamlCF.buildImageListItem(targetName, attachment));
+          });
+
+          YamlCF.initGallerySorting();
+        });
+
+        mediaUploader.open();
+      });
+    },
+
+    /**
+     * Build one gallery tile, matching the markup of
+     * YAML_Custom_Fields::render_image_list_item()
+     */
+    buildImageListItem: function (fieldName, attachment) {
+      const $item = $('<li>', {
+        class: 'yaml-cf-image-list-item',
+        'data-id': attachment.id,
+      });
+
+      $('<input>', {
+        type: 'hidden',
+        name: 'yaml_cf[' + fieldName + '][]',
+        value: attachment.id,
+      }).appendTo($item);
+
+      // sizes.thumbnail is missing for an image smaller than the thumbnail size
+      const thumb =
+        (attachment.sizes && attachment.sizes.thumbnail && attachment.sizes.thumbnail.url) ||
+        attachment.url;
+
+      $('<img>', {
+        src: thumb,
+        alt: attachment.alt || '',
+        class: 'yaml-cf-image-list-thumb',
+      }).appendTo($item);
+
+      const $actions = $('<span>', { class: 'yaml-cf-image-list-actions' });
+      const buttons = [
+        ['yaml-cf-move-image-earlier', 'dashicons-arrow-left-alt2', __('Move earlier', 'yaml-custom-fields')],
+        ['yaml-cf-move-image-later', 'dashicons-arrow-right-alt2', __('Move later', 'yaml-custom-fields')],
+        ['yaml-cf-remove-image-list-item', 'dashicons-no-alt', __('Remove this image', 'yaml-custom-fields')],
+      ];
+
+      buttons.forEach(function (spec) {
+        $('<button>', {
+          type: 'button',
+          class: 'button button-small ' + spec[0],
+          title: spec[2],
+          html:
+            '<span class="dashicons ' + spec[1] + '" aria-hidden="true"></span>' +
+            '<span class="screen-reader-text">' + spec[2] + '</span>',
+        }).appendTo($actions);
+      });
+
+      $actions.appendTo($item);
+      return $item;
+    },
+
+    /**
+     * Let galleries be reordered by dragging
+     *
+     * The order of the hidden inputs is the order that is saved, so moving a
+     * tile is all it takes. Safe to call again after adding images.
+     */
+    initGallerySorting: function () {
+      if (!$.fn.sortable) {
+        return;
+      }
+
+      $('.yaml-cf-image-list-items.is-sortable').each(function () {
+        const $list = $(this);
+        if ($list.data('ycf-sortable')) {
+          return;
+        }
+        $list.sortable({
+          items: '> .yaml-cf-image-list-item',
+          placeholder: 'yaml-cf-image-list-placeholder-tile',
+          forcePlaceholderSize: true,
+          tolerance: 'pointer',
+        });
+        $list.data('ycf-sortable', true);
+      });
+    },
+
+    toggleBlock: function (e) {
+      e.preventDefault();
+
+      const $toggle = $(this);
+      const $item = $toggle.closest('.yaml-cf-block-item');
+      const collapsed = !$item.hasClass('is-collapsed');
+
+      $item.toggleClass('is-collapsed', collapsed);
+      $toggle.attr('aria-expanded', collapsed ? 'false' : 'true');
+    },
+
+    toggleAllBlocks: function (e) {
+      e.preventDefault();
+
+      const $button = $(this);
+
+      // Only this field's own sections, not those of a block nested inside one
+      const $items = $button
+        .closest('.yaml-cf-field')
+        .children('.yaml-cf-block-container')
+        .first()
+        .children('.yaml-cf-block-list')
+        .children('.yaml-cf-block-item');
+
+      const collapse = $button.attr('aria-pressed') !== 'true';
+
+      $items.toggleClass('is-collapsed', collapse);
+      $items
+        .children('.yaml-cf-block-header')
+        .children('.yaml-cf-block-toggle')
+        .attr('aria-expanded', collapse ? 'false' : 'true');
+
+      $button
+        .attr('aria-pressed', collapse ? 'true' : 'false')
+        .text(collapse ? __('Expand all', 'yaml-custom-fields') : __('Collapse all', 'yaml-custom-fields'));
+    },
+
+    /**
+     * Keep a section's header text matching the field it stands for
+     */
+    updateBlockSummary: function () {
+      const $input = $(this);
+      const $item = $input.closest('.yaml-cf-block-item');
+      const summaryField = $item.data('summary-field');
+
+      if (!summaryField) {
+        return;
+      }
+
+      // The field name ends in [<summaryField>] for both top-level and nested blocks
+      const name = $input.attr('name') || '';
+      if (!name.endsWith('[' + summaryField + ']')) {
+        return;
+      }
+
+      const text = String($input.val() || '');
+      const words = text.trim().split(/\s+/).slice(0, 12).join(' ');
+      $item
+        .children('.yaml-cf-block-header')
+        .find('.yaml-cf-block-summary')
+        .text(words === '' ? '' : words + (text.trim().split(/\s+/).length > 12 ? '…' : ''));
+    },
+
+    /**
+     * Search a picker's choices
+     *
+     * The requests are debounced per field and the stale ones are dropped, so
+     * typing quickly cannot leave an earlier reply on screen.
+     */
+    searchPicker: function () {
+      const $search = $(this);
+      const $picker = $search.closest('.yaml-cf-picker');
+      const $results = $picker.find('.yaml-cf-picker-results');
+      const term = $search.val();
+
+      clearTimeout($search.data('ycf-timer'));
+
+      const timer = setTimeout(function () {
+        const request = ($search.data('ycf-request') || 0) + 1;
+        $search.data('ycf-request', request);
+
+        $.post(yamlCF.ajax_url, {
+          action:
+            $picker.data('source') === 'taxonomy'
+              ? 'yaml_cf_search_terms'
+              : 'yaml_cf_search_data_objects',
+          nonce: yamlCF.nonce,
+          taxonomy: $picker.data('key'),
+          object_type: $picker.data('key'),
+          search: term,
+        })
+          .done(function (response) {
+            // A slower earlier request must not overwrite a later reply
+            if ($search.data('ycf-request') !== request) {
+              return;
+            }
+            YamlCF.renderPickerResults($picker, $results, $search, response);
+          })
+          .fail(function () {
+            $results
+              .empty()
+              .append(
+                $('<li>', {
+                  class: 'yaml-cf-picker-empty',
+                  text: __('The search could not be finished. Try again.', 'yaml-custom-fields'),
+                })
+              )
+              .removeAttr('hidden');
+            $search.attr('aria-expanded', 'true');
+          });
+      }, 200);
+
+      $search.data('ycf-timer', timer);
+    },
+
+    renderPickerResults: function ($picker, $results, $search, response) {
+      $results.empty();
+
+      if (!response || !response.success || !response.data.results.length) {
+        $results.append(
+          $('<li>', {
+            class: 'yaml-cf-picker-empty',
+            text: __('Nothing matched.', 'yaml-custom-fields'),
+          })
+        );
+        $results.removeAttr('hidden');
+        $search.attr('aria-expanded', 'true');
+        return;
+      }
+
+      const chosen = {};
+      $picker.find('.yaml-cf-picker-chip').each(function () {
+        chosen[String($(this).data('id'))] = true;
+      });
+
+      response.data.results.forEach(function (result) {
+        const isChosen = chosen[String(result.id)];
+        $('<li>', {
+          class: 'yaml-cf-picker-result' + (isChosen ? ' is-chosen' : ''),
+          role: 'option',
+          'aria-selected': isChosen ? 'true' : 'false',
+          'data-id': result.id,
+          'data-label': result.label,
+          text: result.label,
+        }).appendTo($results);
+      });
+
+      if (response.data.truncated) {
+        $results.append(
+          $('<li>', {
+            class: 'yaml-cf-picker-empty',
+            text: __('More matches exist. Keep typing to narrow them down.', 'yaml-custom-fields'),
+          })
+        );
+      }
+
+      $results.removeAttr('hidden');
+      $search.attr('aria-expanded', 'true');
+    },
+
+    /**
+     * Move through the result list with the keyboard
+     */
+    navigatePicker: function (e) {
+      const $search = $(this);
+      const $picker = $search.closest('.yaml-cf-picker');
+      const $results = $picker.find('.yaml-cf-picker-results');
+      const $options = $results.find('.yaml-cf-picker-result');
+
+      if (e.key === 'Escape') {
+        $results.attr('hidden', true).empty();
+        $search.attr('aria-expanded', 'false');
+        return;
+      }
+
+      if (!$options.length) {
+        return;
+      }
+
+      const $current = $options.filter('.is-active');
+      let index = $options.index($current);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        index = index + 1 >= $options.length ? 0 : index + 1;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        index = index <= 0 ? $options.length - 1 : index - 1;
+      } else if (e.key === 'Enter') {
+        if ($current.length) {
+          e.preventDefault();
+          $current.trigger('click');
+        }
+        return;
+      } else {
+        return;
+      }
+
+      $options.removeClass('is-active');
+      $options.eq(index).addClass('is-active');
+    },
+
+    choosePickerResult: function (e) {
+      e.preventDefault();
+
+      const $result = $(this);
+      const $picker = $result.closest('.yaml-cf-picker');
+      const $selected = $picker.find('.yaml-cf-picker-selected');
+      const $search = $picker.find('.yaml-cf-picker-search');
+      const multiple = String($picker.data('multiple')) === '1';
+      const fieldName = $picker.data('field-name');
+      const id = String($result.data('id'));
+      const label = String($result.data('label'));
+
+      if ($selected.find('.yaml-cf-picker-chip[data-id="' + id + '"]').length) {
+        return;
+      }
+
+      // One value only: the new choice replaces the old one
+      if (!multiple) {
+        $selected.empty();
+        $picker.children('.yaml-cf-picker-value').remove();
+      }
+
+      const name = multiple
+        ? 'yaml_cf[' + fieldName + '][]'
+        : 'yaml_cf[' + fieldName + ']';
+
+      const $chip = $('<li>', {
+        class: 'yaml-cf-picker-chip',
+        'data-id': id,
+      });
+      $('<input>', {
+        type: 'hidden',
+        class: 'yaml-cf-picker-value',
+        name: name,
+        value: id,
+      }).appendTo($chip);
+      $('<span>', { class: 'yaml-cf-picker-chip-label', text: label }).appendTo($chip);
+      $('<button>', {
+        type: 'button',
+        class: 'yaml-cf-picker-remove',
+        html:
+          '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>' +
+          '<span class="screen-reader-text">' +
+          __('Remove', 'yaml-custom-fields') +
+          ' ' +
+          label +
+          '</span>',
+      }).appendTo($chip);
+
+      $selected.append($chip);
+
+      $search.val('').attr('aria-expanded', 'false');
+      $picker.find('.yaml-cf-picker-results').attr('hidden', true).empty();
+    },
+
+    removePickerChip: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const $chip = $(this).closest('.yaml-cf-picker-chip');
+      const $picker = $chip.closest('.yaml-cf-picker');
+      const multiple = String($picker.data('multiple')) === '1';
+      const fieldName = $picker.data('field-name');
+
+      $chip.remove();
+
+      // A single-value picker still has to post something, or the old value
+      // would survive the save.
+      if (!multiple && !$picker.find('.yaml-cf-picker-chip').length) {
+        $('<input>', {
+          type: 'hidden',
+          class: 'yaml-cf-picker-value',
+          name: 'yaml_cf[' + fieldName + ']',
+          value: '',
+        }).insertBefore($picker.find('.yaml-cf-picker-search-row'));
+      }
     },
 
     removeFileListItem: function (e) {
@@ -1006,6 +1015,37 @@
       e.stopPropagation();
 
       $(this).closest('.yaml-cf-file-list-item').remove();
+    },
+
+    removeImageListItem: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      $(this).closest('.yaml-cf-image-list-item').remove();
+    },
+
+    moveImageEarlier: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const $item = $(this).closest('.yaml-cf-image-list-item');
+      const $previous = $item.prev('.yaml-cf-image-list-item');
+      if ($previous.length) {
+        $item.insertBefore($previous);
+        $item.find('.yaml-cf-move-image-earlier').trigger('focus');
+      }
+    },
+
+    moveImageLater: function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const $item = $(this).closest('.yaml-cf-image-list-item');
+      const $next = $item.next('.yaml-cf-image-list-item');
+      if ($next.length) {
+        $item.insertAfter($next);
+        $item.find('.yaml-cf-move-image-later').trigger('focus');
+      }
     },
 
     clearMedia: function (e) {
@@ -1659,47 +1699,9 @@
     });
   };
 
-  /**
-   * Fold the custom fields box away
-   *
-   * The box is printed on edit_form_after_title rather than registered with
-   * add_meta_box(), so core's postbox script does not manage it. The open or
-   * closed state is remembered in this browser only.
-   */
-  const BOX_STATE_KEY = 'yamlCFMetaBoxClosed';
-
-  function setMetaBoxClosed($box, closed) {
-    $box.toggleClass('closed', closed);
-    $box.find('.yaml-cf-box-toggle').attr('aria-expanded', closed ? 'false' : 'true');
-  }
-
-  $(function() {
-    const $box = $('#yaml-cf-meta-box');
-    if (!$box.length) {
-      return;
-    }
-
-    try {
-      if (window.localStorage.getItem(BOX_STATE_KEY) === '1') {
-        setMetaBoxClosed($box, true);
-      }
-    } catch (e) {
-      // Private windows and blocked storage: the box just starts open
-    }
-
-    // One handler on the whole header: a click on the caret bubbles up to it,
-    // so the title and the caret behave the same and neither toggles twice.
-    $box.on('click', '.yaml-cf-box-header', function() {
-      const closed = !$box.hasClass('closed');
-      setMetaBoxClosed($box, closed);
-
-      try {
-        window.localStorage.setItem(BOX_STATE_KEY, closed ? '1' : '0');
-      } catch (e) {
-        // Not remembering the state is fine
-      }
-    });
-  });
+  // Folding the custom fields box away is core's job: it is a real meta box
+  // (add_meta_box), so postboxes.js handles the toggle and remembers the open or
+  // closed state per user instead of per browser.
 
   // Make YamlCF globally accessible
   window.YamlCF = YamlCF;

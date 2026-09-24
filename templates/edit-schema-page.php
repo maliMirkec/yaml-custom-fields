@@ -35,7 +35,7 @@ if (!defined('ABSPATH')) {
 
         // Also check if schema exists before showing Manage Data button
         if ($yaml_cf_is_partial && !empty($schema_yaml)) :
-          $yaml_cf_manage_data_url = admin_url('admin.php?page=yaml-cf-edit-partial&template=' . urlencode($template));
+          $yaml_cf_manage_data_url = admin_url('admin.php?page=yaml-cf-edit-partial&template=' . rawurlencode($template));
         ?>
         <a href="<?php echo esc_url($yaml_cf_manage_data_url); ?>" class="button button-secondary yaml-cf-button-gap">
           <span class="dashicons dashicons-edit"></span>
@@ -79,6 +79,10 @@ fields:
   - name: hero_image
     label: Hero Image
     type: image
+  - name: gallery
+    label: Gallery
+    type: image
+    list: true
   - break: true
   - name: category
     label: Category

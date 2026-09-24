@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
  * Accessor for file field data with WordPress attachment metadata
  */
 class FileAccessor {
+  use UnimplementedAccessor;
+
   private $fieldAccessor;
 
   public function __construct($fieldAccessor) {
@@ -26,7 +28,6 @@ class FileAccessor {
    * @return array|null File data with url, filename, filesize, mime_type, etc.
    */
   public function getFile($field_name, $post_id = null, $context_data = null) {
-    // TODO: Phase 14 - Implement FileAccessor::getFile
-    return null;
+    $this->notImplemented('getFile');
   }
 }

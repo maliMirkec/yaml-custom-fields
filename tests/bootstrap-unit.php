@@ -13,6 +13,12 @@ if (!defined('YAML_CF_VERSION')) {
 	define('YAML_CF_VERSION', 'test');
 }
 
+// Unfinished field renderers throw instead of logging when WP_DEBUG is on,
+// which is what a developer's environment looks like (see tests/wp-tests-config.php)
+if (!defined('WP_DEBUG')) {
+	define('WP_DEBUG', true);
+}
+
 // Load Composer autoloader (includes both PHPUnit and Symfony packages)
 // In tests, we use the unscoped Symfony libraries from vendor/
 // The scoped version in build/vendor is only used in production WordPress environment
@@ -164,6 +170,16 @@ if (!function_exists('esc_attr')) {
 	// Alias to WordPress core function name for mocking
 	function esc_attr($text) {
 		return yaml_cf_test_esc_attr($text);
+	}
+}
+
+if (!function_exists('esc_textarea')) {
+	function yaml_cf_test_esc_textarea($text) {
+		return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+	}
+	// Alias to WordPress core function name for mocking
+	function esc_textarea($text) {
+		return yaml_cf_test_esc_textarea($text);
 	}
 }
 

@@ -1,7 +1,8 @@
 <?php
 
 /**
- * ImageRenderer - TODO: Complete implementation
+ * ImageRenderer
+ * Not implemented yet: field rendering lives in YAML_Custom_Fields::render_fields_flat().
  */
 namespace YamlCF\Rendering\FieldRenderers;
 
@@ -13,8 +14,6 @@ use YamlCF\Rendering\BaseFieldRenderer;
 
 class ImageRenderer extends BaseFieldRenderer {
   public function render($field, $value, $context) {
-    // TODO: Phase 14 - Implement ImageRenderer
-    // For now, delegates to old rendering logic
-    echo '<!-- ImageRenderer: Placeholder - will be implemented in Phase 14 -->';
+    $this->notImplemented(isset($field['type']) ? $field['type'] : 'image');
   }
 }

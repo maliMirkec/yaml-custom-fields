@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
           <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
         <?php
-        $yaml_cf_edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . urlencode($template));
+        $yaml_cf_edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . rawurlencode($template));
         ?>
         <a href="<?php echo esc_url($yaml_cf_edit_schema_url); ?>" class="button button-secondary yaml-cf-button-gap">
           <span class="dashicons dashicons-admin-generic"></span>
@@ -47,9 +47,9 @@ if (!defined('ABSPATH')) {
       <div class="yaml-cf-fields yaml-cf-surface">
         <?php
         if (!empty($schema['fields'])) {
-          $plugin = YAML_Custom_Fields::get_instance();
+          $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
           $yaml_cf_context = ['type' => 'partial', 'template' => $template];
-          $plugin->render_schema_fields($schema['fields'], $template_data, '', $yaml_cf_context);
+          $yaml_cf_plugin->render_schema_fields($schema['fields'], $template_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('This schema has no fields yet. Add fields to the schema first.', 'yaml-custom-fields') . '</p>';
         }

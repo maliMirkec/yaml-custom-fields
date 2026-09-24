@@ -127,6 +127,9 @@ class HookManager {
   public function clearTemplateCache() {
     $cacheManager = $this->plugin->get('cache_manager');
     $cacheManager->clearTemplateCache();
+
+    // The new theme has a different set of template files
+    $this->plugin->get('template_resolver')->flushTemplateExistsCache();
   }
 
   /**
@@ -197,6 +200,9 @@ class HookManager {
       'yaml_cf_export_bundle' => 'ajax_export_bundle',
       'yaml_cf_inspect_bundle' => 'ajax_inspect_bundle',
       'yaml_cf_import_bundle' => 'ajax_import_bundle',
+      'yaml_cf_render_block_item' => 'ajax_render_block_item',
+      'yaml_cf_search_terms' => 'ajax_search_terms',
+      'yaml_cf_search_data_objects' => 'ajax_search_data_objects',
     ];
 
     foreach ($handlers as $action => $service) {

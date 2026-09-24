@@ -12,7 +12,9 @@
     "humbug/php-scoper": "^0.18",
     "phpunit/phpunit": "^9.0",
     "yoast/phpunit-polyfills": "^2.0",
-    "wp-phpunit/wp-phpunit": "^7.1"
+    "wp-phpunit/wp-phpunit": "^7.1",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "wp-coding-standards/wpcs": "~3.4.1"
   },
   "autoload": {
     "psr-4": {
@@ -22,9 +24,39 @@
   "scripts": {
     "test": "@php -d error_reporting=8191 vendor/bin/phpunit --testsuite unit",
     "test:unit": "@php -d error_reporting=8191 vendor/bin/phpunit --testsuite unit",
-    "test:integration": "@php -d error_reporting=8191 vendor/bin/phpunit -c phpunit-integration.xml.dist"
+    "test:integration": "@php -d error_reporting=8191 vendor/bin/phpunit -c phpunit-integration.xml.dist",
+    "lint": "@php -d error_reporting=8191 vendor/bin/phpcs -q",
+    "lint:fix": "@php -d error_reporting=8191 vendor/bin/phpcbf",
+    "lint:diff": "@php -d error_reporting=8191 vendor/bin/phpcs -q --filter=gitmodified",
+    "lint:report": "@php -d error_reporting=8191 vendor/bin/phpcs -q --report=source",
+    "lint:syntax": "find src templates -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null && echo 'Syntax OK'",
+    "check": [
+      "@lint:syntax",
+      "@lint",
+      "@test:unit"
+    ],
+    "check:release": [
+      "@lint:syntax",
+      "@lint",
+      "@test:unit",
+      "bash bin/security-audit.sh",
+      "bash bin/code-quality-check.sh",
+      "bash build-scoped.sh"
+    ]
+  },
+  "scripts-descriptions": {
+    "lint": "Check WordPress Coding Standards (phpcs.xml.dist records what is enforced)",
+    "lint:fix": "Apply the auto-fixable coding standards fixes",
+    "lint:diff": "Lint only the files changed since the last commit",
+    "lint:report": "Show remaining findings grouped by sniff, most frequent first",
+    "lint:syntax": "php -l over src/ and templates/",
+    "check": "Before every commit: syntax, coding standards, unit tests",
+    "check:release": "Before a release: check, plus the audit scripts and the scoped build"
   },
   "config": {
-    "platform-check": false
+    "platform-check": false,
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
   }
 }

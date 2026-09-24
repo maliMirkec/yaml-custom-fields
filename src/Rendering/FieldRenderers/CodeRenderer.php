@@ -18,7 +18,7 @@ class CodeRenderer extends BaseFieldRenderer {
     // Decode base64 encoded code field value for display
     $value = $this->decodeCodeField($value);
 
-    echo '<textarea name="yaml_cf[' . esc_attr($field['name']) . ']" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($value) . '</textarea>';
+    echo '<textarea name="' . esc_attr($this->getInputName($field['name'], $context)) . '" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($value) . '</textarea>';
   }
 
   /**

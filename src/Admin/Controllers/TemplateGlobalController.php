@@ -95,7 +95,7 @@ class TemplateGlobalController extends AdminController {
     $template_global_schema = $this->schemaStorage->parseSchema($template_global_schema_yaml);
 
     if (!$template_global_schema || !isset($template_global_schema['fields'])) {
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-template-global-schema&template=' . urlencode($template)));
+      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-template-global-schema&template=' . rawurlencode($template)));
       exit;
     }
 
@@ -115,8 +115,12 @@ class TemplateGlobalController extends AdminController {
     // Save results are shown as queued admin notices (see NotificationManager)
     $success_message = '';
 
-    // Localize schema data for JavaScript
-    $this->localizeScript(['schema' => $template_global_schema]);
+    // Localize the schema and which one it is, so that adding a section can ask
+    // the server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem)
+    $this->localizeScript([
+      'schema' => $template_global_schema,
+      'schemaSource' => ['source' => 'template_global', 'key' => $template],
+    ]);
 
     // Pass messages and form tracking config to JavaScript
     $page_config = [];

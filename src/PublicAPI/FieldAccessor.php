@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
  * Accessor for post-specific custom fields
  */
 class FieldAccessor {
+  use UnimplementedAccessor;
+
   private $postDataRepository;
   private $templateResolver;
   private $schemaStorage;
@@ -30,8 +32,7 @@ class FieldAccessor {
    * @return mixed Field value
    */
   public function getField($field_name, $post_id = null, $context_data = null) {
-    // TODO: Phase 14 - Implement FieldAccessor::getField
-    return null;
+    $this->notImplemented('getField');
   }
 
   /**
@@ -41,8 +42,7 @@ class FieldAccessor {
    * @return array All field values
    */
   public function getFields($post_id = null) {
-    // TODO: Phase 14 - Implement FieldAccessor::getFields
-    return [];
+    $this->notImplemented('getFields');
   }
 
   /**
@@ -53,7 +53,6 @@ class FieldAccessor {
    * @return bool True if field exists
    */
   public function hasField($field_name, $post_id = null) {
-    // TODO: Phase 14 - Implement FieldAccessor::hasField
-    return false;
+    $this->notImplemented('hasField');
   }
 }

@@ -5,6 +5,14 @@
 	<!-- Check all PHP files in directory tree -->
 	<file>.</file>
 
+	<!-- Only PHP files; cache and parallelise (113 files in scope) -->
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="cache" value=".phpcs.cache"/>
+	<arg name="parallel" value="8"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+
 	<!-- Exclude build files, vendor, and test files -->
 	<exclude-pattern>/build/*</exclude-pattern>
 	<exclude-pattern>/vendor/*</exclude-pattern>
@@ -12,10 +20,255 @@
 	<exclude-pattern>/.git/*</exclude-pattern>
 	<exclude-pattern>/tests/*</exclude-pattern>
 
-	<!-- Use WordPress Coding Standards -->
+	<!-- Build tooling and developer-only examples are never shipped (see .distignore) -->
+	<exclude-pattern>/scoper.inc.php</exclude-pattern>
+	<exclude-pattern>/examples/*</exclude-pattern>
+
+	<!--
+		Use WordPress Coding Standards.
+
+		This plugin enforces the parts of WPCS that affect correctness and review outcomes:
+		security, escaping, input validation, database access, i18n, WordPress API usage,
+		global prefixing and hook naming. It does NOT enforce the WordPress *formatting* and
+		*documentation* conventions. The code is namespaced PSR-4 with a 2-space, camelCase
+		house style, and converting ~16,800 lines to tabs, snake_case and WP paren spacing
+		would rewrite every file without changing behaviour. Each exception is listed below
+		with its reason, so this file is the single record of what is and is not enforced.
+		Per .claude-rules.md rule 1, exceptions live here and never as phpcs:ignore comments.
+	-->
 	<rule ref="WordPress">
-		<!-- Allow short array syntax -->
+		<!-- Allow short array syntax.
+		     Both names are listed: WPCS 3.x moved this check from Generic to Universal
+		     (PHPCSExtra), and PHPCS silently ignores an exclude for a sniff that is not in
+		     the standard, so keeping only the old name would leave a dead exclusion and
+		     flag every [] in the plugin. -->
 		<exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+
+		<!-- ===== Indentation: 2 spaces, not tabs =====
+		     112 of the 113 files in scope are space-indented. Rather than switching
+		     indentation checks off entirely, the tabs-only rule is swapped for its inverse
+		     (DisallowTabIndent, below) and the indent width is re-pointed to 2. -->
+		<exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+
+		<!-- ===== Paren and operator spacing =====
+		     The house style is foo($bar) and if (!$x), not foo( $bar ) / if ( ! $x ):
+		     ~3,600 call sites and every control structure. phpcbf can rewrite them, but
+		     inside templates/ that changes whitespace emitted through esc_textarea() and
+		     <pre><code> blocks, i.e. it changes rendered output rather than formatting. -->
+		<exclude name="PEAR.Functions.FunctionCallSignature"/>
+		<exclude name="Squiz.Functions.FunctionDeclarationArgumentSpacing"/>
+		<exclude name="Squiz.Functions.MultiLineFunctionDeclaration"/>
+		<exclude name="WordPress.WhiteSpace.ControlStructureSpacing"/>
+		<exclude name="WordPress.WhiteSpace.OperatorSpacing"/>
+		<exclude name="WordPress.WhiteSpace.CastStructureSpacing"/>
+		<exclude name="Generic.WhiteSpace.ArbitraryParenthesesSpacing"/>
+		<exclude name="Generic.Formatting.SpaceAfterNot"/>
+		<exclude name="Generic.Formatting.MultipleStatementAlignment"/>
+		<exclude name="Squiz.PHP.EmbeddedPhp"/>
+		<exclude name="PSR2.Namespaces.NamespaceDeclaration"/>
+		<exclude name="PSR2.ControlStructures.SwitchDeclaration.BreakIndent"/>
+
+		<!-- ===== Array formatting =====
+		     Alignment and brace spacing are house style; the arrays themselves are checked
+		     for correctness by the sniffs that stay enabled. -->
+		<exclude name="WordPress.Arrays.ArrayIndentation"/>
+		<exclude name="WordPress.Arrays.MultipleStatementAlignment"/>
+		<exclude name="WordPress.Arrays.ArrayKeySpacingRestrictions"/>
+		<exclude name="WordPress.Arrays.ArrayDeclarationSpacing"/>
+		<exclude name="NormalizedArrays.Arrays.ArrayBraceSpacing"/>
+		<exclude name="NormalizedArrays.Arrays.CommaAfterLast"/>
+
+		<!-- ===== Documentation format =====
+		     Docblocks are present throughout but follow PSR/PHPDoc conventions rather than
+		     WordPress-Docs: no @package on every file, no enforced terminal punctuation on
+		     the ~600 inline comments, no @param restating a typed signature. Whether code is
+		     adequately documented is a review concern (.claude-rules.md rule 8); these
+		     sniffs only police the house style it is written in. -->
+		<exclude name="Squiz.Commenting.FileComment"/>
+		<exclude name="Squiz.Commenting.ClassComment"/>
+		<exclude name="Squiz.Commenting.FunctionComment"/>
+		<exclude name="Squiz.Commenting.VariableComment"/>
+		<exclude name="Squiz.Commenting.InlineComment"/>
+		<exclude name="Generic.Commenting.DocComment"/>
+
+		<!-- ===== Style preferences that carry no correctness weight =====
+		     Yoda conditions (259 sites) guard against a typo class that a strict comparison
+		     already rules out; the rest are modern-PHP idioms this codebase uses on purpose. -->
+		<exclude name="WordPress.PHP.YodaConditions"/>
+		<exclude name="Universal.Operators.DisallowShortTernary"/>
+		<exclude name="Universal.Operators.DisallowStandalonePostIncrementDecrement"/>
+		<exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
+		<exclude name="Squiz.Operators.IncrementDecrementUsage.NoBrackets"/>
+		<exclude name="Squiz.Strings.DoubleQuoteUsage.NotRequired"/>
+		<exclude name="PEAR.Files.IncludingFile.UseRequire"/>
+
+		<!-- yaml-custom-fields.php deliberately holds both the YAML_Custom_Fields class and
+		     the ~40 global template functions that are the plugin's public API. -->
+		<exclude name="Universal.Files.SeparateFunctionsFromOO"/>
+	</rule>
+
+	<!-- ===== Indentation, re-pointed to the house style =====
+	     Indentation is still enforced; it is enforced as 2 spaces instead of tabs, so a
+	     contributor cannot quietly introduce tabs or a 4-space block. -->
+	<rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+
+	<rule ref="Generic.WhiteSpace.ScopeIndent">
+		<properties>
+			<property name="indent" value="2"/>
+			<property name="tabIndent" value="false"/>
+			<property name="exact" value="false"/>
+		</properties>
+		<!-- Not in templates/. Those files alternate HTML and PHP, and this sniff cannot track
+		     scope across a ?> that closes inside an HTML attribute: on one such line it asked
+		     for 88 spaces of indentation. It stays enforced on every real PHP file, where it
+		     found a genuine bug (a current_user_can() body that was not indented, so it read
+		     as unconditional). -->
+		<exclude-pattern>templates/*</exclude-pattern>
+	</rule>
+
+	<!-- ===== Naming: src/ is namespaced PSR-4 with a camelCase house style =====
+	     These stay enforced for the procedural surface (yaml-custom-fields.php,
+	     uninstall.php, templates/), which is already snake_case with hyphenated filenames,
+	     and are lifted only inside src/. -->
+
+	<!-- src/ filenames are PSR-4 class names (src/Rendering/FieldRenderers/ImageRenderer.php).
+	     Renaming them to class-image-renderer.php would break the YamlCF -> src/ autoload
+	     map that build-scoped.sh and scoper.inc.php depend on. -->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>src/*</exclude-pattern>
+	</rule>
+
+	<!-- src/ uses camelCase locals, properties and methods (199 method declarations).
+	     They are internal to the namespaced classes; renaming them is an API break across
+	     the plugin and its 290 tests with no behavioural benefit. -->
+	<rule ref="WordPress.NamingConventions.ValidVariableName">
+		<exclude-pattern>src/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.NamingConventions.ValidFunctionName">
+		<exclude-pattern>src/*</exclude-pattern>
+	</rule>
+
+	<!-- Global prefixes used by the plugin: the yaml_cf_/YAML_CF_ public API and hooks,
+	     the short ycf_ template aliases, the YAML_Custom_Fields class (which does not start
+	     with yaml_cf), and the YamlCF namespace for src/. -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="yaml_cf"/>
+				<element value="YAML_CF"/>
+				<element value="ycf"/>
+				<element value="YAML_Custom_Fields"/>
+				<element value="YamlCF"/>
+			</property>
+		</properties>
+		<!-- "ycf" is three characters, one short of the four this sniff wants. It is the
+		     documented short alias for the template API (ycf_get_field() and friends) and is
+		     part of the public surface, so it cannot be lengthened without breaking themes. -->
+		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
+	</rule>
+
+	<!-- Indentation that is not a multiple of the tab width, which in a 2-space codebase means
+	     every docblock continuation line (" * ") and every hand-aligned continuation. The
+	     indentation that matters is still enforced by ScopeIndent and DisallowTabIndent above. -->
+	<rule ref="Universal.WhiteSpace.PrecisionAlignment">
+		<severity>0</severity>
+	</rule>
+
+	<!--
+		Nonce verification, where the check is real but one call away.
+
+		The AJAX handlers all call AjaxHandler::verifyRequest() (which runs
+		check_ajax_referer()) as their first statement, before reading any input; the sniff
+		cannot follow that indirection and reports the $_POST reads instead. This is the same
+		reasoning as the RequestHelper exclusion further down.
+
+		yaml-custom-fields.php is listed for should_skip_admin_init(), a read-only guard that
+		inspects $_GET['action']/$_POST['action'] only to decide whether to bail out of its own
+		admin_init processing. It runs on every admin request, outside any form, and takes no
+		action of its own, so there is no nonce for it to verify.
+	-->
+	<rule ref="WordPress.Security.NonceVerification">
+		<exclude-pattern>src/Ajax/*</exclude-pattern>
+		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+		<exclude-pattern>src/Admin/Controllers/DataObjectController.php</exclude-pattern>
+	</rule>
+
+	<!--
+		Parameters that exist because something else dictates the signature.
+
+		src/Core/Plugin.php registers container factories as function($c) closures; a factory
+		that needs no other service still has to accept the container.
+
+		src/PublicAPI holds the accessor interfaces for the not-yet-finished template API. Their
+		parameters are the contract those methods will honour, so the signatures stay even
+		though the bodies currently only refuse (see UnimplementedAccessor).
+
+		src/Admin/MenuManager.php has customizeAdminTitle($admin_title, $title), the callback
+		for WordPress's admin_title filter, which passes both arguments whether or not a
+		callback reads them.
+	-->
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+		<exclude-pattern>src/Core/Plugin.php</exclude-pattern>
+		<exclude-pattern>src/PublicAPI/*</exclude-pattern>
+		<exclude-pattern>src/Admin/MenuManager.php</exclude-pattern>
+	</rule>
+
+	<!-- loadTemplate() uses extract() to expose its data as the plain variables every file in
+	     templates/ reads ($schema, $template_name and so on). Replacing it means rewriting all
+	     15 templates to index an array, for no behavioural gain. EXTR_SKIP means it can never
+	     overwrite an existing variable, which is the risk the sniff is warning about. -->
+	<rule ref="WordPress.PHP.DontExtract">
+		<exclude-pattern>src/Admin/Controllers/AdminController.php</exclude-pattern>
+	</rule>
+
+	<!-- Loose comparison is deliberate where a value from $_POST (always a string) is matched
+	     against an ID from the database (an int): term IDs, select option values and data
+	     object entry IDs. Making these strict would stop selected checkboxes rendering as
+	     checked. The comparisons are between a known-scalar pair, never user-controlled types. -->
+	<rule ref="Universal.Operators.StrictComparisons">
+		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.StrictInArray">
+		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+	</rule>
+
+	<!-- Code fields are stored base64-encoded behind a marker prefix so that WordPress's own
+	     sanitization cannot strip the HTML, JavaScript or CSS an editor typed in. See
+	     YAML_Custom_Fields::CODE_FIELD_MARKER and decode_code_field(). -->
+	<rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode">
+		<severity>0</severity>
+	</rule>
+	<rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode">
+		<severity>0</severity>
+	</rule>
+
+	<!-- These read local files: theme templates, to find the @ycf marker, and an already
+	     validated upload. wp_remote_get() is for URLs, and WP_Filesystem would demand
+	     filesystem credentials to read a file the theme already exposes. -->
+	<rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+		<severity>0</severity>
+	</rule>
+
+	<!-- The main plugin file has to be named after the plugin for WordPress to load it,
+	     so it cannot be renamed to class-yaml-custom-fields.php. -->
+	<rule ref="WordPress.Files.FileName.InvalidClassFileName">
+		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+	</rule>
+
+	<!-- One nested if inside an else, in the middle of the field-rendering switch. Rewriting
+	     control flow there for a style rule is more risk than the readability is worth. -->
+	<rule ref="Universal.ControlStructures.DisallowLonelyIf">
+		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+	</rule>
+
+	<!-- Text domain declared in the plugin header, required for the i18n checks to work -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="yaml-custom-fields"/>
+			</property>
+		</properties>
 	</rule>
 
 	<!-- uninstall.php uses direct SQL for bulk deletion - this is the documented exception -->
@@ -42,9 +295,22 @@
 	</rule>
 	<rule ref="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized">
 		<exclude-pattern>src/Helpers/RequestHelper.php</exclude-pattern>
+		<!-- AjaxHandler::postJson() decodes a JSON request body. Running
+		     sanitize_textarea_field() over the JSON string first would strip the HTML out of
+		     rich-text field values and corrupt the payload, so the decoded values are
+		     sanitized per field type against the schema by YamlCF\Form\DataSanitizer. -->
+		<exclude-pattern>src/Ajax/AjaxHandler.php</exclude-pattern>
 	</rule>
 
-	<!-- Minimum supported PHP version -->
-	<config name="minimum_supported_wp_version" value="5.8"/>
-	<config name="testVersion" value="7.4-"/>
+	<!-- Oldest supported WordPress version. Must match readme.txt "Requires at least".
+	     WPCS 3.x renamed this setting from minimum_supported_wp_version. -->
+	<config name="minimum_wp_version" value="5.0"/>
+
+	<!--
+		No testVersion / PHPCompatibility standard is configured on purpose. The only stable
+		PHPCompatibilityWP release pins php-compatibility ^9.0 (9.3.5, from 2019), which has no
+		knowledge of PHP 8.2+. PHP compatibility is covered by CI running the full test suite on
+		PHP 8.1, 8.3 and 8.4 (.github/workflows/tests.yml), which is a stronger check than a
+		static sniff against a stale target.
+	-->
 </ruleset>

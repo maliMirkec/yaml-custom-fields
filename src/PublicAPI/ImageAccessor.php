@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
  * Accessor for image field data with WordPress attachment metadata
  */
 class ImageAccessor {
+  use UnimplementedAccessor;
+
   private $fieldAccessor;
 
   public function __construct($fieldAccessor) {
@@ -27,7 +29,6 @@ class ImageAccessor {
    * @return array|null Image data with url, width, height, alt, etc.
    */
   public function getImage($field_name, $post_id = null, $size = 'full', $context_data = null) {
-    // TODO: Phase 14 - Implement ImageAccessor::getImage
-    return null;
+    $this->notImplemented('getImage');
   }
 }

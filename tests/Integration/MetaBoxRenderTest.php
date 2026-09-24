@@ -16,8 +16,48 @@ class MetaBoxRenderTest extends WPTestCase {
 
 	private function render($post_id) {
 		ob_start();
-		\YAML_Custom_Fields::get_instance()->render_schema_meta_box_after_title(get_post($post_id));
+		\YAML_Custom_Fields::get_instance()->render_schema_meta_box(get_post($post_id));
 		return ob_get_clean();
+	}
+
+	/**
+	 * The box is registered with add_meta_box() so that it also appears in the
+	 * block editor, which never fires edit_form_after_title.
+	 */
+	public function testBoxIsRegisteredForAPostWithASchema() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$post = get_post($this->createTestPost());
+
+		global $wp_meta_boxes;
+		$wp_meta_boxes = [];
+		\YAML_Custom_Fields::get_instance()->register_meta_box($post->post_type, $post);
+
+		$this->assertArrayHasKey('yaml-cf-meta-box', $wp_meta_boxes[$post->post_type]['normal']['high']);
+	}
+
+	public function testBoxIsNotRegisteredWhenTheTemplateHasNoSchema() {
+		update_option('yaml_cf_schemas', []);
+		$this->actingAs($this->createTestUser('administrator'));
+		$post = get_post($this->createTestPost());
+
+		global $wp_meta_boxes;
+		$wp_meta_boxes = [];
+		\YAML_Custom_Fields::get_instance()->register_meta_box($post->post_type, $post);
+
+		$this->assertSame([], $wp_meta_boxes);
+	}
+
+	/**
+	 * Core prints the .postbox wrapper and heading for a registered meta box;
+	 * printing our own too would nest one postbox inside another.
+	 */
+	public function testRenderDoesNotPrintItsOwnPostboxWrapper() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$html = $this->render($this->createTestPost());
+
+		$this->assertStringNotContainsString('class="postbox"', $html);
+		$this->assertStringNotContainsString('postbox-header', $html);
+		$this->assertStringContainsString('yaml_cf_meta_box_nonce', $html);
 	}
 
 	public function testWriterSeesHelpTextButNoDeveloperTools() {

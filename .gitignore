@@ -23,3 +23,6 @@ composer.lock
 
 # PHPUnit
 .phpunit.result.cache
+
+# PHPCS
+.phpcs.cache

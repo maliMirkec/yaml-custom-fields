@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
  * Accessor for taxonomy term field data
  */
 class TaxonomyAccessor {
+  use UnimplementedAccessor;
+
   private $fieldAccessor;
 
   public function __construct($fieldAccessor) {
@@ -26,7 +28,6 @@ class TaxonomyAccessor {
    * @return \WP_Term|array|null Term object(s) or null
    */
   public function getTerm($field_name, $post_id = null, $context_data = null) {
-    // TODO: Phase 14 - Implement TaxonomyAccessor::getTerm
-    return null;
+    $this->notImplemented('getTerm');
   }
 }

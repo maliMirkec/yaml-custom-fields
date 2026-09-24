@@ -4,7 +4,7 @@ Tags: custom fields, fields, content, yaml, schema
 Requires at least: 5.0
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 1.2.9
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,7 +40,7 @@ The fields of each page template are set in a short list, called a schema. It ta
 * Category or tag
 * Kind of content (posts, pages and more)
 * Item from a reusable list
-* Image
+* Image, or a gallery of several images
 * File, or several files
 * Group of fields
 * Sections
@@ -59,7 +59,7 @@ The fields of each page template are set in a short list, called a schema. It ta
     label: Photo
     type: image`
 
-3. Open a page that uses the template. The fields sit below the title.
+3. Open a page that uses the template. The fields sit in a "Custom fields" panel, below the content in the block editor and below the title in the classic editor.
 4. The theme shows each field with one line:
 
 `<h1><?php echo esc_html( ycf_get_field( 'headline' ) ); ?></h1>`
@@ -98,7 +98,7 @@ Yes. The theme decides where each field shows up.
 
 = Does it work with the block editor? =
 
-The fields appear in the classic editor, below the title. On a site that uses the block editor, the Classic Editor plugin brings them back.
+Yes. The fields appear in a "Custom fields" panel, below the content in the block editor and below the title in the classic editor. The Classic Editor plugin is not needed.
 
 = Which content types are supported? =
 
@@ -129,6 +129,19 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 5. The Documentation page, written in plain words.
 
 == Changelog ==
+
+= 1.3.0 =
+* **NEW: Works in the Block Editor** - The fields are now a real meta box, so they appear in the block editor as well as the classic one. The Classic Editor plugin is no longer needed
+* **NEW: Galleries** - Image fields support `list: true`: pick many images in one trip to the media library, see them as a grid of thumbnails, and reorder them by dragging or with the keyboard
+* **NEW: Search Instead of Endless Lists** - A taxonomy or collection field with more than 50 choices becomes a search box, so a page with thousands of tags or collection items no longer carries every one of them. The cut-off can be changed with the `yaml_cf_picker_threshold` filter
+* **NEW: Sections Fold Away** - Each repeating section can be collapsed, shows the text of its first field in its header instead of repeating the block name, and a "Collapse all" button folds them all at once
+* **NEW: yaml_cf_field_value Filter** - The filter the documentation has always described now actually exists, and runs for every route a value can arrive by
+* **NEW: Warning When a Field Loses Its Content** - Renaming or deleting a field in a schema now says which fields are affected, and that their content is still saved
+* **IMPROVED: Faster Field Reads** - Resolving a post's template no longer touches the filesystem on every `ycf_get_field()` call, which mattered most in archive loops
+* **IMPROVED: Added Sections Render on the Server** - "Add section" now asks the server for the markup instead of rebuilding every field type in JavaScript. A section added on the page is now identical to one that came with it, which is the class of bug behind the 1.2.3 fixes
+* **IMPROVED: Much Smaller Editor Pages** - Every taxonomy term and collection item used to be written into the page for the old JavaScript field builder. That is gone, so a post editor on a site with thousands of tags or collection items loads a fraction of the markup
+* **FIXED: Unreadable Active Filter Button** - The selected filter on the Content Check page was purple text on a purple background, and now reads white. It also reports its state to screen readers
+* **FIXED: Nested Field Names in the New Renderers** - The unfinished renderers in `src/Rendering` ignored their nesting prefix and now refuse to render rather than silently dropping a value
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"

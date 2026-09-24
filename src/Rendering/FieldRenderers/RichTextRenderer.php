@@ -13,7 +13,7 @@ class RichTextRenderer extends BaseFieldRenderer {
     $field_id = $this->getFieldId($field['name'], $context);
     $this->renderLabel($field, $context);
     wp_editor($value, $field_id, [
-      'textarea_name' => 'yaml_cf[' . $field['name'] . ']',
+      'textarea_name' => $this->getInputName($field['name'], $context),
       'textarea_rows' => 10,
       'media_buttons' => true,
       'tinymce' => ['toolbar1' => 'formatselect,bold,italic,bullist,numlist,link,unlink'],

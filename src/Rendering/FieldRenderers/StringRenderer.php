@@ -17,14 +17,13 @@ use YamlCF\Rendering\BaseFieldRenderer;
 class StringRenderer extends BaseFieldRenderer {
   public function render($field, $value, $context) {
     $field_id = $this->getFieldId($field['name'], $context);
-    $prefix = isset($context['prefix']) ? $context['prefix'] : '';
 
     $this->renderLabel($field, $context);
 
     $options = isset($field['options']) ? $field['options'] : [];
     $attrs = [
       'type' => 'text',
-      'name' => 'yaml_cf[' . $field['name'] . ']',
+      'name' => $this->getInputName($field['name'], $context),
       'id' => $field_id,
       'value' => $value,
       'class' => 'regular-text',

@@ -175,10 +175,10 @@ class DataSanitizer {
       $sanitized[sanitize_text_field($key)] = $this->sanitizeValue($item, null);
     }
 
-    // Drop the empty strings submitted by hidden inputs that keep checkbox/file lists clearable
+    // Drop the empty strings submitted by hidden inputs that keep checkbox/media lists clearable
     $is_multiple = !empty($field_def['multiple']) || ($type === 'data_object' && !empty($field_def['list']));
-    $is_file_list = $type === 'file' && !empty($field_def['list']);
-    if ((($type === 'taxonomy' || $type === 'data_object') && $is_multiple) || $is_file_list) {
+    $is_media_list = ($type === 'file' || $type === 'image') && !empty($field_def['list']);
+    if ((($type === 'taxonomy' || $type === 'data_object') && $is_multiple) || $is_media_list) {
       $sanitized = array_values(array_filter($sanitized, function($item) {
         return $item !== '';
       }));

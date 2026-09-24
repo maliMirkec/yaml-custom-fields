@@ -1,6 +1,6 @@
 # YAML Custom Fields
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
 [![WordPress](https://img.shields.io/badge/wordpress-6.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/php-8.1%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
@@ -57,8 +57,8 @@ A WordPress plugin for managing YAML frontmatter schemas in theme templates and 
 | **taxonomy** | WordPress categories, tags, or custom taxonomies |
 | **post_type** | Dropdown to select registered post types |
 | **data_object** | Reference to structured data objects |
-| **image** | WordPress media uploader for images |
-| **file** | WordPress media uploader for any file |
+| **image** | WordPress media uploader for images; `list: true` makes it a gallery |
+| **file** | WordPress media uploader for any file; `list: true` accepts several |
 | **object** | Nested group of fields |
 | **block** | Repeatable blocks for flexible page builders |
 
@@ -197,6 +197,34 @@ $value = ycf_get_field('title', null, $block);
 ```php
 $image = ycf_get_image('field_name', null, 'full');
 // Returns: array('id', 'url', 'alt', 'title', 'caption', 'description', 'width', 'height')
+```
+
+### Get a Gallery
+
+An `image` field with `list: true` returns an array of those arrays, in the order
+the images were arranged in the editor:
+
+```yaml
+- name: gallery
+  label: Gallery
+  type: image
+  list: true
+```
+
+```php
+$gallery = ycf_get_image('gallery', null, 'medium');
+
+if ($gallery) {
+    foreach ($gallery as $image) {
+        printf(
+            '<img src="%s" alt="%s" width="%d" height="%d" />',
+            esc_url($image['url']),
+            esc_attr($image['alt']),
+            (int) $image['width'],
+            (int) $image['height']
+        );
+    }
+}
 ```
 
 ### Get File Field
@@ -357,15 +385,37 @@ The `build-scoped.sh` script uses PHP-Scoper to namespace the Symfony YAML depen
 
 ### Hooks and Filters
 
-The plugin provides several hooks for extensibility:
+**`yaml_cf_field_value`** — filters every value on its way out to the theme. It runs
+for all four routes a value can arrive by: post data, template global data, site
+details and block context.
 
 ```php
-// Modify field output before rendering
-add_filter('yaml_cf_field_value', function($value, $field_name, $post_id) {
-    // Your custom logic
+add_filter('yaml_cf_field_value', function ($value, $field_name, $post_id, $context_data) {
+    if ($field_name === 'headline' && $value === null) {
+        return get_the_title($post_id);
+    }
     return $value;
+}, 10, 4);
+```
+
+To read a value without the filter (inside a filter callback, for instance), use
+`yaml_cf_get_field_unfiltered()`.
+
+**`yaml_cf_picker_threshold`** — how many choices a `taxonomy` or `data_object`
+field may have before it becomes a search box instead of listing every option.
+Defaults to 50.
+
+```php
+add_filter('yaml_cf_picker_threshold', function ($threshold, $type, $key) {
+    // Always search this one, however few entries it has
+    return $key === 'universities' ? 0 : $threshold;
 }, 10, 3);
 ```
+
+**Actions** — `yaml_cf_cache_cleared`, `yaml_cf_template_cache_cleared`,
+`yaml_cf_post_meta_cache_cleared`, `yaml_cf_post_cache_cleared`,
+`yaml_cf_log_debug` and `yaml_cf_log_error` fire for cache invalidation and
+logging.
 
 ## Frequently Asked Questions
 
@@ -383,7 +433,9 @@ Yes! YAML Custom Fields works with any WordPress theme. You define schemas for y
 
 ### Does this work with Gutenberg?
 
-Yes, YAML Custom Fields is compatible with both the Classic and Block (Gutenberg) editors. The custom fields appear below the editor regardless of which editor you're using.
+Yes. The fields are registered as a standard meta box, so they appear in a "Custom fields" panel below the content in the block editor and below the title in the classic editor. The Classic Editor plugin is not required.
+
+Before 1.3.0 the box was printed on `edit_form_after_title`, which the block editor never fires — so on a block-editor site the fields did not appear at all. If you added the Classic Editor plugin only for this reason, you can remove it.
 
 ### What happens to my data if I deactivate the plugin?
 
