@@ -351,12 +351,15 @@ if (!defined('ABSPATH')) {
 
 <p>When a page's schema has a field with the same name, the editor shows both values, and each page can use the shared one or its own.</p>
 
-<p>The value that shows up comes from this order:</p>
+<p>The value that shows up comes from this order, top one first:</p>
 <ol>
   <li>The shared value, when "Use the shared value on this page" is ticked.</li>
-  <li>The value on the page.</li>
   <li>The shared value, for fields that only exist as shared fields.</li>
+  <li>The value on the page.</li>
+  <li>The shared value, for a page that has never been saved since the field was added. A page saved with the field left empty stays empty: clearing a field is a decision.</li>
+  <li>The site detail of the same name, when the template uses site details.</li>
 </ol>
+<p><code>ycf_get_field('name')</code> and <code>ycf_get_fields()</code> both follow this order, so the same field is the same value whichever one the theme asks with.</p>
 
 <h2 id="site-details">Site details</h2>
 

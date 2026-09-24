@@ -82,11 +82,19 @@ class DataObjectImporter {
       }
 
       $schema_yaml = sanitize_textarea_field($type_data['schema']);
-      $validation_result = $this->validator->validate($schema_yaml);
+      // Not strict: a field with a type this version does not know is reported,
+      // but the list and its entries still come across.
+      $validation_result = $this->validator->validate($schema_yaml, null, false);
       if (!$validation_result['valid']) {
         /* translators: 1: data object type slug, 2: schema validation error */
         $errors[] = sprintf(__('Skipped the list "%1$s": %2$s', 'yaml-custom-fields'), $type_slug, $validation_result['message']);
         continue;
+      }
+      if (!empty($validation_result['warnings']) && is_array($validation_result['warnings'])) {
+        foreach ($validation_result['warnings'] as $warning) {
+          /* translators: 1: data object type slug, 2: the problem found in the schema */
+          $errors[] = sprintf(__('The list "%1$s" was imported, but %2$s', 'yaml-custom-fields'), $type_slug, $warning);
+        }
       }
 
       $existing_types[$type_slug] = [

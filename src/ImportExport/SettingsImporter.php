@@ -14,6 +14,13 @@ if (!defined('ABSPATH')) {
  * against the schemas in effect on this site after the import.
  */
 class SettingsImporter {
+  /**
+   * Things worth saying about an import that still went through
+   *
+   * @var string[]
+   */
+  private $warnings = [];
+
   private $sanitizer;
   private $validator;
   private $parser;
@@ -58,6 +65,7 @@ class SettingsImporter {
 
     $settings = $data['settings'];
     $errors = [];
+    $this->warnings = [];
     // Counts what was really written, so a caller never reports a skipped schema as imported
     $imported = 0;
 
@@ -84,10 +92,14 @@ class SettingsImporter {
 
     if (isset($settings['global_schema']) && is_string($settings['global_schema'])) {
       $global_schema = sanitize_textarea_field($settings['global_schema']);
-      $validation_result = $global_schema === '' ? ['valid' => true] : $this->validator->validate($global_schema);
+      $validation_result = $global_schema === '' ? ['valid' => true] : $this->validator->validate($global_schema, null, false);
       if ($validation_result['valid']) {
         update_option('yaml_cf_global_schema', $global_schema);
         $imported++;
+        foreach ($this->warningsOf($validation_result) as $warning) {
+          /* translators: %s: the problem found in the schema */
+          $this->warnings[] = sprintf(__('The site details schema was imported, but %s', 'yaml-custom-fields'), $warning);
+        }
       } else {
         /* translators: %s: schema validation error */
         $errors[] = sprintf(__('Skipped the site details schema: %s', 'yaml-custom-fields'), $validation_result['message']);
@@ -115,15 +127,35 @@ class SettingsImporter {
     $this->cacheManager->clearTemplateCache();
     $this->cacheManager->clearDataCaches();
 
+    $message = empty($errors)
+      ? __('Settings imported.', 'yaml-custom-fields')
+      /* translators: %s: list of import errors */
+      : sprintf(__('Settings imported, but some parts were skipped: %s', 'yaml-custom-fields'), implode('; ', $errors));
+
+    if (!empty($this->warnings)) {
+      /* translators: %s: list of things to look at after the import */
+      $message .= ' ' . sprintf(__('Worth a look: %s', 'yaml-custom-fields'), implode('; ', $this->warnings));
+    }
+
     return [
       'success' => true,
-      'message' => empty($errors)
-        ? __('Settings imported.', 'yaml-custom-fields')
-        /* translators: %s: list of import errors */
-        : sprintf(__('Settings imported, but some parts were skipped: %s', 'yaml-custom-fields'), implode('; ', $errors)),
+      'message' => $message,
       'errors' => $errors,
+      'warnings' => $this->warnings,
       'imported' => $imported,
     ];
+  }
+
+  /**
+   * The warnings a validation result carries, if any
+   *
+   * @param array $validation_result Result from SchemaValidator::validate()
+   * @return string[]
+   */
+  private function warningsOf($validation_result) {
+    return isset($validation_result['warnings']) && is_array($validation_result['warnings'])
+      ? $validation_result['warnings']
+      : [];
   }
 
   /**
@@ -146,11 +178,18 @@ class SettingsImporter {
       }
       $yaml = sanitize_textarea_field($yaml);
       if ($yaml !== '') {
-        $validation_result = $this->validator->validate($yaml, $template);
+        // Not strict: a field with a type this version does not know is worth
+        // saying out loud, but dropping the whole template over it would lose
+        // every other field and the content that goes with them.
+        $validation_result = $this->validator->validate($yaml, $template, false);
         if (!$validation_result['valid']) {
           /* translators: 1: template file name, 2: schema validation error */
           $errors[] = sprintf(__('Skipped the schema for %1$s: %2$s', 'yaml-custom-fields'), $template, $validation_result['message']);
           continue;
+        }
+        foreach ($this->warningsOf($validation_result) as $warning) {
+          /* translators: 1: template file name, 2: the problem found in the schema */
+          $this->warnings[] = sprintf(__('The schema for %1$s was imported, but %2$s', 'yaml-custom-fields'), $template, $warning);
         }
       }
       $result[$template] = $yaml;

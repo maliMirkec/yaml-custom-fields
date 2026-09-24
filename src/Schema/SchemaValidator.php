@@ -16,8 +16,46 @@ use YamlCF\Vendor\Symfony\Component\Yaml\Yaml;
 use YamlCF\Vendor\Symfony\Component\Yaml\Exception\ParseException;
 
 class SchemaValidator {
+  /**
+   * Every field type the editor can render.
+   *
+   * This is the same list as the switch in YAML_Custom_Fields::render_fields_flat().
+   * A type outside it renders no input at all, so the field would look present in
+   * the schema and be missing from the editor; validating here turns that into a
+   * message at the moment the schema is saved.
+   *
+   * 'break' is left out on purpose: FieldNormalizer turns it into 'section'
+   * before validation runs.
+   */
+  const FIELD_TYPES = [
+    'block',
+    'boolean',
+    'code',
+    'data_object',
+    'date',
+    'file',
+    'image',
+    'info',
+    'number',
+    'object',
+    'post_type',
+    'rich-text',
+    'section',
+    'select',
+    'string',
+    'taxonomy',
+    'text',
+  ];
+
   private $parser;
   private $normalizer;
+
+  /**
+   * Problems found while not being strict, collected for the caller to report
+   *
+   * @var string[]
+   */
+  private $warnings = [];
 
   public function __construct() {
     $this->parser = new SchemaParser();
@@ -29,9 +67,15 @@ class SchemaValidator {
    *
    * @param string $yaml YAML schema string
    * @param string|null $template Template name (for info field validation)
-   * @return array Array with 'valid' => bool, 'message' => string
+   * @param bool $strict False to report unknown field types as warnings rather
+   *                     than refusing the schema. Importing uses this: dropping
+   *                     a whole template because one field has a bad type loses
+   *                     far more than it protects.
+   * @return array Array with 'valid' => bool, 'message' => string, 'warnings' => string[]
    */
-  public function validate($yaml, $template = null) {
+  public function validate($yaml, $template = null, $strict = true) {
+    $this->warnings = [];
+
     try {
       $parsed = Yaml::parse($yaml);
 
@@ -39,7 +83,8 @@ class SchemaValidator {
       if ($parsed === null) {
         return [
           'valid' => false,
-          'message' => __('The schema is empty, or it is not written in YAML.', 'yaml-custom-fields')
+          'message' => __('The schema is empty, or it is not written in YAML.', 'yaml-custom-fields'),
+          'warnings' => [],
         ];
       }
 
@@ -47,62 +92,206 @@ class SchemaValidator {
       if (!isset($parsed['fields']) || !is_array($parsed['fields'])) {
         return [
           'valid' => false,
-          'message' => __('The schema must start with "fields:", followed by the list of fields.', 'yaml-custom-fields')
+          'message' => __('The schema must start with "fields:", followed by the list of fields.', 'yaml-custom-fields'),
+          'warnings' => [],
         ];
       }
 
-      // Normalize shorthand syntax (info boxes, section breaks) for validation
-      $fields = $this->normalizer->normalizeAll($parsed['fields']);
-
-      // Basic validation of field structure
-      foreach ($fields as $index => $field) {
-        if (!is_array($field)) {
-          return [
-            'valid' => false,
-            /* translators: %s: field index */
-            'message' => sprintf(__('Field number %s is not written correctly. Start it with "- name:".', 'yaml-custom-fields'), $index + 1)
-          ];
-        }
-
-        if (!isset($field['name'])) {
-          return [
-            'valid' => false,
-            /* translators: %s: field index */
-            'message' => sprintf(__('Field number %s needs a name. Add a line like "name: title".', 'yaml-custom-fields'), $index + 1)
-          ];
-        }
-
-        if (!isset($field['type'])) {
-          return [
-            'valid' => false,
-            /* translators: %s: field name */
-            'message' => sprintf(__('The field "%s" needs a type. Add a line like "type: string".', 'yaml-custom-fields'), $field['name'])
-          ];
-        }
-
-        // Validate info field template restrictions
-        if ($field['type'] === 'info' && $template !== null) {
-          if (!$this->isTemplateAllowedForInfoField($template)) {
-            return [
-              'valid' => false,
-              /* translators: %s: template file name */
-              'message' => sprintf(__('Info boxes only work on page and post templates, not on %s.', 'yaml-custom-fields'), $template)
-            ];
-          }
-        }
+      $error = $this->validateFieldList($parsed['fields'], $template, '', $strict);
+      if ($error !== null) {
+        return ['valid' => false, 'message' => $error, 'warnings' => $this->warnings];
       }
 
       return [
         'valid' => true,
-        'message' => __('The schema looks good.', 'yaml-custom-fields')
+        'message' => __('The schema looks good.', 'yaml-custom-fields'),
+        'warnings' => $this->warnings,
       ];
     } catch (ParseException $e) {
       return [
         'valid' => false,
         /* translators: %s: YAML parser error */
-        'message' => sprintf(__('The schema has a typing mistake. %s', 'yaml-custom-fields'), $e->getMessage())
+        'message' => sprintf(__('The schema has a typing mistake. %s', 'yaml-custom-fields'), $e->getMessage()),
+        'warnings' => $this->warnings,
       ];
     }
+  }
+
+  /**
+   * Check one level of fields, then the levels inside it
+   *
+   * Groups and sections hold fields of their own, and those are rendered by the
+   * same code as the top level, so they are held to the same rules.
+   *
+   * @param array $fields Fields at this level
+   * @param string|null $template Template name (for info field validation)
+   * @param string $path Field names leading here, for the message ('' at the top)
+   * @param bool $strict False to collect unknown types as warnings instead of refusing
+   * @return string|null Error message, or null when this level and everything inside it is fine
+   */
+  private function validateFieldList($fields, $template, $path, $strict = true) {
+    // Shorthand (- info: "…", - section: "…") is expanded at every level when
+    // fields are rendered, so it is expanded here too before anything is checked.
+    $fields = $this->normalizer->normalizeAll($fields);
+
+    foreach ($fields as $index => $field) {
+      if (!is_array($field)) {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field index */
+          sprintf(__('Field number %s is not written correctly. Start it with "- name:".', 'yaml-custom-fields'), $index + 1)
+        );
+      }
+
+      if (!isset($field['name'])) {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field index */
+          sprintf(__('Field number %s needs a name. Add a line like "name: title".', 'yaml-custom-fields'), $index + 1)
+        );
+      }
+
+      if (!isset($field['type'])) {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field name */
+          sprintf(__('The field "%s" needs a type. Add a line like "type: string".', 'yaml-custom-fields'), $field['name'])
+        );
+      }
+
+      $type = $field['type'];
+
+      if (!is_string($type) || !in_array($type, self::FIELD_TYPES, true)) {
+        $message = $this->atPath($path, $this->unknownTypeMessage($field['name'], $type));
+        if ($strict) {
+          return $message;
+        }
+        $this->warnings[] = $message;
+      }
+
+      // Validate info field template restrictions
+      if ($type === 'info' && $template !== null && !$this->isTemplateAllowedForInfoField($template)) {
+        /* translators: %s: template file name */
+        return sprintf(__('Info boxes only work on page and post templates, not on %s.', 'yaml-custom-fields'), $template);
+      }
+
+      $nested_path = $path === '' ? (string) $field['name'] : $path . ' → ' . $field['name'];
+
+      // A group holds fields directly
+      if ($type === 'object' && isset($field['fields'])) {
+        if (!is_array($field['fields'])) {
+          /* translators: %s: field name */
+          return $this->atPath($path, sprintf(__('The group "%s" needs a list of fields under "fields:".', 'yaml-custom-fields'), $field['name']));
+        }
+        $error = $this->validateFieldList($field['fields'], $template, $nested_path, $strict);
+        if ($error !== null) {
+          return $error;
+        }
+      }
+
+      // A section field holds one list of fields per section type
+      if ($type === 'block' && isset($field['blocks'])) {
+        if (!is_array($field['blocks'])) {
+          /* translators: %s: field name */
+          return $this->atPath($path, sprintf(__('The sections field "%s" needs a list under "blocks:".', 'yaml-custom-fields'), $field['name']));
+        }
+
+        foreach ($field['blocks'] as $block_index => $block) {
+          if (!is_array($block)) {
+            /* translators: 1: field name, 2: section number */
+            return $this->atPath($path, sprintf(__('Section number %2$s of "%1$s" is not written correctly. Start it with "- name:".', 'yaml-custom-fields'), $field['name'], $block_index + 1));
+          }
+
+          if (!isset($block['fields'])) {
+            continue;
+          }
+
+          if (!is_array($block['fields'])) {
+            /* translators: 1: field name, 2: section name */
+            return $this->atPath($path, sprintf(__('Section "%2$s" of "%1$s" needs a list of fields under "fields:".', 'yaml-custom-fields'), $field['name'], isset($block['name']) ? $block['name'] : ($block_index + 1)));
+          }
+
+          $block_name = isset($block['name']) ? $block['name'] : ($block_index + 1);
+          $error = $this->validateFieldList($block['fields'], $template, $nested_path . ' → ' . $block_name, $strict);
+          if ($error !== null) {
+            return $error;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Say which type was written and what was probably meant
+   *
+   * @param string $field_name Field the type belongs to
+   * @param mixed $type Type as written in the schema
+   * @return string Message
+   */
+  private function unknownTypeMessage($field_name, $type) {
+    $written = is_string($type) ? $type : wp_json_encode($type);
+    $suggestion = is_string($type) ? $this->closestType($type) : null;
+
+    if ($suggestion !== null) {
+      return sprintf(
+        /* translators: 1: field name, 2: type as written in the schema, 3: suggested type */
+        __('The field "%1$s" has a type this plugin does not know: "%2$s". Did you mean "%3$s"?', 'yaml-custom-fields'),
+        $field_name,
+        $written,
+        $suggestion
+      );
+    }
+
+    return sprintf(
+      /* translators: 1: field name, 2: type as written in the schema, 3: comma-separated list of the types that work */
+      __('The field "%1$s" has a type this plugin does not know: "%2$s". The types that work are: %3$s.', 'yaml-custom-fields'),
+      $field_name,
+      $written,
+      implode(', ', self::FIELD_TYPES)
+    );
+  }
+
+  /**
+   * The known type nearest to what was written, when one is near enough to suggest
+   *
+   * @param string $type Type as written
+   * @return string|null Suggested type, or null when nothing is close
+   */
+  private function closestType($type) {
+    $written = strtolower($type);
+    $best = null;
+    $best_distance = PHP_INT_MAX;
+
+    foreach (self::FIELD_TYPES as $known) {
+      $distance = levenshtein($written, $known);
+      if ($distance < $best_distance) {
+        $best_distance = $distance;
+        $best = $known;
+      }
+    }
+
+    // Far enough away and a guess would only mislead
+    $limit = max(2, (int) floor(strlen($written) / 3));
+
+    return $best_distance <= $limit ? $best : null;
+  }
+
+  /**
+   * Say where in the schema a problem is, when it is not at the top level
+   *
+   * @param string $path Field names leading to this level
+   * @param string $message The problem
+   * @return string Message, prefixed with the path when there is one
+   */
+  private function atPath($path, $message) {
+    if ($path === '') {
+      return $message;
+    }
+
+    /* translators: 1: field names leading to the problem, 2: the problem */
+    return sprintf(__('Inside "%1$s": %2$s', 'yaml-custom-fields'), $path, $message);
   }
 
   /**

@@ -106,7 +106,7 @@ class SchemaValidatorTest extends TestCase {
 			"  - name: description\n" .
 			"    type: text\n" .
 			"  - name: active\n" .
-			"    type: checkbox\n";
+			"    type: boolean\n";
 
 		$result = $this->validator->validate($yaml);
 
@@ -282,7 +282,7 @@ class SchemaValidatorTest extends TestCase {
 	public function testValidatesNestedFieldStructures() {
 		$yaml = "fields:\n" .
 			"  - name: group\n" .
-			"    type: group\n" .
+			"    type: object\n" .
 			"    fields:\n" .
 			"      - name: title\n" .
 			"        type: string\n" .
@@ -339,4 +339,155 @@ class SchemaValidatorTest extends TestCase {
 
 		$this->assertTrue($result['valid'], $result['message']);
 	}
+
+	/**
+	 * A typo in a type used to pass validation, render no input at all, and let
+	 * the field's content be dropped on the next save.
+	 */
+	public function testRejectsAnUnknownFieldType() {
+		$yaml = "fields:\n" .
+			"  - name: headline\n" .
+			"    type: strng\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('does not know', $result['message']);
+	}
+
+	/**
+	 * A near miss is worth naming: the fix is almost always the suggestion.
+	 */
+	public function testSuggestsTheClosestTypeForATypo() {
+		$yaml = "fields:\n" .
+			"  - name: headline\n" .
+			"    type: strng\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertStringContains('Did you mean "string"', $result['message']);
+	}
+
+	/**
+	 * Nothing close enough to guess at gets the list of what does work instead.
+	 */
+	public function testListsTheTypesWhenNothingIsClose() {
+		$yaml = "fields:\n" .
+			"  - name: headline\n" .
+			"    type: wysiwyg_editor_thing\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('rich-text', $result['message']);
+	}
+
+	public function testAcceptsEveryTypeTheEditorCanRender() {
+		foreach (SchemaValidator::FIELD_TYPES as $type) {
+			$yaml = "fields:\n" .
+				"  - name: a_field\n" .
+				"    type: " . $type . "\n";
+
+			$result = $this->validator->validate($yaml);
+
+			$this->assertTrue($result['valid'], 'Type "' . $type . '" should be accepted: ' . $result['message']);
+		}
+	}
+
+	/**
+	 * "break" is shorthand that FieldNormalizer turns into a section, so it is
+	 * accepted although it is not in the list of types.
+	 */
+	public function testAcceptsTheBreakShorthandType() {
+		$yaml = "fields:\n" .
+			"  - name: headline\n" .
+			"    type: string\n" .
+			"  - type: break\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
+	}
+
+	// ------------------------------------------------------- nested levels
+
+	public function testRejectsAnUnknownTypeInsideAGroup() {
+		$yaml = "fields:\n" .
+			"  - name: button\n" .
+			"    type: object\n" .
+			"    fields:\n" .
+			"      - name: link\n" .
+			"        type: urll\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('button', $result['message']);
+		$this->assertStringContains('link', $result['message']);
+	}
+
+	public function testRejectsAFieldWithoutATypeInsideAGroup() {
+		$yaml = "fields:\n" .
+			"  - name: button\n" .
+			"    type: object\n" .
+			"    fields:\n" .
+			"      - name: link\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('needs a type', $result['message']);
+	}
+
+	public function testRejectsAnUnknownTypeInsideASection() {
+		$yaml = "fields:\n" .
+			"  - name: sections\n" .
+			"    type: block\n" .
+			"    list: true\n" .
+			"    blocks:\n" .
+			"      - name: banner\n" .
+			"        fields:\n" .
+			"          - name: image\n" .
+			"            type: imag\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('Did you mean "image"', $result['message']);
+	}
+
+	public function testAcceptsAWellFormedSectionField() {
+		$yaml = "fields:\n" .
+			"  - name: sections\n" .
+			"    type: block\n" .
+			"    list: true\n" .
+			"    blocks:\n" .
+			"      - name: banner\n" .
+			"        fields:\n" .
+			"          - name: image\n" .
+			"            type: image\n" .
+			"      - name: quote\n" .
+			"        fields:\n" .
+			"          - name: body\n" .
+			"            type: rich-text\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
+	}
+
+	public function testAcceptsShorthandInsideAGroup() {
+		$yaml = "fields:\n" .
+			"  - name: details\n" .
+			"    type: object\n" .
+			"    fields:\n" .
+			"      - info: \"Fill both in\"\n" .
+			"      - name: link\n" .
+			"        type: string\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
+	}
+
 }

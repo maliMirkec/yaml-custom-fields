@@ -142,6 +142,9 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * **IMPROVED: Much Smaller Editor Pages** - Every taxonomy term and collection item used to be written into the page for the old JavaScript field builder. That is gone, so a post editor on a site with thousands of tags or collection items loads a fraction of the markup
 * **FIXED: Unreadable Active Filter Button** - The selected filter on the Content Check page was purple text on a purple background, and now reads white. It also reports its state to screen readers
 * **FIXED: Nested Field Names in the New Renderers** - The unfinished renderers in `src/Rendering` ignored their nesting prefix and now refuse to render rather than silently dropping a value
+* **FIXED: ycf_get_field() and ycf_get_fields() Could Disagree** - The two functions worked out values by different rules, so the same field on the same page could come back with two different values. In particular `ycf_get_fields()` ignored the "Use the shared value on this page" ticks entirely. Both now read from one place, in the order the documentation describes
+* **FIXED: A Typo in a Field Type Passed Unnoticed** - `type: strng` used to save with "The schema looks good.", render nothing at all, and then drop the field's content the next time the page was saved. Types are now checked when the schema is saved, inside groups and sections too, and the message suggests the type that was probably meant. Content belonging to a field with an unknown type is left alone rather than dropped
+* **IMPROVED: Fewer Repeated Lookups Per Page** - A page's field values are worked out once per request instead of once per `ycf_get_field()` call, which re-read the same options for every field on the page
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"

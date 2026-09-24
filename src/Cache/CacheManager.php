@@ -64,6 +64,11 @@ class CacheManager {
    * @param int|null $post_id Specific post to clear, or null for every post with YAML CF data
    */
   public function clearDataCaches($post_id = null) {
+    // Values already worked out for this request (yaml_cf_resolve_post_fields)
+    if (function_exists('yaml_cf_flush_resolved_post_fields')) {
+      yaml_cf_flush_resolved_post_fields($post_id);
+    }
+
     // Admin list caches
     wp_cache_delete('yaml_cf_validation_posts', 'yaml-custom-fields');
     wp_cache_delete('yaml_cf_posts_with_data', 'yaml-custom-fields');

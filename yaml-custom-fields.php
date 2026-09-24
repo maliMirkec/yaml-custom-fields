@@ -324,6 +324,17 @@ class YAML_Custom_Fields {
     add_action('add_meta_boxes', [$this, 'register_meta_box'], 10, 2);
     add_action('save_post', [$this, 'save_schema_data']);
     add_action('delete_post', [$this, 'handle_post_deletion']);
+
+    // Resolved field values are memoized for the request (yaml_cf_resolve_post_fields).
+    // Watch the meta and options they are built from, so an importer or any other
+    // caller that writes directly cannot leave a stale value behind.
+    add_action('added_post_meta', [$this, 'flush_resolved_fields_for_meta'], 10, 3);
+    add_action('updated_post_meta', [$this, 'flush_resolved_fields_for_meta'], 10, 3);
+    add_action('deleted_post_meta', [$this, 'flush_resolved_fields_for_meta'], 10, 3);
+    add_action('updated_option', [$this, 'flush_resolved_fields_for_option']);
+    add_action('added_option', [$this, 'flush_resolved_fields_for_option']);
+    add_action('deleted_option', [$this, 'flush_resolved_fields_for_option']);
+    add_action('switch_theme', 'yaml_cf_flush_resolved_post_fields');
     // AJAX handlers live in src/Ajax/Handlers and are registered by YamlCF\Core\HookManager
   }
 
@@ -2236,6 +2247,21 @@ class YAML_Custom_Fields {
             echo '</span>';
           }
           break;
+
+        default:
+          // A type this plugin has no input for. Saying so beats printing a
+          // label with nothing under it and letting the writer wonder what
+          // they are meant to fill in. The value already stored is kept by
+          // save_schema_data(), so fixing the schema brings it back.
+          echo '<p class="yaml-cf-unknown-type notice notice-warning inline">';
+          echo esc_html(sprintf(
+            /* translators: 1: field name, 2: type as written in the schema */
+            __('The field "%1$s" has a type this plugin does not know: "%2$s". Nothing is shown for it, and whatever it already holds is left alone. An administrator can fix the type in the schema.', 'yaml-custom-fields'),
+            $field_name,
+            is_string($field['type']) ? $field['type'] : gettype($field['type'])
+          ));
+          echo '</p>';
+          break;
       }
 
       // Render snippet below the input field (skip for block fields as they handle their own)
@@ -3099,6 +3125,42 @@ class YAML_Custom_Fields {
     echo '</div>';
   }
 
+  /**
+   * Drop memoized field values when post meta they are built from changes
+   *
+   * @param int|array $meta_id Meta row ID, or IDs when a meta row is deleted (unused)
+   * @param int $object_id Post ID
+   * @param string $meta_key Meta key that changed
+   * @return void
+   */
+  public function flush_resolved_fields_for_meta($meta_id, $object_id, $meta_key) {
+    $watched = [
+      '_yaml_cf_data',
+      '_yaml_cf_use_template_global_fields',
+      // Changes which template the post uses, and so which schema applies
+      '_wp_page_template',
+    ];
+
+    if (in_array($meta_key, $watched, true)) {
+      yaml_cf_flush_resolved_post_fields($object_id);
+    }
+  }
+
+  /**
+   * Drop every memoized field value when a plugin option changes
+   *
+   * Schemas, shared content and site details apply across posts, so there is no
+   * single post to forget.
+   *
+   * @param string $option Option name that changed
+   * @return void
+   */
+  public function flush_resolved_fields_for_option($option) {
+    if (is_string($option) && strpos($option, 'yaml_cf_') === 0) {
+      yaml_cf_flush_resolved_post_fields();
+    }
+  }
+
   public function save_schema_data($post_id) {
     if (!isset($_POST['yaml_cf_meta_box_nonce'])) {
       return;
@@ -3134,6 +3196,7 @@ class YAML_Custom_Fields {
 
       $sanitized_data = $this->sanitize_field_data($posted_data, $schema);
       $sanitized_data = $this->remove_template_global_only_fields($sanitized_data, $schema, $template);
+      $sanitized_data = $this->keep_values_of_unrenderable_fields($post_id, $sanitized_data, $schema);
 
       // Update post meta using WordPress API (handles serialization and caching)
       // update_post_meta() unslashes its value; slash first so backslashes in field values survive
@@ -3156,6 +3219,49 @@ class YAML_Custom_Fields {
       ? array_map('sanitize_text_field', wp_unslash($_POST['yaml_cf_use_template_global_fields']))
       : [];
     update_post_meta($post_id, '_yaml_cf_use_template_global_fields', wp_slash($use_template_global_fields));
+  }
+
+  /**
+   * Carry over what is stored for fields the editor could not show
+   *
+   * Saving replaces the stored data with what the form posted, which is right
+   * for every field the editor rendered: a cleared field has to save as cleared.
+   * A field whose type this plugin has no input for posts nothing at all, so
+   * without this its content would be dropped on the next save of the page,
+   * because of a typo in the schema. Schemas saved from now on cannot contain
+   * one (SchemaValidator rejects it), but schemas saved by earlier versions can.
+   *
+   * @param int $post_id Post being saved
+   * @param array $data Sanitized data from the form
+   * @param array|null $schema Parsed schema for the post's template
+   * @return array Data, with unrenderable fields' stored values put back
+   */
+  private function keep_values_of_unrenderable_fields($post_id, $data, $schema) {
+    if (!is_array($schema) || empty($schema['fields']) || !is_array($schema['fields'])) {
+      return $data;
+    }
+
+    $stored = get_post_meta($post_id, '_yaml_cf_data', true);
+    if (!is_array($stored) || empty($stored)) {
+      return $data;
+    }
+
+    foreach ($schema['fields'] as $field) {
+      if (!is_array($field) || !isset($field['name'], $field['type'])) {
+        continue;
+      }
+
+      if (in_array($field['type'], \YamlCF\Schema\SchemaValidator::FIELD_TYPES, true)) {
+        continue;
+      }
+
+      $name = $field['name'];
+      if (!array_key_exists($name, $data) && array_key_exists($name, $stored)) {
+        $data[$name] = $stored[$name];
+      }
+    }
+
+    return $data;
   }
 
   /**
@@ -3194,6 +3300,7 @@ class YAML_Custom_Fields {
    * @param int|null $post_id Optional. Specific post ID to clear cache for. If null, clears all.
    */
   private function clear_data_caches($post_id = null) {
+    yaml_cf_flush_resolved_post_fields($post_id);
     \YamlCF\Core\Plugin::getInstance()->get('cache_manager')->clearDataCaches($post_id);
   }
 
@@ -3318,86 +3425,9 @@ function yaml_cf_get_field_unfiltered($field_name, $post_id = null, $context_dat
     return null;
   }
 
-  $data = get_post_meta($post_id, '_yaml_cf_data', true);
-  if (!is_array($data)) {
-    $data = [];
-  }
+  $fields = yaml_cf_resolve_post_fields($post_id);
 
-  // Get post, plugin, and template for schema lookup
-  $post = get_post($post_id);
-  if ($post) {
-    $plugin = YAML_Custom_Fields::get_instance();
-    $template = $plugin->get_template_for_post($post);
-
-    // Get schema for this template
-    $schemas = get_option('yaml_cf_schemas', []);
-    if (isset($schemas[$template])) {
-      $schema = $schemas[$template];
-    }
-  }
-
-  // Check if template global is enabled for this specific field
-  $use_template_global_fields = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
-  if (is_array($use_template_global_fields) && isset($use_template_global_fields[$field_name]) && $use_template_global_fields[$field_name] === '1') {
-    if ($post && $template) {
-      // Get template global data
-      $template_global_data_array = get_option('yaml_cf_template_global_data', []);
-      if (isset($template_global_data_array[$template][$field_name])) {
-        $value = $template_global_data_array[$template][$field_name];
-        return yaml_cf_auto_decode_if_code_field($value, yaml_cf_get_template_global_schema($template), $field_name);
-      }
-    }
-  }
-
-  // Check for site details (global data)
-  // (Only if the template has site details enabled)
-  if ($post && $template) {
-    $template_settings = get_option('yaml_cf_template_settings', []);
-    $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
-
-    if ($use_global) {
-      $global_data = get_option('yaml_cf_global_data', []);
-      if (is_array($global_data) && isset($global_data[$field_name])) {
-        $value = $global_data[$field_name];
-        return yaml_cf_auto_decode_if_code_field($value, get_option('yaml_cf_global_schema', ''), $field_name);
-      }
-    }
-  }
-
-  // Fields defined only in the template global schema always come from template global data
-  // (older versions stored stale copies of them in post data)
-  if ($post && $template && $schema) {
-    $template_global_schema = yaml_cf_get_template_global_schema($template);
-    if ($template_global_schema !== '') {
-      $sanitizer = \YamlCF\Core\Plugin::getInstance()->get('data_sanitizer');
-      $in_post_schema = $sanitizer->getFieldDefinition(yaml_cf_parse_schema_cached($schema), $field_name);
-      $in_template_global_schema = $sanitizer->getFieldDefinition(yaml_cf_parse_schema_cached($template_global_schema), $field_name);
-      if (!$in_post_schema && $in_template_global_schema) {
-        $template_global_data_array = get_option('yaml_cf_template_global_data', []);
-        if (!isset($template_global_data_array[$template][$field_name])) {
-          return null;
-        }
-        return yaml_cf_auto_decode_if_code_field($template_global_data_array[$template][$field_name], $template_global_schema, $field_name);
-      }
-    }
-  }
-
-  // Finally, check post-specific data
-  if (isset($data[$field_name])) {
-    $value = $data[$field_name];
-    return yaml_cf_auto_decode_if_code_field($value, $schema, $field_name);
-  }
-
-  // Fallback: check template global data for fields defined only in template global schema
-  if ($post && $template) {
-    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
-    if (isset($template_global_data_array[$template][$field_name])) {
-      $value = $template_global_data_array[$template][$field_name];
-      return yaml_cf_auto_decode_if_code_field($value, yaml_cf_get_template_global_schema($template), $field_name);
-    }
-  }
-
-  return null;
+  return array_key_exists($field_name, $fields) ? $fields[$field_name] : null;
 }
 
 /**
@@ -3513,79 +3543,161 @@ function yaml_cf_get_fields($post_id = null) {
     return [];
   }
 
-  $merged_data = [];
+  return yaml_cf_resolve_post_fields($post_id);
+}
 
-  // Start with post data
-  $post_data = get_post_meta($post_id, '_yaml_cf_data', true);
-  if (is_array($post_data)) {
-    $merged_data = $post_data;
+/**
+ * Work out every field value for a post, from every source that can supply one.
+ *
+ * This is the single place the precedence rules live. yaml_cf_get_field() looks
+ * one name up in the result and yaml_cf_get_fields() returns all of it, so the
+ * two can never disagree about the same field again.
+ *
+ * Sources, highest priority first:
+ *
+ *   1. The shared (template global) value, for each field the editor ticked
+ *      "Use the shared value on this page" for.
+ *   2. The shared value, for fields that exist only in the shared schema. Older
+ *      versions froze a copy of these into post meta; the copy is discarded.
+ *   3. The value stored on the page.
+ *   4. The shared value, for a field the page has never been saved with. A page
+ *      saved with the field left empty keeps its empty value.
+ *   5. Site details, when the template uses them.
+ *
+ * This is the order the Documentation page describes.
+ *
+ * The result is memoized for the rest of the request: a template that reads
+ * thirty fields used to re-read the same six options thirty times over.
+ *
+ * @param int $post_id Post ID.
+ * @return array Field values keyed by field name, code fields already decoded.
+ */
+function yaml_cf_resolve_post_fields($post_id) {
+  $cache = &yaml_cf_resolved_post_fields_cache();
+
+  $post_id = (int) $post_id;
+  if (isset($cache[$post_id])) {
+    return $cache[$post_id];
   }
 
-  // Get post and template info
+  $stored = get_post_meta($post_id, '_yaml_cf_data', true);
+  $stored = is_array($stored) ? $stored : [];
+
   $post = get_post($post_id);
   if (!$post) {
-    return yaml_cf_decode_all_code_fields($merged_data);
+    // No post to read a template from, so there is no schema and nothing to
+    // merge. Whatever is stored is still handed back, as it always has been.
+    return yaml_cf_decode_all_code_fields($stored);
   }
 
-  $plugin = YAML_Custom_Fields::get_instance();
-  $template = $plugin->get_template_for_post($post);
-  $template_settings = get_option('yaml_cf_template_settings', []);
+  $template = YAML_Custom_Fields::get_instance()->get_template_for_post($post);
 
-  // Decode each data source against its own schema before merging
   $schemas = get_option('yaml_cf_schemas', []);
-  $post_schema = isset($schemas[$template]) ? $schemas[$template] : null;
-  $merged_data = yaml_cf_decode_all_code_fields($merged_data, $post_schema);
+  $post_schema_yaml = isset($schemas[$template]) ? $schemas[$template] : null;
+  $post_schema = yaml_cf_parse_schema_cached($post_schema_yaml);
 
-  // Fields defined only in the template global schema always come from template global data
-  $template_global_schema = yaml_cf_get_template_global_schema($template);
-  $parsed_template_global_schema = yaml_cf_parse_schema_cached($template_global_schema);
-  if ($post_schema && $parsed_template_global_schema && !empty($parsed_template_global_schema['fields']) && is_array($parsed_template_global_schema['fields'])) {
-    $sanitizer = \YamlCF\Core\Plugin::getInstance()->get('data_sanitizer');
-    $parsed_post_schema = yaml_cf_parse_schema_cached($post_schema);
-    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
-    $template_global_values = isset($template_global_data_array[$template]) && is_array($template_global_data_array[$template]) ? $template_global_data_array[$template] : [];
-    foreach ($parsed_template_global_schema['fields'] as $field) {
-      if (!is_array($field) || !isset($field['name']) || $sanitizer->getFieldDefinition($parsed_post_schema, $field['name'])) {
+  $shared_schema_yaml = yaml_cf_get_template_global_schema($template);
+  $shared_schema = yaml_cf_parse_schema_cached($shared_schema_yaml);
+
+  $shared_data_all = get_option('yaml_cf_template_global_data', []);
+  $shared_values = isset($shared_data_all[$template]) && is_array($shared_data_all[$template])
+    ? yaml_cf_decode_all_code_fields($shared_data_all[$template], $shared_schema_yaml)
+    : [];
+
+  // Start from what is stored on the page; everything below either replaces a
+  // value or fills in one that is not there.
+  $values = yaml_cf_decode_all_code_fields($stored, $post_schema_yaml);
+
+  $sanitizer = \YamlCF\Core\Plugin::getInstance()->get('data_sanitizer');
+
+  // Fields that exist only in the shared schema always come from shared data, so
+  // a copy frozen into post meta by an older version cannot win.
+  if (is_array($shared_schema) && !empty($shared_schema['fields']) && is_array($shared_schema['fields'])) {
+    foreach ($shared_schema['fields'] as $shared_field) {
+      if (!is_array($shared_field) || !isset($shared_field['name'])) {
         continue;
       }
-      $name = $field['name'];
-      if (isset($template_global_values[$name])) {
-        $merged_data[$name] = yaml_cf_decode_all_code_fields([$name => $template_global_values[$name]], $parsed_template_global_schema)[$name];
+      $name = $shared_field['name'];
+      if ($sanitizer->getFieldDefinition($post_schema, $name)) {
+        continue; // Also a page field: the tick below decides this one.
+      }
+      if (array_key_exists($name, $shared_values)) {
+        $values[$name] = $shared_values[$name];
       } else {
-        unset($merged_data[$name]);
+        unset($values[$name]);
       }
     }
   }
 
-  // Merge site details (global data), if enabled for the template
-  $use_global = isset($template_settings[$template . '_use_global']) && $template_settings[$template . '_use_global'];
-  if ($use_global) {
+  // "Use the shared value on this page", ticked per field in the editor. This is
+  // the highest-ranked source, so it is applied over everything above.
+  $ticked = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
+  if (is_array($ticked)) {
+    foreach ($ticked as $name => $is_ticked) {
+      // A tick with nothing filled in on the shared side leaves the page value alone.
+      if ($is_ticked === '1' && array_key_exists($name, $shared_values)) {
+        $values[$name] = $shared_values[$name];
+      }
+    }
+  }
+
+  // A page never saved since the field was added has no value of its own, so the
+  // shared value stands in. A page saved with the field left empty keeps the empty
+  // value: clearing a field is a decision.
+  foreach ($shared_values as $name => $shared_value) {
+    if (!array_key_exists($name, $values)) {
+      $values[$name] = $shared_value;
+    }
+  }
+
+  // Site details are the last resort, filling in names nothing above supplied.
+  $template_settings = get_option('yaml_cf_template_settings', []);
+  if (!empty($template_settings[$template . '_use_global'])) {
     $global_data = get_option('yaml_cf_global_data', []);
     if (is_array($global_data)) {
       $global_data = yaml_cf_decode_all_code_fields($global_data, get_option('yaml_cf_global_schema', ''));
-      $merged_data = array_merge($global_data, $merged_data);
+      $values += $global_data;
     }
   }
 
-  // Merge template global data (if enabled for post)
-  $use_template_global = get_post_meta($post_id, '_yaml_cf_use_template_global', true);
-  if ($use_template_global) {
-    $template_global_data_array = get_option('yaml_cf_template_global_data', []);
-    if (isset($template_global_data_array[$template]) && is_array($template_global_data_array[$template])) {
-      $template_global_data = yaml_cf_decode_all_code_fields($template_global_data_array[$template], yaml_cf_get_template_global_schema($template));
-      $merged_data = array_merge($merged_data, $template_global_data);
-    }
+  // Per-page overrides of shared fields, written by versions before 1.3.0.
+  if (isset($values['_template_global_override']) && is_array($values['_template_global_override'])) {
+    $values = array_merge($values, $values['_template_global_override']);
+  }
+  unset($values['_template_global_override']);
+
+  $cache[$post_id] = $values;
+
+  return $values;
+}
+
+/**
+ * The request-lifetime store behind yaml_cf_resolve_post_fields().
+ *
+ * Held in its own function so that flushing it is possible from elsewhere.
+ *
+ * @return array Resolved field values keyed by post ID (by reference).
+ */
+function &yaml_cf_resolved_post_fields_cache() {
+  static $cache = [];
+  return $cache;
+}
+
+/**
+ * Forget resolved field values, so the next read sees what was just saved.
+ *
+ * @param int|null $post_id Post to forget, or null for every post.
+ * @return void
+ */
+function yaml_cf_flush_resolved_post_fields($post_id = null) {
+  $cache = &yaml_cf_resolved_post_fields_cache();
+
+  if ($post_id === null) {
+    $cache = [];
+    return;
   }
 
-  // Apply overrides (highest priority)
-  if (isset($merged_data['_template_global_override']) && is_array($merged_data['_template_global_override'])) {
-    $merged_data = array_merge($merged_data, $merged_data['_template_global_override']);
-  }
-
-  // Remove internal keys
-  unset($merged_data['_template_global_override']);
-
-  return $merged_data;
+  unset($cache[(int) $post_id]);
 }
 
 /**
