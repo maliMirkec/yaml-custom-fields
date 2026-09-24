@@ -47,7 +47,7 @@ class SaveSchema extends AjaxHandler {
     );
 
     $schemas[$template] = $schema;
-    update_option('yaml_cf_schemas', $schemas);
+    update_option('yaml_cf_schemas', $schemas, false);
 
     $this->sendSuccess(['removed_fields' => $removed_fields]);
   }

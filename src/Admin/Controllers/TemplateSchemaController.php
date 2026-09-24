@@ -11,6 +11,11 @@ if (!defined('ABSPATH')) {
  * Controller for the main dashboard (templates, partials, global schema)
  */
 class TemplateSchemaController extends AdminController {
+  /**
+   * Whether deleting the plugin should leave the content in place
+   */
+  const KEEP_DATA_OPTION = 'yaml_cf_keep_data_on_uninstall';
+
   private $templateCache;
   private $schemaStorage;
   private $notificationManager;
@@ -30,6 +35,8 @@ class TemplateSchemaController extends AdminController {
    */
   public function render() {
     $this->checkPermission();
+
+    $this->handleKeepDataSubmission();
 
     $theme_files = $this->templateCache->getThemeTemplates();
     $template_settings = (array) get_option('yaml_cf_template_settings', []);
@@ -61,6 +68,8 @@ class TemplateSchemaController extends AdminController {
     // this plugin cannot see into.
     $theme_kind = $this->themeKind();
 
+    $keep_data_on_uninstall = (bool) get_option(self::KEEP_DATA_OPTION, false);
+
     $this->localizePageInit(['hasRefreshButton' => true]);
 
     $this->loadTemplate('admin-page.php', compact(
@@ -68,8 +77,41 @@ class TemplateSchemaController extends AdminController {
       'partial_rows',
       'global_field_count',
       'show_getting_started',
-      'theme_kind'
+      'theme_kind',
+      'keep_data_on_uninstall'
     ));
+  }
+
+  /**
+   * Save the choice about what happens to the content if the plugin is deleted
+   *
+   * Deleting the plugin removes the field content from every page, and that is
+   * the site's own writing, not settings. It cannot be undone and there was no
+   * way to ask for it to be kept.
+   *
+   * @return void
+   */
+  private function handleKeepDataSubmission() {
+    if (!isset($_POST['yaml_cf_keep_data_nonce'])) {
+      return;
+    }
+
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_keep_data_nonce'])), 'yaml_cf_keep_data')) {
+      wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
+    }
+
+    if (!current_user_can('manage_options')) {
+      wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
+    }
+
+    $keep = isset($_POST['yaml_cf_keep_data']) && $_POST['yaml_cf_keep_data'] === '1';
+    update_option(self::KEEP_DATA_OPTION, $keep, false);
+
+    $this->notificationManager->success(
+      $keep
+        ? __('Deleting the plugin will now leave the field content in place.', 'yaml-custom-fields')
+        : __('Deleting the plugin will now remove the field content as well.', 'yaml-custom-fields')
+    );
   }
 
   /**

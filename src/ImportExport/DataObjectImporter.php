@@ -115,13 +115,13 @@ class DataObjectImporter {
           $cleaned_entries[$entry_id] = $this->sanitizer->sanitize($entry_data, $schema);
           $entries_imported++;
         }
-        update_option('yaml_cf_data_object_entries_' . $type_slug, $cleaned_entries);
+        update_option('yaml_cf_data_object_entries_' . $type_slug, $cleaned_entries, false);
       }
 
       $types_imported++;
     }
 
-    update_option('yaml_cf_data_object_types', $existing_types);
+    update_option('yaml_cf_data_object_types', $existing_types, false);
 
     return [
       'success' => true,

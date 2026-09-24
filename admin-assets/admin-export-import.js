@@ -236,6 +236,7 @@ jQuery(document).ready(function ($) {
       data: {
         action: 'yaml_cf_export_bundle',
         nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
         selection: chosenItems(),
         post_ids: wantsPosts() ? Array.from(selectedIds) : [],
         match_by: $('input[name="match_by"]:checked').val() || 'slug'
@@ -272,6 +273,7 @@ jQuery(document).ready(function ($) {
       data: {
         action: 'yaml_cf_get_posts_with_data',
         nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
         page: page,
         per_page: PER_PAGE
       },
@@ -411,6 +413,7 @@ jQuery(document).ready(function ($) {
         data: {
           action: 'yaml_cf_inspect_bundle',
           nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
           data: JSON.stringify(parsed)
         },
         success: function (response) {
@@ -603,6 +606,7 @@ jQuery(document).ready(function ($) {
       data: {
         action: 'yaml_cf_import_bundle',
         nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
         data: JSON.stringify(bundleData),
         selection: selection
       },

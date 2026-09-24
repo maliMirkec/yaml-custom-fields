@@ -23,6 +23,40 @@ class AssetManager {
   }
 
   /**
+   * Whether the post being edited has any fields to show
+   *
+   * Loading the editor scripts and the media library on every post editor,
+   * including on sites where one template out of twenty uses this plugin, is
+   * weight on a screen that will not show a single field.
+   *
+   * @return bool
+   */
+  private function postScreenHasFields() {
+    $post_id = RequestHelper::getParamInt('post', 0);
+
+    // A brand new post has no template assigned yet, so assume it may need them
+    if (!$post_id) {
+      return true;
+    }
+
+    $post = get_post($post_id);
+    if (!$post) {
+      return true;
+    }
+
+    $template = $this->templateResolver->resolveForPost($post);
+
+    $template_settings = get_option('yaml_cf_template_settings', []);
+    if (empty($template_settings[$template])) {
+      return false;
+    }
+
+    $schemas = get_option('yaml_cf_schemas', []);
+
+    return !empty($schemas[$template]);
+  }
+
+  /**
    * Set page-specific configuration for JavaScript
    *
    * @param array $config Configuration data to pass to JavaScript
@@ -51,6 +85,12 @@ class AssetManager {
 
     // Only load if on plugin pages or post edit screen
     if (!$is_plugin_page && !$is_post_edit) {
+      return;
+    }
+
+    // A post whose template has no schema shows no fields, so there is nothing
+    // for the scripts or the media library to do on that screen.
+    if ($is_post_edit && !$is_plugin_page && !$this->postScreenHasFields()) {
       return;
     }
 
@@ -132,6 +172,8 @@ class AssetManager {
       'ajax_url' => admin_url('admin-ajax.php'),
       'admin_url' => admin_url(),
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
+      // Only an administrator is handed the token for administrator-only actions
+      'adminNonce' => current_user_can('manage_options') ? wp_create_nonce('yaml_cf_admin_nonce') : '',
       'schema' => $schema_data,
       'schemaSource' => $schema_source,
     ]);

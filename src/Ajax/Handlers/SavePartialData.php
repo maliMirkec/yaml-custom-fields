@@ -35,7 +35,7 @@ class SavePartialData extends AjaxHandler {
 
     $partial_data = (array) get_option('yaml_cf_partial_data', []);
     $partial_data[$template] = $this->sanitizer->sanitize($data ? $data : [], is_array($schema) ? $schema : null);
-    update_option('yaml_cf_partial_data', $partial_data);
+    update_option('yaml_cf_partial_data', $partial_data, false);
 
     $this->cacheManager->clearDataCaches();
 

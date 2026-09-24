@@ -641,7 +641,7 @@ class YAML_Custom_Fields {
       );
 
       $schemas[$template] = $schema;
-      update_option('yaml_cf_schemas', $schemas);
+      update_option('yaml_cf_schemas', $schemas, false);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_schema_' . get_current_user_id());
@@ -686,7 +686,7 @@ class YAML_Custom_Fields {
 
       $partial_data = get_option('yaml_cf_partial_data', []);
       $partial_data[$template] = $field_data;
-      update_option('yaml_cf_partial_data', $partial_data);
+      update_option('yaml_cf_partial_data', $partial_data, false);
 
       // Clear caches
       $this->clear_data_caches();
@@ -731,7 +731,7 @@ class YAML_Custom_Fields {
         }
       }
 
-      update_option('yaml_cf_global_schema', $global_schema);
+      update_option('yaml_cf_global_schema', $global_schema, false);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
@@ -769,7 +769,7 @@ class YAML_Custom_Fields {
         $field_data = $this->sanitize_field_data($posted_data, $global_schema);
       }
 
-      update_option('yaml_cf_global_data', $field_data);
+      update_option('yaml_cf_global_data', $field_data, false);
 
       // Clear caches
       $this->clear_data_caches();
@@ -816,7 +816,7 @@ class YAML_Custom_Fields {
 
       $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
       $template_global_schemas[$template] = $template_global_schema;
-      update_option('yaml_cf_template_global_schemas', $template_global_schemas);
+      update_option('yaml_cf_template_global_schemas', $template_global_schemas, false);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
@@ -859,7 +859,7 @@ class YAML_Custom_Fields {
 
       $template_global_data = get_option('yaml_cf_template_global_data', []);
       $template_global_data[$template] = $field_data;
-      update_option('yaml_cf_template_global_data', $template_global_data);
+      update_option('yaml_cf_template_global_data', $template_global_data, false);
 
       // Clear caches
       $this->clear_data_caches();
@@ -3202,13 +3202,14 @@ class YAML_Custom_Fields {
       // update_post_meta() unslashes its value; slash first so backslashes in field values survive
       update_post_meta($post_id, '_yaml_cf_data', wp_slash($sanitized_data));
 
-      // Store schema for validation purposes
-      if ($schema) {
-        update_post_meta($post_id, '_yaml_cf_schema', wp_slash($schema));
+      // Track this post for efficient cache clearing (avoids slow meta_query).
+      // A page whose fields are all cleared drops off the list again, so it does
+      // not keep growing with posts that have nothing left in them.
+      if (empty($sanitized_data)) {
+        $this->untrack_post_with_yaml_data($post_id);
+      } else {
+        $this->track_post_with_yaml_data($post_id);
       }
-
-      // Track this post for efficient cache clearing (avoids slow meta_query)
-      $this->track_post_with_yaml_data($post_id);
 
       // Clear caches
       $this->clear_data_caches($post_id);

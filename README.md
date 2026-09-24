@@ -461,6 +461,9 @@ Contributions are welcome! Please follow these guidelines:
 
 ## Changelog
 
+The full, current changelog lives in `readme.txt`, which is what WordPress.org
+publishes. The entries below stop at 1.2.4 and are kept for reference only.
+
 ### 1.2.4
 
 - **REFACTOR: Assets Folder Structure** - Reorganized assets for WordPress.org compliance

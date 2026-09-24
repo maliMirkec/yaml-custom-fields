@@ -23,6 +23,15 @@ class RenderBlockItem extends AjaxHandler {
   /** Schema sources a block field can come from, one per screen that renders fields */
   const SOURCES = ['template', 'global', 'template_global', 'partial', 'data_object'];
 
+  /**
+   * Sources that only ever appear on a settings screen.
+   *
+   * The post editor only ever asks for 'template'. The rest belong to screens
+   * an administrator opens, so there is no reason for a writer's browser to be
+   * able to ask for the shape of a site details or collection schema.
+   */
+  const ADMIN_ONLY_SOURCES = ['global', 'template_global', 'partial', 'data_object'];
+
   private $schemaParser;
 
   public function __construct($schemaParser) {
@@ -36,6 +45,10 @@ class RenderBlockItem extends AjaxHandler {
     $source = $this->postText('source');
     if (!in_array($source, self::SOURCES, true)) {
       $this->sendError(__('That schema could not be found.', 'yaml-custom-fields'));
+    }
+
+    if (in_array($source, self::ADMIN_ONLY_SOURCES, true)) {
+      $this->checkCapability();
     }
 
     $schema = $this->getSchema($source, $this->postText('key'));

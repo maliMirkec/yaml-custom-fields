@@ -21,9 +21,13 @@ class ValidationPageTest extends WPTestCase {
 	}
 
 	private function createImportedPost($data) {
+		// The field list comes from the post's template, not from a copy stored
+		// on the post, so the schema is set up the way a site really has it.
+		update_option('yaml_cf_schemas', ['single.php' => "fields:\n  - name: hero\n    type: image\n"], false);
+		update_option('yaml_cf_template_settings', ['single.php' => true], false);
+
 		$post_id = $this->createTestPost([], $data);
 		update_post_meta($post_id, '_yaml_cf_imported', true);
-		update_post_meta($post_id, '_yaml_cf_schema', ['fields' => [['name' => 'hero', 'type' => 'image']]]);
 		return $post_id;
 	}
 

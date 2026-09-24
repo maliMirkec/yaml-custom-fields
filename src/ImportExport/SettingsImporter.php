@@ -78,7 +78,7 @@ class SettingsImporter {
       if ($merge) {
         $template_settings = array_merge((array) get_option('yaml_cf_template_settings', []), $template_settings);
       }
-      update_option('yaml_cf_template_settings', $template_settings);
+      update_option('yaml_cf_template_settings', $template_settings, false);
       $imported++;
     }
 
@@ -94,7 +94,7 @@ class SettingsImporter {
       $global_schema = sanitize_textarea_field($settings['global_schema']);
       $validation_result = $global_schema === '' ? ['valid' => true] : $this->validator->validate($global_schema, null, false);
       if ($validation_result['valid']) {
-        update_option('yaml_cf_global_schema', $global_schema);
+        update_option('yaml_cf_global_schema', $global_schema, false);
         $imported++;
         foreach ($this->warningsOf($validation_result) as $warning) {
           /* translators: %s: the problem found in the schema */
@@ -120,7 +120,7 @@ class SettingsImporter {
       if ($merge) {
         $global_data = array_merge((array) get_option('yaml_cf_global_data', []), $global_data);
       }
-      update_option('yaml_cf_global_data', $global_data);
+      update_option('yaml_cf_global_data', $global_data, false);
       $imported++;
     }
 
@@ -198,7 +198,7 @@ class SettingsImporter {
     if ($merge) {
       $result = array_merge((array) get_option($option, []), $result);
     }
-    update_option($option, $result);
+    update_option($option, $result, false);
 
     return $written;
   }
@@ -223,7 +223,7 @@ class SettingsImporter {
     if ($merge) {
       $result = array_merge((array) get_option($option, []), $result);
     }
-    update_option($option, $result);
+    update_option($option, $result, false);
 
     return $written;
   }

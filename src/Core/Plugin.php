@@ -94,6 +94,17 @@ class Plugin {
     });
 
     // Template Management
+    $this->container->register('post_schema_locator', function($c) {
+      return new \YamlCF\Schema\PostSchemaLocator(
+        $c->get('template_resolver'),
+        $c->get('schema_parser')
+      );
+    });
+
+    $this->container->register('upgrader', function($c) {
+      return new \YamlCF\Core\Upgrader();
+    });
+
     $this->container->register('template_scanner', function($c) {
       return new \YamlCF\Template\TemplateScanner();
     });
@@ -168,7 +179,8 @@ class Plugin {
 
     $this->container->register('page_data_exporter', function($c) {
       return new \YamlCF\ImportExport\PageDataExporter(
-        $c->get('template_resolver')
+        $c->get('template_resolver'),
+        $c->get('post_schema_locator')
       );
     });
 
@@ -383,7 +395,8 @@ class Plugin {
     $this->container->register('validation_controller', function($c) {
       return new \YamlCF\Admin\Controllers\ValidationController(
         $c->get('attachment_validator'),
-        $c->get('post_data_repository')
+        $c->get('post_data_repository'),
+        $c->get('post_schema_locator')
       );
     });
 

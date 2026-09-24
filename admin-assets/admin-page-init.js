@@ -65,7 +65,8 @@
           type: 'POST',
           data: {
             action: 'yaml_cf_refresh_templates',
-            nonce: yamlCF.nonce
+            nonce: yamlCF.nonce,
+            admin_nonce: yamlCF.adminNonce
           },
           success: function(response) {
             if (response.success) {

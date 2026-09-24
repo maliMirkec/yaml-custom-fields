@@ -20,10 +20,15 @@ class ValidationController extends AdminController {
 
   private $attachmentValidator;
   private $postRepository;
+  private $schemaLocator;
 
-  public function __construct($attachmentValidator, $postRepository = null) {
+  public function __construct($attachmentValidator, $postRepository = null, $schemaLocator = null) {
     $this->attachmentValidator = $attachmentValidator;
     $this->postRepository = $postRepository ?: new \YamlCF\Data\Repositories\PostDataRepository();
+    $this->schemaLocator = $schemaLocator ?: new \YamlCF\Schema\PostSchemaLocator(
+      new \YamlCF\Template\TemplateResolver(),
+      new \YamlCF\Schema\SchemaParser()
+    );
   }
 
   /**
@@ -56,9 +61,10 @@ class ValidationController extends AdminController {
         continue;
       }
 
-      // The stored schema is the full parsed schema; the validator expects its field list
-      $schema = get_post_meta($post->ID, '_yaml_cf_schema', true);
-      $fields = is_array($schema) && isset($schema['fields']) && is_array($schema['fields']) ? $schema['fields'] : null;
+      // Worked out from the post's template, so an edited schema takes effect at
+      // once. This used to read a copy frozen into the post when it was saved,
+      // which meant old posts were checked against an out-of-date field list.
+      $fields = $this->schemaLocator->fieldsForPost($post);
 
       $missing = $this->attachmentValidator->validateAttachments($data, '', $fields);
       if (!empty($missing)) {

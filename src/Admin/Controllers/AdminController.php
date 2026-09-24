@@ -52,6 +52,8 @@ abstract class AdminController {
       'ajax_url' => admin_url('admin-ajax.php'),
       'admin_url' => admin_url(),
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
+      // Only an administrator is handed the token for administrator-only actions
+      'adminNonce' => current_user_can('manage_options') ? wp_create_nonce('yaml_cf_admin_nonce') : '',
     ];
 
     $localized_data = array_merge($defaults, $data);

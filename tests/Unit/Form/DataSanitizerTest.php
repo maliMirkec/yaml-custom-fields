@@ -568,4 +568,58 @@ class DataSanitizerTest extends TestCase {
 		$this->assertEquals('object', $this->sanitizer->getFieldDefinition($schema, 'section')['type']);
 		$this->assertNull($this->sanitizer->getFieldDefinition(null, 'section'));
 	}
+	// ------------------------------------------------------- CSS cleaning
+
+	/**
+	 * The cleaner removes dangerous constructs one pattern at a time, and what is
+	 * left can close back up into a new one: "javascjavascript:ript:" becomes
+	 * "javascript:" after a single pass. It now runs until a pass changes nothing.
+	 */
+	public function testCssCleaningDoesNotLeaveAReassembledPayload() {
+		$css = 'a { background: url(javascjavascript:ript:alert(1)); }';
+
+		$result = $this->sanitizer->sanitizeCodeField($css, 'css');
+
+		$this->assertStringNotContainsString('javascript:', $result);
+	}
+
+	public function testCssCleaningHandlesSeveralLayersOfNesting() {
+		$css = 'a { x: expexpexpression(ression(ression(1))); }';
+
+		$result = $this->sanitizer->sanitizeCodeField($css, 'css');
+
+		$this->assertStringNotContainsString('expression(', $result);
+	}
+
+	/**
+	 * A comment in the middle of a word hid it from every pattern, while the
+	 * browser reads the word as one piece.
+	 */
+	public function testCssCommentsCannotHideAPayload() {
+		$css = 'a { x: expr/*comment*/ession(alert(1)); }';
+
+		$result = $this->sanitizer->sanitizeCodeField($css, 'css');
+
+		$this->assertStringNotContainsString('expression(', str_replace(' ', '', $result));
+	}
+
+	public function testCssCleaningLeavesOrdinaryStylesAlone() {
+		$css = "body {\n  color: #333;\n  margin: 0 auto;\n}";
+
+		$result = $this->sanitizer->sanitizeCodeField($css, 'css');
+
+		$this->assertStringContainsString('color: #333', $result);
+		$this->assertStringContainsString('margin: 0 auto', $result);
+	}
+
+	/**
+	 * Someone who may post raw HTML keeps their CSS untouched, comments and all.
+	 */
+	public function testCssIsUntouchedForAUserWithUnfilteredHtml() {
+		$GLOBALS['yaml_cf_test_user_caps'] = ['unfiltered_html' => true];
+		$css = 'a { /* keep me */ color: red; }';
+
+		$this->assertSame($css, $this->sanitizer->sanitizeCodeField($css, 'css'));
+	}
+
 }

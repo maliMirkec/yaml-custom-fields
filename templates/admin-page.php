@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 // - $global_field_count : int - Number of fields in the global schema
 // - $show_getting_started : bool - Show first-run guidance
 // - $theme_kind : array - name, is_block, is_child, parent of the active theme
+// - $keep_data_on_uninstall : bool - Whether deleting the plugin keeps the content
 
 $yaml_cf_admin_url = function ($page, $template = null) {
   $args = ['page' => $page];
@@ -123,7 +124,7 @@ $yaml_cf_empty_reason = function ($kind, $what) {
 
     <?php if ($show_getting_started) : ?>
       <section class="yaml-cf-onboarding" aria-labelledby="yaml-cf-onboarding-title">
-        <h2 id="yaml-cf-onboarding-title"><?php esc_html_e('Get started in three steps', 'yaml-custom-fields'); ?></h2>
+        <h2 id="yaml-cf-onboarding-title"><?php esc_html_e('Get started in four steps', 'yaml-custom-fields'); ?></h2>
         <ol class="yaml-cf-steps">
           <li>
             <strong><?php esc_html_e('Turn on a template', 'yaml-custom-fields'); ?></strong>
@@ -135,7 +136,14 @@ $yaml_cf_empty_reason = function ($kind, $what) {
           </li>
           <li>
             <strong><?php esc_html_e('Fill in the content', 'yaml-custom-fields'); ?></strong>
-            <span><?php esc_html_e('The fields appear below the title on every page or post that uses the template. The theme shows what was typed.', 'yaml-custom-fields'); ?></span>
+            <span><?php esc_html_e('The fields appear below the title on every page or post that uses the template. Writers only ever see this step.', 'yaml-custom-fields'); ?></span>
+          </li>
+          <li>
+            <strong><?php esc_html_e('Show it in the theme', 'yaml-custom-fields'); ?></strong>
+            <span>
+              <?php esc_html_e('A field shows up on the website once the theme asks for it. That is one line per field, and the Copy code button next to each field copies the exact line.', 'yaml-custom-fields'); ?>
+              <code>&lt;?php echo esc_html( ycf_get_field( 'headline' ) ); ?&gt;</code>
+            </span>
           </li>
         </ol>
         <p class="yaml-cf-onboarding-more">
@@ -337,6 +345,36 @@ $yaml_cf_empty_reason = function ($kind, $what) {
           </tbody>
         </table>
       <?php endif; ?>
+    </section>
+
+    <!-- What happens if the plugin is deleted -->
+    <section class="yaml-cf-card yaml-cf-uninstall-card" aria-labelledby="yaml-cf-uninstall-title">
+      <div class="yaml-cf-card-title-row">
+        <h2 id="yaml-cf-uninstall-title">
+          <span class="dashicons dashicons-trash" aria-hidden="true"></span>
+          <?php esc_html_e('If this plugin is deleted', 'yaml-custom-fields'); ?>
+        </h2>
+      </div>
+      <div class="yaml-cf-card-body">
+        <p>
+          <?php esc_html_e('Deleting the plugin removes the schemas, the site details, the collections, and the content filled into the fields on every page and post. Deactivating it changes nothing.', 'yaml-custom-fields'); ?>
+        </p>
+        <form method="post" action="">
+          <?php wp_nonce_field('yaml_cf_keep_data', 'yaml_cf_keep_data_nonce'); ?>
+          <p>
+            <label>
+              <input type="checkbox" name="yaml_cf_keep_data" value="1" <?php checked($keep_data_on_uninstall); ?> />
+              <?php esc_html_e('Keep the content if the plugin is deleted', 'yaml-custom-fields'); ?>
+            </label>
+          </p>
+          <p class="yaml-cf-hint">
+            <?php esc_html_e('With this ticked, the content stays in the database and comes back if the plugin is installed again. Untick it to have everything removed.', 'yaml-custom-fields'); ?>
+          </p>
+          <p>
+            <button type="submit" class="button"><?php esc_html_e('Save this choice', 'yaml-custom-fields'); ?></button>
+          </p>
+        </form>
+      </div>
     </section>
 
     <!-- Schema reference -->

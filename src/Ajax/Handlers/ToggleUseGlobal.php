@@ -22,7 +22,7 @@ class ToggleUseGlobal extends AjaxHandler {
 
     $settings = (array) get_option('yaml_cf_template_settings', []);
     $settings[$template . '_use_global'] = $use_global;
-    update_option('yaml_cf_template_settings', $settings);
+    update_option('yaml_cf_template_settings', $settings, false);
 
     $this->sendSuccess(['use_global' => $use_global]);
   }

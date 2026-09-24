@@ -22,7 +22,7 @@ class SaveTemplateSettings extends AjaxHandler {
 
     $settings = (array) get_option('yaml_cf_template_settings', []);
     $settings[$template] = $enabled;
-    update_option('yaml_cf_template_settings', $settings);
+    update_option('yaml_cf_template_settings', $settings, false);
 
     $schemas = (array) get_option('yaml_cf_schemas', []);
     $template_global_schemas = (array) get_option('yaml_cf_template_global_schemas', []);

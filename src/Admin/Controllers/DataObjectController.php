@@ -76,7 +76,7 @@ class DataObjectController extends AdminController {
         if (isset($data_object_types[$type_slug])) {
           // Delete the type
           unset($data_object_types[$type_slug]);
-          update_option('yaml_cf_data_object_types', $data_object_types);
+          update_option('yaml_cf_data_object_types', $data_object_types, false);
 
           // Delete all entries for this type
           delete_option('yaml_cf_data_object_entries_' . $type_slug);
@@ -131,7 +131,7 @@ class DataObjectController extends AdminController {
         'schema' => $schema_yaml,
       ];
 
-      update_option('yaml_cf_data_object_types', $data_object_types);
+      update_option('yaml_cf_data_object_types', $data_object_types, false);
 
       /* translators: %s: data object type name */
       $this->notifications->success(sprintf(__('The list "%s" was saved.', 'yaml-custom-fields'), $type_name));
@@ -192,7 +192,7 @@ class DataObjectController extends AdminController {
 
       $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
       $entries[$entry_id_to_save] = $entry_data;
-      update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
+      update_option('yaml_cf_data_object_entries_' . $type_id, $entries, false);
 
       $this->notifications->success(__('Item saved.', 'yaml-custom-fields'));
 
@@ -222,7 +222,7 @@ class DataObjectController extends AdminController {
 
       if (isset($entries[$entry_id_to_delete])) {
         unset($entries[$entry_id_to_delete]);
-        update_option('yaml_cf_data_object_entries_' . $type_id, $entries);
+        update_option('yaml_cf_data_object_entries_' . $type_id, $entries, false);
 
         $this->notifications->success(__('Item deleted.', 'yaml-custom-fields'));
       }

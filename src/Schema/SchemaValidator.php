@@ -27,6 +27,24 @@ class SchemaValidator {
    * 'break' is left out on purpose: FieldNormalizer turns it into 'section'
    * before validation runs.
    */
+  /**
+   * The longest schema that will be accepted, in bytes.
+   *
+   * A schema is a short list of fields written by hand; a megabyte of it is
+   * never that. Symfony's parser builds the whole document in memory and
+   * recurses as it goes, so there has to be a limit somewhere.
+   */
+  const MAX_SCHEMA_BYTES = 262144;
+
+  /**
+   * Field names the plugin uses for its own bookkeeping.
+   *
+   * _template_global_override was written into post data by versions before
+   * 1.3.0 to hold per-page overrides of shared fields. It is still read, so a
+   * schema must not be able to claim the name.
+   */
+  const RESERVED_NAMES = ['_template_global_override'];
+
   const FIELD_TYPES = [
     'block',
     'boolean',
@@ -76,6 +94,18 @@ class SchemaValidator {
   public function validate($yaml, $template = null, $strict = true) {
     $this->warnings = [];
 
+    if (is_string($yaml) && strlen($yaml) > self::MAX_SCHEMA_BYTES) {
+      return [
+        'valid' => false,
+        'message' => sprintf(
+          /* translators: %d: size limit in kilobytes */
+          __('The schema is too long. Schemas are lists of fields and have to stay under %d KB.', 'yaml-custom-fields'),
+          (int) (self::MAX_SCHEMA_BYTES / 1024)
+        ),
+        'warnings' => [],
+      ];
+    }
+
     try {
       $parsed = Yaml::parse($yaml);
 
@@ -114,6 +144,14 @@ class SchemaValidator {
         'message' => sprintf(__('The schema has a typing mistake. %s', 'yaml-custom-fields'), $e->getMessage()),
         'warnings' => $this->warnings,
       ];
+    } catch (\Throwable $e) {
+      // Anything else the parser raises on a document it cannot cope with, such
+      // as running out of nesting depth. The schema is refused, not the request.
+      return [
+        'valid' => false,
+        'message' => __('The schema could not be read. Check that it is a plain list of fields.', 'yaml-custom-fields'),
+        'warnings' => $this->warnings,
+      ];
     }
   }
 
@@ -133,6 +171,8 @@ class SchemaValidator {
     // Shorthand (- info: "…", - section: "…") is expanded at every level when
     // fields are rendered, so it is expanded here too before anything is checked.
     $fields = $this->normalizer->normalizeAll($fields);
+
+    $seen_names = [];
 
     foreach ($fields as $index => $field) {
       if (!is_array($field)) {
@@ -156,6 +196,27 @@ class SchemaValidator {
           $path,
           /* translators: %s: field name */
           sprintf(__('The field "%s" needs a type. Add a line like "type: string".', 'yaml-custom-fields'), $field['name'])
+        );
+      }
+
+      $name = (string) $field['name'];
+
+      // Two fields of the same name means one quietly replaces the other: they
+      // share a key in the stored data, and only the second one is ever read.
+      if (isset($seen_names[$name])) {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field name */
+          sprintf(__('There are two fields called "%s". Field names have to be different from one another.', 'yaml-custom-fields'), $name)
+        );
+      }
+      $seen_names[$name] = true;
+
+      if (in_array($name, self::RESERVED_NAMES, true)) {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field name */
+          sprintf(__('"%s" is a name the plugin uses itself. Choose another name for the field.', 'yaml-custom-fields'), $name)
         );
       }
 

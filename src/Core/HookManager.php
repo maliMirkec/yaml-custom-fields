@@ -32,6 +32,9 @@ class HookManager {
   public function registerHooks() {
     $container = $this->plugin->getContainer();
 
+    // Bring stored data up to date before any screen reads it
+    add_action('admin_init', [$this, 'maybeUpgrade'], 1);
+
     // Admin menu and assets
     add_action('admin_menu', [$this, 'registerAdminMenu']);
     add_action('admin_init', [$this, 'hideSubmenuItems']);
@@ -56,6 +59,13 @@ class HookManager {
 
     // Body class for plugin screens (used to show notices only after WordPress moves them below the header)
     add_filter('admin_body_class', [$this, 'adminBodyClass']);
+  }
+
+  /**
+   * Run any pending data upgrade
+   */
+  public function maybeUpgrade() {
+    $this->plugin->get('upgrader')->maybeUpgrade();
   }
 
   /**

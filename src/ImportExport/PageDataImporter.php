@@ -97,9 +97,6 @@ class PageDataImporter {
     // update_post_meta() unslashes its value; slash first so backslashes in field values survive
     $data_updated = update_post_meta($post->ID, '_yaml_cf_data', wp_slash($data));
     update_post_meta($post->ID, '_yaml_cf_imported', true);
-    if ($schema) {
-      update_post_meta($post->ID, '_yaml_cf_schema', wp_slash($schema));
-    }
 
     \YamlCF\Cache\PostTracker::track($post->ID);
     $this->cacheManager->clearDataCaches($post->ID);

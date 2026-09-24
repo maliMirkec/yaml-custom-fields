@@ -26,7 +26,12 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 	 * Call an AJAX action and return the decoded JSON response
 	 */
 	private function callAjax($action, array $params, $nonce = null) {
-		$_POST = wp_slash(array_merge(['nonce' => $nonce === null ? wp_create_nonce('yaml_cf_nonce') : $nonce], $params));
+		// Both tokens travel with every request; the handler picks the one that
+		// matches the capability its action needs.
+		$_POST = wp_slash(array_merge([
+			'nonce' => $nonce === null ? wp_create_nonce('yaml_cf_nonce') : $nonce,
+			'admin_nonce' => $nonce === null ? wp_create_nonce('yaml_cf_admin_nonce') : $nonce,
+		], $params));
 		try {
 			$this->_handleAjax($action);
 		} catch (WPAjaxDieContinueException $e) {
@@ -47,7 +52,7 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 
 	public function testInvalidNonceIsRejected() {
 		$this->_setRole('administrator');
-		$_POST = ['nonce' => 'invalid', 'template' => 'single.php', 'enabled' => 'true'];
+		$_POST = ['nonce' => 'invalid', 'admin_nonce' => 'invalid', 'template' => 'single.php', 'enabled' => 'true'];
 
 		$this->expectException(WPAjaxDieStopException::class);
 		$this->_handleAjax('yaml_cf_save_template_settings');
@@ -95,7 +100,10 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 		$this->assertStringNotContainsString('__YAMLCF_B64__', $stored['title']);
 		$this->assertStringNotContainsString('<script', $stored['body']);
 		$this->assertStringContainsString('<p>Keep</p>', $stored['body']);
-		$this->assertSame('string', get_post_meta($post_id, '_yaml_cf_schema', true)['fields'][0]['type']);
+		// The file said "title" was a code field, which would have let the marker
+		// through. The site's own schema says string, so the marker was stripped
+		// and what is left is inert text that nothing will ever decode.
+		$this->assertSame(base64_encode('<script>x()</script>'), $stored['title']);
 	}
 
 	public function testImportSettingsSkipsInvalidSchemas() {
@@ -164,4 +172,38 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 		$this->assertSame(25, $page1['data']['total']);
 		$this->assertSame(2, $page1['data']['total_pages']);
 	}
+	/**
+	 * Saving a schema is what creates yaml_cf_schemas on most sites, and an
+	 * option created without saying otherwise is loaded on every page view,
+	 * front end included. The schema editor's save is the path that matters.
+	 */
+	public function testSavingASchemaDoesNotLeaveItLoadedOnEveryRequest() {
+		global $wpdb;
+
+		$this->_setRole('administrator');
+		delete_option('yaml_cf_schemas');
+
+		$this->callAjax('yaml_cf_save_schema', [
+			'template' => 'single.php',
+			'schema' => "fields:\n  - name: headline\n    type: string\n",
+		]);
+
+		$schemas = get_option('yaml_cf_schemas', []);
+		$this->assertArrayHasKey('single.php', $schemas, 'The schema should have been saved.');
+
+		// No WordPress function reports an option's autoload state, so the column
+		// is read directly. Tests are outside the plugin's no-direct-SQL rule.
+		$autoload = $wpdb->get_var(
+			$wpdb->prepare("SELECT autoload FROM {$wpdb->options} WHERE option_name = %s LIMIT 1", 'yaml_cf_schemas')
+		);
+
+		// An option saved with no autoload argument is stored as 'auto', and 'auto'
+		// is autoloaded, so the list has to come from WordPress rather than a guess.
+		$autoloaded = function_exists('wp_autoload_values_to_autoload')
+			? wp_autoload_values_to_autoload()
+			: ['yes'];
+
+		$this->assertNotContains($autoload, $autoloaded, 'Schemas should not be autoloaded.');
+	}
+
 }

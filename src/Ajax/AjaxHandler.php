@@ -14,9 +14,19 @@ if (!defined('ABSPATH')) {
 }
 abstract class AjaxHandler {
   /**
-   * Nonce action shared by the admin scripts (localized as yamlCF.nonce)
+   * Nonce action for what a writer may do (localized as yamlCF.nonce)
    */
   const NONCE_ACTION = 'yaml_cf_nonce';
+
+  /**
+   * Nonce action for what only an administrator may do (yamlCF.adminNonce)
+   *
+   * Kept apart from the one above so that the token sitting in a writer's post
+   * editor is not also the token that saves a schema or imports a bundle. Only
+   * a user who can manage options is given this one, so on every other screen
+   * it is an empty string and an administrator-only action fails twice over.
+   */
+  const ADMIN_NONCE_ACTION = 'yaml_cf_admin_nonce';
 
   /**
    * Send success response (ends the request)
@@ -53,7 +63,12 @@ abstract class AjaxHandler {
    * @param string $cap Capability to check
    */
   protected function verifyRequest($cap = 'manage_options') {
-    check_ajax_referer(self::NONCE_ACTION, 'nonce');
+    if ($cap === 'manage_options') {
+      check_ajax_referer(self::ADMIN_NONCE_ACTION, 'admin_nonce');
+    } else {
+      check_ajax_referer(self::NONCE_ACTION, 'nonce');
+    }
+
     $this->checkCapability($cap);
   }
 

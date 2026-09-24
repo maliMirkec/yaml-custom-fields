@@ -591,6 +591,11 @@ if (!defined('ABSPATH')) {
     <li>Collections: option <code>yaml_cf_data_object_types</code>, items in <code>yaml_cf_data_object_entries_{short-name}</code>.</li>
   </ul>
   <p>Image and file fields store attachment IDs. Code fields are stored base64-encoded and decoded by the functions above.</p>
+  <p>None of these options are loaded on every page view. They are read when something asks for them.</p>
+
+  <h3>Deleting the plugin</h3>
+  <p>Deactivating the plugin changes nothing. <strong>Deleting</strong> it removes the schemas, the site details, the collections and the content filled into the fields on every page and post, and that cannot be undone.</p>
+  <p>To keep the content, tick <strong>Keep the content if the plugin is deleted</strong> at the bottom of the YAML Custom Fields page before deleting. The content then stays in the database and comes back if the plugin is installed again.</p>
 
   <h3>Function signatures</h3>
   <pre><code>ycf_get_field($field_name, $post_id = null, $context_data = null)

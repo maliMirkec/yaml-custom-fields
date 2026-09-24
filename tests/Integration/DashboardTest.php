@@ -35,7 +35,7 @@ class DashboardTest extends WPTestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString('Get started in three steps', $html);
+		$this->assertStringContainsString('Get started in four steps', $html);
 		$this->assertStringContainsString('Not set up', $html);
 		$this->assertStringContainsString('Create site details', $html);
 		$this->assertStringContainsString('class="wp-header-end"', $html);
@@ -64,7 +64,7 @@ class DashboardTest extends WPTestCase {
 
 		$html = $this->render();
 
-		$this->assertStringNotContainsString('Get started in three steps', $html);
+		$this->assertStringNotContainsString('Get started in four steps', $html);
 		$this->assertStringContainsString('2 fields', $html);
 		$this->assertStringContainsString('Fix schema', $html);
 		$this->assertStringContainsString('No fields yet', $html);
@@ -122,6 +122,22 @@ class DashboardTest extends WPTestCase {
 		$this->assertStringContainsString('Site Editor', $html);
 		// The @ycf marker hint is meaningless without .php files to put it in
 		$this->assertStringNotContainsString('put @ycf in a comment', $html);
+	}
+
+	/**
+	 * The dashboard used to say "The theme shows what was typed", which reads as
+	 * though nothing else is needed. Someone would set up a schema, fill it in,
+	 * look at the page and find nothing there. The readme was always honest that
+	 * it takes a line in the theme; the screen people actually read was not.
+	 */
+	public function testOnboardingSaysTheThemeNeedsALineOfCode() {
+		$this->actingAs($this->createTestUser('administrator'));
+
+		$html = $this->render();
+
+		$this->assertStringContainsString('Show it in the theme', $html);
+		$this->assertStringContainsString('ycf_get_field', $html);
+		$this->assertStringNotContainsString('The theme shows what was typed', $html);
 	}
 
 }

@@ -16,8 +16,14 @@ if (!defined('ABSPATH')) {
 class PageDataExporter {
   private $templateResolver;
 
-  public function __construct($templateResolver = null) {
+  private $schemaLocator;
+
+  public function __construct($templateResolver = null, $schemaLocator = null) {
     $this->templateResolver = $templateResolver ?: new \YamlCF\Template\TemplateResolver();
+    $this->schemaLocator = $schemaLocator ?: new \YamlCF\Schema\PostSchemaLocator(
+      $this->templateResolver,
+      new \YamlCF\Schema\SchemaParser()
+    );
   }
 
   /**
@@ -41,7 +47,9 @@ class PageDataExporter {
       'data' => $data,
     ];
 
-    $schema = get_post_meta($post->ID, '_yaml_cf_schema', true);
+    // The schema the post's template uses now, rather than a copy frozen into
+    // the post when it was last saved
+    $schema = $this->schemaLocator->forPost($post);
     if (!empty($schema)) {
       $entry['schema'] = $schema;
     }

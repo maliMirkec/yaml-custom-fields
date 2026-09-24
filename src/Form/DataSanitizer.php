@@ -19,6 +19,14 @@ class DataSanitizer {
   const CODE_FIELD_MARKER = '__YAMLCF_B64__';
 
   /**
+   * How many times CSS cleaning may run before it gives up
+   *
+   * Each pass can reveal a pattern the one before it joined together, but the
+   * value shrinks every pass, so this is only a stop against a pathological input.
+   */
+  const MAX_CSS_CLEANING_PASSES = 10;
+
+  /**
    * Whether code fields may keep raw markup for users with unfiltered_html
    */
   private $trustCurrentUser;
@@ -303,9 +311,29 @@ class DataSanitizer {
       '/data\s*:\s*text\/html/i',     // Data URI with HTML
     ];
 
-    $cleaned_css = $css;
-    foreach ($dangerous_patterns as $pattern) {
-      $cleaned_css = preg_replace($pattern, '', $cleaned_css);
+    // Comments come out first: without this, "expr/*x*/ession(" walks past every
+    // pattern below and is then read as one word by the browser.
+    $cleaned_css = preg_replace('#/\*.*?\*/#s', '', $css);
+    if ($cleaned_css === null) {
+      return '';
+    }
+
+    // Removing a match can join what is left into a new one: "javascjavascript:ript:"
+    // becomes "javascript:" after a single pass. Keep going until a pass changes
+    // nothing, with a stop so a pathological value cannot spin here.
+    for ($pass = 0; $pass < self::MAX_CSS_CLEANING_PASSES; $pass++) {
+      $before = $cleaned_css;
+
+      foreach ($dangerous_patterns as $pattern) {
+        $cleaned_css = preg_replace($pattern, '', $cleaned_css);
+        if ($cleaned_css === null) {
+          return '';
+        }
+      }
+
+      if ($cleaned_css === $before) {
+        break;
+      }
     }
 
     // Basic sanitization while preserving newlines (also strips any tags, e.g. </style>)

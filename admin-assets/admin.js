@@ -90,8 +90,6 @@
 
       // Template Global Controls
       $(document).off('change' + ns, '.yaml-cf-use-template-global-checkbox').on('change' + ns, '.yaml-cf-use-template-global-checkbox', this.toggleTemplateGlobal);
-      $(document).off('click' + ns, '.yaml-cf-enable-override').on('click' + ns, '.yaml-cf-enable-override', this.enableOverride);
-      $(document).off('click' + ns, '.yaml-cf-reset-override').on('click' + ns, '.yaml-cf-reset-override', this.resetOverride);
     },
 
     toggleYAML: function () {
@@ -122,6 +120,7 @@
         data: {
           action: 'yaml_cf_save_template_settings',
           nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
           template: template,
           enabled: enabled,
         },
@@ -165,6 +164,7 @@
         data: {
           action: 'yaml_cf_toggle_use_global',
           nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
           template: template,
           use_global: useGlobal,
         },
@@ -216,70 +216,6 @@
       });
     },
 
-    enableOverride: function () {
-      const $button = $(this);
-      const fieldName = $button.data('field');
-      const $fieldContainer = $button.closest('.yaml-cf-template-global-field');
-      const $fieldHeader = $fieldContainer.find('.yaml-cf-field-header');
-      const $fieldDisplay = $fieldContainer.find('.yaml-cf-field-display');
-
-      // Change indicator to override
-      $fieldHeader.find('.yaml-cf-global-indicator').replaceWith(
-        $('<span>', { 'class': 'yaml-cf-override-indicator', text: '⚠️ ' + __('Changed for this page', 'yaml-custom-fields') })
-      );
-
-      // Change button to reset
-      $button.replaceWith(
-        $('<button>', {
-          type: 'button',
-          'class': 'button button-small yaml-cf-reset-override',
-          'data-field': fieldName,
-          text: __('Use shared value', 'yaml-custom-fields')
-        })
-      );
-
-      // Enable editing - remove readonly class
-      $fieldDisplay.find('.yaml-cf-readonly').removeClass('yaml-cf-readonly');
-      $fieldDisplay.find('input, textarea, select').prop('disabled', false).css({
-        'opacity': '1',
-        'background-color': '#fff',
-        'cursor': 'text',
-        'pointer-events': 'auto'
-      });
-
-      // Add hidden field to mark as override
-      const overrideName = 'yaml_cf_template_global_override[' + fieldName + ']';
-      const hasOverrideInput = $fieldDisplay.find('input').filter(function() {
-        return $(this).attr('name') === overrideName;
-      }).length > 0;
-      if (!hasOverrideInput) {
-        $fieldDisplay.prepend($('<input>', { type: 'hidden', name: overrideName, value: '1' }));
-      }
-
-      // Update field names to use override namespace
-      $fieldDisplay.find('input, textarea, select').each(function() {
-        const $field = $(this);
-        const name = $field.attr('name');
-        if (name && name.indexOf('yaml_cf[') === 0 && name.indexOf('_template_global_override') === -1) {
-          const newName = name.replace('yaml_cf[', 'yaml_cf[_template_global_override][' + fieldName + '][');
-          $field.attr('name', newName);
-        }
-      });
-    },
-
-    resetOverride: function () {
-      const $button = $(this);
-      const fieldName = $button.data('field');
-
-      if (!confirm(__('Go back to the shared value? The value typed for this page will be lost.', 'yaml-custom-fields'))) {
-        return;
-      }
-
-      // Reload the page to reset the field
-      // Note: A better implementation would use AJAX to reload just the field
-      location.reload();
-    },
-
     /**
      * Add a section, rendered by the server
      *
@@ -315,6 +251,7 @@
       $.post(yamlCF.ajax_url, {
         action: 'yaml_cf_render_block_item',
         nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
         source: source.source,
         key: source.key || '',
         field_name: fieldName,
@@ -817,6 +754,7 @@
               ? 'yaml_cf_search_terms'
               : 'yaml_cf_search_data_objects',
           nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
           taxonomy: $picker.data('key'),
           object_type: $picker.data('key'),
           search: term,
@@ -1212,6 +1150,7 @@
             data: {
               action: 'yaml_cf_import_settings',
               nonce: yamlCF.nonce,
+        admin_nonce: yamlCF.adminNonce,
               data: JSON.stringify(importData),
               merge: merge,
             },

@@ -24,6 +24,13 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 function yaml_cf_uninstall_site() {
   global $wpdb;
 
+  // The field content is the site's own writing, not settings, and removing it
+  // cannot be undone. An administrator can ask on the plugin's own page for it
+  // to be left in place, in which case nothing here runs for this site.
+  if ( get_option( 'yaml_cf_keep_data_on_uninstall' ) ) {
+    return;
+  }
+
   // Fixed options
   $yaml_cf_options = array(
     'yaml_cf_schemas',
@@ -35,6 +42,8 @@ function yaml_cf_uninstall_site() {
     'yaml_cf_template_global_data',
     'yaml_cf_data_object_types',
     'yaml_cf_tracked_posts',
+    'yaml_cf_db_version',
+    'yaml_cf_keep_data_on_uninstall',
   );
   foreach ( $yaml_cf_options as $yaml_cf_option ) {
     delete_option( $yaml_cf_option );

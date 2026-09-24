@@ -490,4 +490,101 @@ class SchemaValidatorTest extends TestCase {
 		$this->assertTrue($result['valid'], $result['message']);
 	}
 
+	/**
+	 * A schema is a short list of fields written by hand. Anything enormous is
+	 * refused before the parser builds it all in memory.
+	 */
+	public function testRejectsAnEnormousSchema() {
+		$yaml = "fields:\n";
+		for ($i = 0; $i < 20000; $i++) {
+			$yaml .= "  - name: field_{$i}\n    type: string\n";
+		}
+
+		$this->assertGreaterThan(SchemaValidator::MAX_SCHEMA_BYTES, strlen($yaml));
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('too long', $result['message']);
+	}
+
+	public function testAcceptsASchemaJustUnderTheLimit() {
+		$yaml = "fields:\n";
+		for ($i = 0; strlen($yaml) < SchemaValidator::MAX_SCHEMA_BYTES - 200; $i++) {
+			$yaml .= "  - name: field_{$i}\n    type: string\n";
+		}
+
+		$this->assertLessThan(SchemaValidator::MAX_SCHEMA_BYTES, strlen($yaml));
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
+	}
+
+	/**
+	 * Two fields of the same name share one key in the stored data, so one of
+	 * them silently replaces the other and can never be read back.
+	 */
+	public function testRejectsTwoFieldsWithTheSameName() {
+		$yaml = "fields:\n" .
+			"  - name: headline\n" .
+			"    type: string\n" .
+			"  - name: headline\n" .
+			"    type: text\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('two fields called "headline"', $result['message']);
+	}
+
+	/**
+	 * The same name at two different depths is fine: they are stored separately.
+	 */
+	public function testAllowsTheSameNameInsideAGroup() {
+		$yaml = "fields:\n" .
+			"  - name: title\n" .
+			"    type: string\n" .
+			"  - name: button\n" .
+			"    type: object\n" .
+			"    fields:\n" .
+			"      - name: title\n" .
+			"        type: string\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertTrue($result['valid'], $result['message']);
+	}
+
+	public function testRejectsDuplicatesInsideAGroup() {
+		$yaml = "fields:\n" .
+			"  - name: button\n" .
+			"    type: object\n" .
+			"    fields:\n" .
+			"      - name: label\n" .
+			"        type: string\n" .
+			"      - name: label\n" .
+			"        type: string\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('button', $result['message']);
+	}
+
+	/**
+	 * The plugin reads _template_global_override out of a post's own data, so a
+	 * schema must not be able to define a field with that name.
+	 */
+	public function testRejectsAReservedFieldName() {
+		$yaml = "fields:\n" .
+			"  - name: _template_global_override\n" .
+			"    type: string\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('uses itself', $result['message']);
+	}
+
 }
