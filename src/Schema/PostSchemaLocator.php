@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 /**
  * Finds the schema a post's fields were described by.
  *
- * Until 1.3.0 a full copy of the parsed schema was written into every post as
+ * Until 2.0.0 a full copy of the parsed schema was written into every post as
  * _yaml_cf_schema on every save. It was only ever read in two places, it could
  * be worked out from the post's template at any time, and it went stale the
  * moment the schema was edited, so the Content Check screen kept checking old

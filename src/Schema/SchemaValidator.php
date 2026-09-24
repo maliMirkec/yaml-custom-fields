@@ -40,7 +40,7 @@ class SchemaValidator {
    * Field names the plugin uses for its own bookkeeping.
    *
    * _template_global_override was written into post data by versions before
-   * 1.3.0 to hold per-page overrides of shared fields. It is still read, so a
+   * 2.0.0 to hold per-page overrides of shared fields. It is still read, so a
    * schema must not be able to claim the name.
    */
   const RESERVED_NAMES = ['_template_global_override'];

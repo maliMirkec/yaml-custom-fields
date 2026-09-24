@@ -10,6 +10,8 @@ This guide explains how to package and release the plugin to WordPress.org.
 - [ ] Changelog updated in `readme.txt`
 - [ ] Scoped dependencies built (`./build-scoped.sh`)
 - [ ] Tested on a clean WordPress installation
+- [ ] Tested on a site upgraded from the previous version
+- [ ] Release-specific manual testing done (see `RELEASE-TESTING-<version>.md`)
 - [ ] All WordPress.org plugin checks pass
 
 ## Creating a Release Package

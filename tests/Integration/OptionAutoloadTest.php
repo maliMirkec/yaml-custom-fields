@@ -18,6 +18,7 @@ class OptionAutoloadTest extends WPTestCase {
 	public function tearDown(): void {
 		delete_option('yaml_cf_db_version');
 		delete_option('yaml_cf_data_object_entries_people');
+		delete_option('yaml_cf_partial_data');
 		$_POST = [];
 		parent::tearDown();
 	}
@@ -51,7 +52,7 @@ class OptionAutoloadTest extends WPTestCase {
 	}
 
 	/**
-	 * Put an option in the state a pre-1.3.0 install left it in
+	 * Put an option in the state a pre-2.0.0 install left it in
 	 *
 	 * @param string $option Option name
 	 * @param mixed $value Stored value
@@ -129,6 +130,80 @@ class OptionAutoloadTest extends WPTestCase {
 
 		$this->assertFalse($this->isAutoloaded('yaml_cf_data_object_entries_people'));
 		$this->assertSame(['1' => ['name' => 'Ada']], get_option('yaml_cf_data_object_entries_people'));
+	}
+
+	// ------------------------------------- site parts stranded by a full path
+
+	/**
+	 * Before 2.0.0 a child theme's own site parts were keyed by their whole
+	 * absolute path, because the scan measured them against the parent theme's
+	 * directory. The scan is right now, so those entries have to be moved to the
+	 * key it produces or the schema and its content simply vanish.
+	 */
+	public function testUpgradeMovesChildThemeSitePartsToTheirPlainName() {
+		$absolute = get_stylesheet_directory() . '/header-promo.php';
+
+		update_option('yaml_cf_schemas', [$absolute => "fields:\n  - name: phone\n    type: string\n"], false);
+		update_option('yaml_cf_partial_data', [$absolute => ['phone' => '555-0100']], false);
+		update_option('yaml_cf_template_settings', [$absolute => true], false);
+
+		(new Upgrader())->maybeUpgrade();
+
+		$schemas = get_option('yaml_cf_schemas');
+		$this->assertArrayHasKey('header-promo.php', $schemas);
+		$this->assertArrayNotHasKey($absolute, $schemas);
+
+		$data = get_option('yaml_cf_partial_data');
+		$this->assertSame(['phone' => '555-0100'], $data['header-promo.php']);
+
+		$settings = get_option('yaml_cf_template_settings');
+		$this->assertTrue($settings['header-promo.php']);
+	}
+
+	/**
+	 * A path from a theme that is no longer installed still has a usable name.
+	 */
+	public function testUpgradeFallsBackToTheFileNameForAnUnknownTheme() {
+		update_option('yaml_cf_schemas', ['/var/www/old-theme/footer-extra.php' => 'fields: []'], false);
+
+		(new Upgrader())->maybeUpgrade();
+
+		$this->assertArrayHasKey('footer-extra.php', get_option('yaml_cf_schemas'));
+	}
+
+	/**
+	 * A site part in a sub-folder is legitimately stored as "parts/header.php",
+	 * and must not be flattened.
+	 */
+	public function testUpgradeLeavesRelativeKeysAlone() {
+		update_option('yaml_cf_schemas', [
+			'page.php' => 'fields: []',
+			'parts/header.php' => 'fields: []',
+		], false);
+
+		(new Upgrader())->maybeUpgrade();
+
+		$schemas = get_option('yaml_cf_schemas');
+		$this->assertArrayHasKey('page.php', $schemas);
+		$this->assertArrayHasKey('parts/header.php', $schemas);
+	}
+
+	/**
+	 * The template settings option keys the site details flag separately, and
+	 * that suffix has to survive the move.
+	 */
+	public function testUpgradeKeepsTheSiteDetailsFlagWithItsTemplate() {
+		$absolute = get_stylesheet_directory() . '/header-promo.php';
+		update_option('yaml_cf_template_settings', [
+			$absolute => true,
+			$absolute . '_use_global' => true,
+		], false);
+
+		(new Upgrader())->maybeUpgrade();
+
+		$settings = get_option('yaml_cf_template_settings');
+		$this->assertTrue($settings['header-promo.php']);
+		$this->assertTrue($settings['header-promo.php_use_global']);
 	}
 
 	public function testUpgradeRecordsThatItHasRun() {

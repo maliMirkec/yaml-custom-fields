@@ -4,7 +4,7 @@ Tags: custom fields, fields, content, yaml, schema
 Requires at least: 5.0
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 1.3.0
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -130,7 +130,7 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 
 == Changelog ==
 
-= 1.3.0 =
+= 2.0.0 =
 * **NEW: Works in the Block Editor** - The fields are now a real meta box, so they appear in the block editor as well as the classic one. The Classic Editor plugin is no longer needed
 * **NEW: Galleries** - Image fields support `list: true`: pick many images in one trip to the media library, see them as a grid of thumbnails, and reorder them by dragging or with the keyboard
 * **NEW: Search Instead of Endless Lists** - A taxonomy or collection field with more than 50 choices becomes a search box, so a page with thousands of tags or collection items no longer carries every one of them. The cut-off can be changed with the `yaml_cf_picker_threshold` filter
@@ -253,6 +253,9 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * Copy snippet buttons for all field types with complete function signatures
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+Read this before updating. Two things change what the website shows. Pages where "Use the shared value on this page" is ticked now really do show the shared value through `ycf_get_fields()`, which used to ignore the tick. Where a page field and a site detail share a name, the page's own value now wins. Schemas with a mistake in them - an unknown field type, or the same field name twice - are refused when saved from now on; schemas already saved keep working, and the editor says what is wrong. The update tidies the database once, by itself, the first time an administrator opens a page: it stops the plugin's options being read on every page view, removes a copy of the schema it used to keep in every post, and repairs site parts of a child theme that were filed under their full path. Back up before updating, as with any update.
 
 = 1.2.6 =
 Important fix for code fields. HTML/JavaScript/CSS code is now properly preserved using base64 encoding. Re-save any code fields that previously had content stripped.

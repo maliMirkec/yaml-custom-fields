@@ -24,8 +24,9 @@ class Upgrader {
    * 1: everything up to 1.2.9.
    * 2: plugin options are no longer loaded on every page view.
    * 3: the copy of the schema kept in every post is gone.
+   * 4: site parts of a child theme are keyed by name, not by full path.
    */
-  const CURRENT_VERSION = 3;
+  const CURRENT_VERSION = 4;
 
   /**
    * Options the plugin keeps under a fixed name
@@ -66,7 +67,87 @@ class Upgrader {
       $this->dropPerPostSchemaCopies();
     }
 
+    if ($installed < 4) {
+      $this->repairChildThemePaths();
+    }
+
     update_option(self::VERSION_OPTION, self::CURRENT_VERSION, false);
+  }
+
+  /**
+   * Key a child theme's site parts by name rather than by their full path
+   *
+   * The scan used to measure every file against the parent theme's directory.
+   * A child theme's own files are not in it, so nothing was stripped and the
+   * whole absolute path became the key its schema and content were stored
+   * under. The scan is right now, which would leave those entries stranded
+   * under a key nothing looks for, so they are moved across here.
+   *
+   * @return void
+   */
+  private function repairChildThemePaths() {
+    $directories = [get_stylesheet_directory(), get_template_directory()];
+
+    foreach (['yaml_cf_schemas', 'yaml_cf_partial_data', 'yaml_cf_template_settings'] as $option) {
+      $stored = get_option($option, null);
+      if (!is_array($stored) || empty($stored)) {
+        continue;
+      }
+
+      $repaired = [];
+      $changed = false;
+
+      foreach ($stored as $key => $value) {
+        $new_key = $this->themeRelativeKey((string) $key, $directories);
+
+        if ($new_key !== (string) $key) {
+          $changed = true;
+        }
+
+        // An entry already saved under the plain name is the newer one and wins
+        if ($new_key === (string) $key || !array_key_exists($new_key, $stored)) {
+          $repaired[$new_key] = $value;
+        }
+      }
+
+      if ($changed) {
+        update_option($option, $repaired, false);
+      }
+    }
+  }
+
+  /**
+   * Turn a full path to a theme file into the name the scan uses now
+   *
+   * Keys that are already relative are left exactly as they are: a site part in
+   * a sub-folder is legitimately stored as "parts/header.php".
+   *
+   * @param string $key Key as stored
+   * @param string[] $directories Theme directories to measure against
+   * @return string Key to store it under
+   */
+  private function themeRelativeKey($key, $directories) {
+    // Template settings hold a second key per template for the site details flag
+    $suffix = '';
+    if (substr($key, -11) === '_use_global') {
+      $suffix = '_use_global';
+      $key = substr($key, 0, -11);
+    }
+
+    $is_absolute = strpos($key, '/') === 0 || preg_match('#^[A-Za-z]:[\\/]#', $key) === 1;
+    if (!$is_absolute) {
+      return $key . $suffix;
+    }
+
+    foreach ($directories as $directory) {
+      $directory = trailingslashit($directory);
+      if (strpos($key, $directory) === 0) {
+        return substr($key, strlen($directory)) . $suffix;
+      }
+    }
+
+    // From a theme that is no longer installed: the file name is the best guess
+    return basename($key) . $suffix;
   }
 
   /**

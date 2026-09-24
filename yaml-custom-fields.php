@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: Add your own fields to pages, posts and every part of your site. You choose the fields; writers fill them in.
- * Version: 1.3.0
+ * Version: 2.0.0
  * Author: Studio Cita
  * Author URI: https://www.cita.hr
  * License: GPL v2 or later
@@ -1310,6 +1310,14 @@ class YAML_Custom_Fields {
 
     if ($has_template_global) {
       $template_global_schema = $this->parse_yaml_schema($template_global_schemas[$template]);
+
+      // Expand shorthand the same way get_schema_for_post() does for the post's
+      // own schema. Without this, "- info:" and "- section:" reach the code
+      // below as fields with no name at all.
+      if (is_array($template_global_schema) && isset($template_global_schema['fields']) && is_array($template_global_schema['fields'])) {
+        $template_global_schema['fields'] = $this->normalize_field_shorthand($template_global_schema['fields']);
+      }
+
       $template_global_data_array = get_option('yaml_cf_template_global_data', []);
       $template_global_data = isset($template_global_data_array[$template]) ? $template_global_data_array[$template] : [];
     }
@@ -1353,6 +1361,17 @@ class YAML_Custom_Fields {
       $has_global_only_fields = false;
 
       foreach ($template_global_schema['fields'] as $global_field) {
+        if (!is_array($global_field) || !isset($global_field['name'])) {
+          continue;
+        }
+
+        // Section breaks and info boxes hold no value to share, and the names
+        // they are given are positional, so the same one can appear in both
+        // schemas without meaning the same thing.
+        if (isset($global_field['type']) && in_array($global_field['type'], ['section', 'info'], true)) {
+          continue;
+        }
+
         $global_field_name = $global_field['name'];
 
         // Check if this field exists ONLY in template global (NOT in local schema)
@@ -1428,11 +1447,22 @@ class YAML_Custom_Fields {
    * Check if a field exists in a schema fields array
    */
   private function field_exists_in_schema($field_name, $fields) {
+    if (!is_array($fields)) {
+      return false;
+    }
+
     foreach ($fields as $field) {
+      // Shorthand that has not been expanded, or a schema written by hand with
+      // a field missing its name: neither is a match, and neither is a warning
+      if (!is_array($field) || !isset($field['name'])) {
+        continue;
+      }
+
       if ($field['name'] === $field_name) {
         return true;
       }
     }
+
     return false;
   }
 
@@ -3661,7 +3691,7 @@ function yaml_cf_resolve_post_fields($post_id) {
     }
   }
 
-  // Per-page overrides of shared fields, written by versions before 1.3.0.
+  // Per-page overrides of shared fields, written by versions before 2.0.0.
   if (isset($values['_template_global_override']) && is_array($values['_template_global_override'])) {
     $values = array_merge($values, $values['_template_global_override']);
   }

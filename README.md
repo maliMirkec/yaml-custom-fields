@@ -1,6 +1,6 @@
 # YAML Custom Fields
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
 [![WordPress](https://img.shields.io/badge/wordpress-6.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/php-8.1%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
@@ -435,7 +435,7 @@ Yes! YAML Custom Fields works with any WordPress theme. You define schemas for y
 
 Yes. The fields are registered as a standard meta box, so they appear in a "Custom fields" panel below the content in the block editor and below the title in the classic editor. The Classic Editor plugin is not required.
 
-Before 1.3.0 the box was printed on `edit_form_after_title`, which the block editor never fires — so on a block-editor site the fields did not appear at all. If you added the Classic Editor plugin only for this reason, you can remove it.
+Before 2.0.0 the box was printed on `edit_form_after_title`, which the block editor never fires — so on a block-editor site the fields did not appear at all. If you added the Classic Editor plugin only for this reason, you can remove it.
 
 ### What happens to my data if I deactivate the plugin?
 
