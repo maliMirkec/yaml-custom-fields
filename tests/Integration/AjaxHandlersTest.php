@@ -8,16 +8,23 @@ namespace YamlCF\Tests\Integration;
 use WP_Ajax_UnitTestCase;
 use WPAjaxDieContinueException;
 use WPAjaxDieStopException;
+use YamlCF\Tests\FailsOnPluginWarnings;
 
 class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
+	// WP_Ajax_UnitTestCase switches E_WARNING off for every test, so without
+	// this a warning raised inside a handler passes unnoticed here.
+	use FailsOnPluginWarnings;
+
 	const SCHEMA = "fields:\n  - name: title\n    type: string\n  - name: body\n    type: rich-text\n  - name: embed\n    type: code\n";
 
 	public function setUp(): void {
 		parent::setUp();
-		update_option('yaml_cf_schemas', ['single.php' => self::SCHEMA]);
+		$this->failOnPluginWarnings();
+		update_option('yaml_cf_schemas', ['single.php' => self::SCHEMA], false);
 	}
 
 	public function tearDown(): void {
+		$this->stopFailingOnPluginWarnings();
 		$_POST = [];
 		parent::tearDown();
 	}

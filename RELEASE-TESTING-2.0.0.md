@@ -11,6 +11,25 @@ real data in it, or notice that a button stopped responding.
 Tick the boxes as you go. If something fails, the **If it fails** line says what
 it points at.
 
+> **What you do not have to test by hand.** Three smoke tests run the same
+> fourteen-schema matrix — every field type, every shorthand form, nesting, and
+> the awkward cases — across the three surfaces a PHP warning can surface on:
+>
+> - `AdminScreenSmokeTest` — every admin screen and the post editor meta box,
+>   empty, filled in, as an administrator and as a writer.
+> - `AjaxSmokeTest` — all nineteen AJAX handlers, as an administrator and as a
+>   writer, and again with missing and with nonsense parameters.
+> - `PublicApiSmokeTest` — every theme-facing function for every field name, with
+>   values, without values, with deleted attachments and terms, inside repeating
+>   sections, on site parts, and with arguments a theme can get wrong.
+>
+> A warning from the plugin's own code fails the build and names the file and
+> line. All three were checked by deliberately introducing a fault and confirming
+> each one caught it. They run in CI on PHP 8.1, 8.3 and 8.4.
+>
+> So do not spend time clicking through schema variations hunting for warnings.
+> Spend it on section 1, the upgrade path, which is the part no test can reach.
+
 ---
 
 ## Before you start

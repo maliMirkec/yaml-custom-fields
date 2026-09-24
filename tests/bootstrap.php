@@ -28,4 +28,5 @@ tests_add_filter('muplugins_loaded', function() {
 require $yaml_cf_tests_dir . '/includes/bootstrap.php';
 
 // Base test case for integration tests
+require_once __DIR__ . '/FailsOnPluginWarnings.php';
 require_once __DIR__ . '/WPTestCase.php';

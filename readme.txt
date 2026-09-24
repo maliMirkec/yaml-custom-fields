@@ -159,6 +159,8 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * **SECURITY: Writers Cannot Ask for Administrator-Only Schemas** - The "Add section" request accepted site details, shared field and collection schemas from the post editor. Those now need administrator permissions
 * **SECURITY: Stricter CSS Cleaning** - Cleaning ran once per pattern, so a value could close back up into the very thing that was removed. It now repeats until nothing changes, and strips comments first
 * **SECURITY: A Size Limit on Schemas** - A schema is a short list of fields, and is now refused above 256 KB rather than being handed to the parser whole
+* **FIXED: Warnings in the Editor from Shorthand in Shared Fields** - A shared fields schema written with `- info:` or `- section:` shorthand filled the post editor with "Undefined array key" warnings, because only the page's own schema was expanded before being drawn. Every schema is expanded the same way now, wherever it is used
+* **FIXED: Shorthand Inside a Repeating Section** - The same problem inside a section's own fields, where a field with no label of its own also went unhandled
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"
