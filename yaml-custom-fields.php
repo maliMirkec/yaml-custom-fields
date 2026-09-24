@@ -317,11 +317,19 @@ class YAML_Custom_Fields {
     // asset enqueuing (admin_enqueue_scripts) and template cache invalidation
     // (switch_theme). YamlCF\Core\HookManager owns all of those now.
 
-    // Registered as a real meta box so the fields appear in the block editor too.
-    // edit_form_after_title never fires there, which used to make the plugin
-    // classic-editor-only; core posts meta boxes from the block editor as well,
-    // so save_schema_data() keeps receiving $_POST['yaml_cf'] unchanged.
+    // Where the box appears depends on which editor is open.
+    //
+    // The classic editor can print it directly under the title, above the
+    // content, which is where it has always been. The block editor cannot:
+    // a meta box there sits either below the content or in the narrow sidebar,
+    // and the space above the content is the block canvas. So the block editor
+    // gets a real meta box and the classic editor keeps its old position.
+    //
+    // edit_form_after_title simply does not fire in the block editor, so the
+    // two never both run. Either way the same markup is printed and
+    // save_schema_data() keeps receiving $_POST['yaml_cf'] unchanged.
     add_action('add_meta_boxes', [$this, 'register_meta_box'], 10, 2);
+    add_action('edit_form_after_title', [$this, 'render_schema_meta_box_after_title']);
     add_action('save_post', [$this, 'save_schema_data']);
     add_action('delete_post', [$this, 'handle_post_deletion']);
 
@@ -685,6 +693,17 @@ class YAML_Custom_Fields {
       }
 
       $partial_data = get_option('yaml_cf_partial_data', []);
+
+      // A field dropped from the schema keeps its content, the same as on a
+      // page. Restoring before the write also means "nothing posted" is no
+      // longer the same as "delete everything", which is what it used to mean
+      // here: these screens wrote an empty array whenever a form sent nothing.
+      $field_data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+        $field_data,
+        isset($partial_data[$template]) && is_array($partial_data[$template]) ? $partial_data[$template] : [],
+        $schema
+      );
+
       $partial_data[$template] = $field_data;
       update_option('yaml_cf_partial_data', $partial_data, false);
 
@@ -731,7 +750,16 @@ class YAML_Custom_Fields {
         }
       }
 
+      // Say which fields are losing their place, as the template schema editor
+      // does. This one said nothing at all, so content quietly stopped showing.
+      $removed_fields = $this->get_removed_schema_fields(
+        (string) get_option('yaml_cf_global_schema', ''),
+        $global_schema
+      );
+
       update_option('yaml_cf_global_schema', $global_schema, false);
+
+      $this->notify_removed_schema_fields($removed_fields);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
@@ -768,6 +796,16 @@ class YAML_Custom_Fields {
       if (!empty($posted_data) && is_array($posted_data)) {
         $field_data = $this->sanitize_field_data($posted_data, $global_schema);
       }
+
+      // A field dropped from the schema keeps its content, the same as on a
+      // page. Restoring before the write also means "nothing posted" is no
+      // longer the same as "delete everything", which is what it used to mean
+      // here: these screens wrote an empty array whenever a form sent nothing.
+      $field_data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+        $field_data,
+        (array) get_option('yaml_cf_global_data', []),
+        $global_schema
+      );
 
       update_option('yaml_cf_global_data', $field_data, false);
 
@@ -815,8 +853,18 @@ class YAML_Custom_Fields {
       }
 
       $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
+
+      // Say which shared fields are losing their place, as the template schema
+      // editor does. This one said nothing at all.
+      $removed_fields = $this->get_removed_schema_fields(
+        isset($template_global_schemas[$template]) ? (string) $template_global_schemas[$template] : '',
+        $template_global_schema
+      );
+
       $template_global_schemas[$template] = $template_global_schema;
       update_option('yaml_cf_template_global_schemas', $template_global_schemas, false);
+
+      $this->notify_removed_schema_fields($removed_fields);
 
       // Clear any stored invalid schema
       delete_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
@@ -858,6 +906,17 @@ class YAML_Custom_Fields {
       }
 
       $template_global_data = get_option('yaml_cf_template_global_data', []);
+
+      // A field dropped from the schema keeps its content, the same as on a
+      // page. Restoring before the write also means "nothing posted" is no
+      // longer the same as "delete everything", which is what it used to mean
+      // here: these screens wrote an empty array whenever a form sent nothing.
+      $field_data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+        $field_data,
+        isset($template_global_data[$template]) && is_array($template_global_data[$template]) ? $template_global_data[$template] : [],
+        $template_global_schema
+      );
+
       $template_global_data[$template] = $field_data;
       update_option('yaml_cf_template_global_data', $template_global_data, false);
 
@@ -1221,6 +1280,12 @@ class YAML_Custom_Fields {
       return;
     }
 
+    // The classic editor prints the box above the content instead, on
+    // edit_form_after_title, so registering it here as well would show it twice.
+    if (!$this->post_uses_block_editor($post)) {
+      return;
+    }
+
     add_meta_box(
       'yaml-cf-meta-box',
       __('Custom fields', 'yaml-custom-fields'),
@@ -1433,14 +1498,57 @@ class YAML_Custom_Fields {
   }
 
   /**
-   * Print the custom fields box on edit_form_after_title
+   * Print the custom fields box directly under the title, in the classic editor
    *
-   * @deprecated Use render_schema_meta_box(), registered via add_meta_boxes.
+   * Only ever runs there: the block editor does not fire edit_form_after_title,
+   * and register_meta_box() stands down when this hook is going to fire, so the
+   * box is printed once and only once.
+   *
    * @param WP_Post $post Post being edited
    * @return void
    */
   public function render_schema_meta_box_after_title($post) {
+    if (!($post instanceof WP_Post) || $this->post_uses_block_editor($post)) {
+      return;
+    }
+
+    // Nothing to show for this post: print no wrapper either, or the editor
+    // grows an empty box with a heading and nothing under it.
+    if ($this->get_schema_for_post($post) === null) {
+      return;
+    }
+
+    // Same id and same inner structure as the meta box WordPress draws in the
+    // block editor. Two dozen style rules and every script that touches the
+    // fields — "Empty all fields", gallery drag-sorting — are written against
+    // "#yaml-cf-meta-box > .inside > .yaml-cf-fields", so anything printed here
+    // under a different name would look wrong and half of it would not work.
+    // Only one of the two paths ever runs, so the id stays unique.
+    echo '<div id="yaml-cf-meta-box" class="yaml-cf-after-title postbox">';
+    echo '<h2 class="hndle"><span>' . esc_html__('Custom fields', 'yaml-custom-fields') . '</span></h2>';
+    echo '<div class="inside">';
     $this->render_schema_meta_box($post);
+    echo '</div>';
+    echo '</div>';
+  }
+
+  /**
+   * Whether this post opens in the block editor
+   *
+   * Decides where the fields are printed. Defaults to the block editor when
+   * WordPress cannot say, because a meta box shows up in both editors whereas
+   * edit_form_after_title shows up in only one: guessing that way round can
+   * misplace the box, never hide it.
+   *
+   * @param WP_Post $post Post being edited
+   * @return bool
+   */
+  private function post_uses_block_editor($post) {
+    if (!function_exists('use_block_editor_for_post')) {
+      return true;
+    }
+
+    return (bool) use_block_editor_for_post($post);
   }
 
   /**
@@ -1761,6 +1869,13 @@ class YAML_Custom_Fields {
 
       switch ($field['type']) {
         case 'boolean':
+          // An unticked box sends nothing at all, so without this the field can
+          // never be cleared: the save sees no value and leaves the old one in
+          // place. Every other clearable field already pairs with a hidden empty
+          // value this way; the tick box was the one that did not.
+          if (!$readonly) {
+            echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . ']" value="" />';
+          }
           echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field_name) . ']" id="' . esc_attr($field_id) . '" value="1" ' . checked($field_value, 1, false) . ' />';
           break;
 
@@ -3242,7 +3357,7 @@ class YAML_Custom_Fields {
       }
 
       $sanitized_data = $this->sanitize_field_data($posted_data, $schema);
-      $sanitized_data = $this->remove_template_global_only_fields($sanitized_data, $schema, $template);
+      $sanitized_data = $this->keep_orphaned_values($post_id, $sanitized_data, $schema);
       $sanitized_data = $this->keep_values_of_unrenderable_fields($post_id, $sanitized_data, $schema);
 
       // Update post meta using WordPress API (handles serialization and caching)
@@ -3269,6 +3384,47 @@ class YAML_Custom_Fields {
     update_post_meta($post_id, '_yaml_cf_use_template_global_fields', wp_slash($use_template_global_fields));
   }
 
+  /**
+   * Carry over what is stored for fields no schema mentions any more
+   *
+   * Saving rebuilds the stored data from what the form sent. A field that has
+   * been deleted or renamed in the schema renders no input, so it sends nothing,
+   * and its content used to be destroyed the next time anybody pressed Update.
+   * The editor promises the opposite when a schema drops a field: that the
+   * content is still saved and that putting the name back brings it back.
+   * This is what makes that true.
+   *
+   * Only the schema's TOP-LEVEL names count as still in use. A group's children
+   * live inside the group's own value, so a name reused at another depth says
+   * nothing about a stranded top-level value: moving "title" into a group leaves
+   * the old top-level "title" stranded, and it has to be kept.
+   *
+   * A page's own copy of a field that has since become a shared field is kept
+   * too. It is never shown — yaml_cf_resolve_post_fields() takes shared fields
+   * from shared data whatever post meta holds — but keeping it means moving a
+   * field into the shared schema and back again does not lose what pages had.
+   *
+   * A null schema is not a reason to bail: no schema means everything stored is
+   * an orphan, which is exactly what this keeps.
+   *
+   * @param int $post_id Post being saved
+   * @param array $data Sanitized data from the form
+   * @param array|null $schema Parsed schema for the post's template
+   * @return array Data, with stranded values put back
+   */
+  private function keep_orphaned_values($post_id, $data, $schema) {
+    $stored = get_post_meta($post_id, '_yaml_cf_data', true);
+    if (!is_array($stored) || empty($stored)) {
+      return $data;
+    }
+
+    return \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+      is_array($data) ? $data : [],
+      $stored,
+      $schema,
+      \YamlCF\Schema\SchemaValidator::RESERVED_NAMES
+    );
+  }
   /**
    * Carry over what is stored for fields the editor could not show
    *
@@ -3306,36 +3462,6 @@ class YAML_Custom_Fields {
       $name = $field['name'];
       if (!array_key_exists($name, $data) && array_key_exists($name, $stored)) {
         $data[$name] = $stored[$name];
-      }
-    }
-
-    return $data;
-  }
-
-  /**
-   * Remove values for fields that exist only in the template global schema
-   * Older versions submitted read-only copies of these fields with the post,
-   * which froze a stale snapshot of the template global value in post meta.
-   *
-   * @param array $data Sanitized post data
-   * @param array|null $schema Parsed post (template) schema
-   * @param string $template Template file name
-   * @return array Data without template-global-only fields
-   */
-  private function remove_template_global_only_fields($data, $schema, $template) {
-    if (!is_array($data) || !is_array($schema)) {
-      return $data;
-    }
-
-    $template_global_schema = $this->parse_yaml_schema(yaml_cf_get_template_global_schema($template));
-    if (!is_array($template_global_schema) || empty($template_global_schema['fields']) || !is_array($template_global_schema['fields'])) {
-      return $data;
-    }
-
-    $sanitizer = \YamlCF\Core\Plugin::getInstance()->get('data_sanitizer');
-    foreach ($template_global_schema['fields'] as $field) {
-      if (is_array($field) && isset($field['name']) && !$sanitizer->getFieldDefinition($schema, $field['name'])) {
-        unset($data[$field['name']]);
       }
     }
 

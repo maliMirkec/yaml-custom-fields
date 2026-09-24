@@ -318,6 +318,12 @@ if (!defined('ABSPATH')) {
   default: Welcome    # Filled in on new pages</code></pre>
 <p><code>description</code> shows in small text under the label. It is the place for a hint about what belongs in the field.</p>
 
+<h3>Removing or renaming a field</h3>
+<p>Taking a field out of a schema, or giving it a different name, does not throw away what was typed into it. The field stops showing, and the content stays where it is.</p>
+<p>Putting the field back under the same name brings its content back with it. That is deliberate: a field that disappears from a schema is usually a typo or a rename, and content should not be lost to either.</p>
+<p>The same is true for a field inside a group. Fields inside a repeating section are the exception: those sections are stored as a numbered list, so a field removed from one does lose its content.</p>
+<p>When content is being kept this way, <strong>Content Check</strong> lists it under "Values with no field", and can remove it when it really is not wanted. Nothing else ever removes it.</p>
+
 <h2 id="site-parts">Site parts: header, footer and more</h2>
 
 <p>Site parts appear on many pages. Their content is filled in once, on the YAML Custom Fields page, not on each post.</p>

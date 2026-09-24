@@ -34,7 +34,18 @@ class SavePartialData extends AjaxHandler {
     $schema = !empty($schemas[$template]) ? $this->parser->parse($schemas[$template]) : null;
 
     $partial_data = (array) get_option('yaml_cf_partial_data', []);
-    $partial_data[$template] = $this->sanitizer->sanitize($data ? $data : [], is_array($schema) ? $schema : null);
+    $saved = $this->sanitizer->sanitize($data ? $data : [], is_array($schema) ? $schema : null);
+
+    // Same rule as the form that saves this screen: a field dropped from the
+    // schema keeps its content. The two paths have to agree, or a site part
+    // would gain or lose values depending on which one saved it last.
+    $saved = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+      $saved,
+      isset($partial_data[$template]) && is_array($partial_data[$template]) ? $partial_data[$template] : [],
+      is_array($schema) ? $schema : null
+    );
+
+    $partial_data[$template] = $saved;
     update_option('yaml_cf_partial_data', $partial_data, false);
 
     $this->cacheManager->clearDataCaches();

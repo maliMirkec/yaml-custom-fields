@@ -131,7 +131,7 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 == Changelog ==
 
 = 2.0.0 =
-* **NEW: Works in the Block Editor** - The fields are now a real meta box, so they appear in the block editor as well as the classic one. The Classic Editor plugin is no longer needed
+* **NEW: Works in the Block Editor** - The fields are now a real meta box, so they appear in the block editor as well as the classic one. The Classic Editor plugin is no longer needed. In the classic editor they stay directly under the title, where they have always been; in the block editor they sit below the content, because the space above it belongs to the blocks
 * **NEW: Galleries** - Image fields support `list: true`: pick many images in one trip to the media library, see them as a grid of thumbnails, and reorder them by dragging or with the keyboard
 * **NEW: Search Instead of Endless Lists** - A taxonomy or collection field with more than 50 choices becomes a search box, so a page with thousands of tags or collection items no longer carries every one of them. The cut-off can be changed with the `yaml_cf_picker_threshold` filter
 * **NEW: Sections Fold Away** - Each repeating section can be collapsed, shows the text of its first field in its header instead of repeating the block name, and a "Collapse all" button folds them all at once
@@ -161,6 +161,12 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * **SECURITY: A Size Limit on Schemas** - A schema is a short list of fields, and is now refused above 256 KB rather than being handed to the parser whole
 * **FIXED: Warnings in the Editor from Shorthand in Shared Fields** - A shared fields schema written with `- info:` or `- section:` shorthand filled the post editor with "Undefined array key" warnings, because only the page's own schema was expanded before being drawn. Every schema is expanded the same way now, wherever it is used
 * **FIXED: Shorthand Inside a Repeating Section** - The same problem inside a section's own fields, where a field with no label of its own also went unhandled
+* **FIXED: Removing a Field from a Schema No Longer Destroys Its Content** - The editor has always said that content is still saved when a field is dropped from a schema, and that putting the name back brings it back. It was not true: the next save of any page on that template threw the content away. Now it is true, for fields inside a group as well as at the top level. Since a dropped field is usually a typo or a rename, one mistyped line could take the content of every page on a template with it
+* **FIXED: Moving a Field into Shared Fields Kept Each Page's Own Value** - It used to be deleted on the next save. The page still shows the shared value, but moving the field back now restores what each page had
+* **FIXED: A Tick Box Could Not Be Unticked** - An unticked box sends nothing, and the field was missing the hidden companion every other clearable field has, so on a schema whose only field was a tick box it could never be turned off again
+* **FIXED: The Same on Every Screen** - Site parts, site details, shared fields and collections all threw away the content of a removed field too, and worse: they emptied the whole entry whenever a form sent nothing. Importing a file no longer removes content the file says nothing about either
+* **NEW: Content Check Finds Content Left Behind** - Values belonging to fields that are no longer in a schema are listed under "Values with no field", with a button to remove them when they really are not wanted. Pages whose template has no schema are reported as unchecked rather than treated as entirely stranded
+* **FIXED: Schema Editors That Said Nothing** - Saving the site details schema or a shared fields schema never mentioned dropped fields, so content quietly stopped showing. Both now say which fields lost their place, as the template schema editor always has
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"

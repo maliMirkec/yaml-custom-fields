@@ -213,4 +213,29 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 		$this->assertNotContains($autoload, $autoloaded, 'Schemas should not be autoloaded.');
 	}
 
+	/**
+	 * The AJAX save of a site part has to agree with the form that saves the
+	 * same screen: a field dropped from the schema keeps its content either way,
+	 * or the site part gains or loses values depending on which one saved last.
+	 */
+	public function testSavingASitePartKeepsTheContentOfARemovedField() {
+		$this->_setRole('administrator');
+
+		update_option('yaml_cf_schemas', ['header.php' => "fields:\n  - name: headline\n    type: string\n"], false);
+		update_option('yaml_cf_partial_data', [
+			'header.php' => ['headline' => 'Headline', 'subtitle' => 'Must survive'],
+		], false);
+
+		$response = $this->callAjax('yaml_cf_save_partial_data', [
+			'template' => 'header.php',
+			'data' => wp_json_encode(['headline' => 'Edited']),
+		]);
+
+		$this->assertTrue($response['success']);
+
+		$stored = get_option('yaml_cf_partial_data')['header.php'];
+		$this->assertSame('Edited', $stored['headline']);
+		$this->assertSame('Must survive', $stored['subtitle']);
+	}
+
 }

@@ -39,6 +39,108 @@ class SchemaDiff {
   }
 
   /**
+   * The names a schema defines at its top level only
+   *
+   * Deliberately not collectFieldNames(): that flattens an object's children and
+   * a block's fields into the same list, and values are keyed by depth. Moving a
+   * field into a group is an ordinary edit, and it strands the old top-level
+   * value — but the flat list still contains the name, one level down, so the
+   * stranded value would look like a field that is still in use.
+   *
+   * @param array|null $schema Parsed schema
+   * @return string[] Top-level field names, without duplicates
+   */
+  public function topLevelFieldNames($schema) {
+    if (!is_array($schema) || empty($schema['fields']) || !is_array($schema['fields'])) {
+      return [];
+    }
+
+    $names = [];
+    foreach ($schema['fields'] as $field) {
+      if (is_array($field) && !empty($field['name']) && is_string($field['name'])) {
+        $names[] = $field['name'];
+      }
+    }
+
+    return array_values(array_unique($names));
+  }
+
+  /**
+   * Put back the values that no field describes any more
+   *
+   * Saving rebuilds stored data from what a form sent. A field deleted or
+   * renamed in the schema renders no input, so it sends nothing, and its content
+   * used to be destroyed on the next save. The editor promises the opposite:
+   * that the content is still saved and that putting the name back brings it
+   * back. This is what makes that true, for every screen that saves fields.
+   *
+   * Only names at the level being looked at count as still in use. A group's
+   * children live inside the group's own value, so a name reused at another
+   * depth says nothing about a stranded value one level up.
+   *
+   * Recurses into groups, because a field removed from inside a group strands
+   * its value just as surely as one removed from the top. Repeating sections are
+   * left alone on purpose: their items are positional and each can be a
+   * different section type, so there is no single field list to measure an item
+   * against.
+   *
+   * @param array $submitted What the form sent for this level
+   * @param array $stored What is already saved for this level
+   * @param array|null $schema Schema node holding this level's 'fields'
+   * @param string[] $reserved Names the plugin owns, which are never put back
+   * @return array The submitted values, with stranded ones restored
+   */
+  public function restoreStranded($submitted, $stored, $schema, array $reserved = []) {
+    if (!is_array($stored) || empty($stored)) {
+      return is_array($submitted) ? $submitted : [];
+    }
+
+    if (!is_array($submitted)) {
+      $submitted = [];
+    }
+
+    $known = [];
+    if (is_array($schema) && !empty($schema['fields']) && is_array($schema['fields'])) {
+      foreach ($schema['fields'] as $field) {
+        if (is_array($field) && !empty($field['name']) && is_string($field['name'])) {
+          $known[$field['name']] = $field;
+        }
+      }
+    }
+
+    foreach ($stored as $key => $value) {
+      $key = (string) $key;
+
+      if (!isset($known[$key])) {
+        // Bookkeeping keys are not content, so they are allowed to go
+        if (in_array($key, $reserved, true)) {
+          continue;
+        }
+
+        // The form sent something for it, even an empty string: that wins
+        if (array_key_exists($key, $submitted)) {
+          continue;
+        }
+
+        $submitted[$key] = $value;
+        continue;
+      }
+
+      // Still a field here. If it groups other fields, look inside it too.
+      $type = isset($known[$key]['type']) ? $known[$key]['type'] : '';
+      if ($type === 'object' && is_array($value) && isset($submitted[$key]) && is_array($submitted[$key])) {
+        $submitted[$key] = $this->restoreStranded(
+          $submitted[$key],
+          $value,
+          ['fields' => isset($known[$key]['fields']) && is_array($known[$key]['fields']) ? $known[$key]['fields'] : []]
+        );
+      }
+    }
+
+    return $submitted;
+  }
+
+  /**
    * @param array $fields Schema field definitions
    * @return string[] Field names, possibly with duplicates
    */

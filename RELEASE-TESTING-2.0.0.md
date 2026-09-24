@@ -243,6 +243,49 @@ none either.
 
 ---
 
+## 5a. Where the fields appear
+
+**Why:** the box moved from an editor hook to a real meta box so that it would
+appear in the block editor at all. A meta box sits below the content, so classic
+editor users saw their fields move. Both are now handled separately, and the two
+paths must never both print.
+
+- [ ] **Classic editor** (Classic Editor plugin, or a post type that opts out):
+      the fields are directly under the title, above the content, as before.
+- [ ] They appear **once**, not twice.
+- [ ] Filling them in and pressing Update still saves.
+- [ ] **Block editor**: the fields are in a "Custom fields" panel below the
+      content, and nothing extra is printed above it.
+- [ ] A post whose template has no schema shows no empty box in either editor.
+
+**If it fails:** `register_meta_box()` and `render_schema_meta_box_after_title()`
+both consult `post_uses_block_editor()`; exactly one of them should act.
+
+## 5b. Removing a field keeps its content
+
+**Why:** the editor has always promised that dropping a field from a schema keeps
+what was typed into it, and that putting the name back brings it back. That was
+not true — the next save of any page on the template threw it away.
+
+- [ ] Fill in two fields on a page. Remove one from the schema. Save the page.
+      The removed field's content is still in the database.
+- [ ] Put the field back under the same name: its content is there again.
+- [ ] A field still in the schema that you clear stays cleared.
+- [ ] A tick box can be unticked and stays unticked.
+- [ ] The same for a site part, for site details and for shared fields.
+- [ ] Saving the site details schema or a shared fields schema without a field
+      now says which fields lost their place.
+
+## 5c. Content Check cleanup
+
+- [ ] Content Check lists the kept values under "Values with no field".
+- [ ] **On a page whose template has no schema**, it says "not checked" and does
+      **not** list every field as stranded. This is the one to check carefully:
+      getting it wrong would offer to wipe every field on those pages.
+- [ ] Removing takes exactly the listed values and nothing else.
+- [ ] Put a field back into the schema, then submit a removal form that was
+      already on screen: that field is **not** removed.
+
 ## 6. Messaging
 
 - [ ] On Site B, before creating any schema, the dashboard reads **"Get started

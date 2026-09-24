@@ -94,6 +94,18 @@ class PageDataImporter {
     $data = $this->attachmentValidator->validateAndClean($entry['data'], $schema);
     $data = $this->sanitizer->sanitize($data, $schema);
 
+    // An import file carries whatever the site it came from had. Where it says
+    // nothing about a field this site's schema does not define either, the value
+    // already here is left alone: importing a headline is not a request to throw
+    // away content that has nothing to do with the file.
+    $stored = get_post_meta($post->ID, '_yaml_cf_data', true);
+    $data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+      $data,
+      is_array($stored) ? $stored : [],
+      $schema,
+      \YamlCF\Schema\SchemaValidator::RESERVED_NAMES
+    );
+
     // update_post_meta() unslashes its value; slash first so backslashes in field values survive
     $data_updated = update_post_meta($post->ID, '_yaml_cf_data', wp_slash($data));
     update_post_meta($post->ID, '_yaml_cf_imported', true);

@@ -138,9 +138,13 @@ YAML;
 		$this->assertSame('Current banner', ycf_get_field('banner', $post_id));
 		$this->assertSame('Current banner', ycf_get_fields($post_id)['banner']);
 
-		// Write side: a save drops the stale copy
+		// Write side: the stale copy is left alone rather than destroyed. It is
+		// never shown, because the read side above always prefers the shared
+		// value, and keeping it means moving a field into the shared schema and
+		// back again does not lose what each page had.
 		$this->submit($post_id, ['title' => 'Hello', 'banner' => 'Submitted copy']);
-		$this->assertArrayNotHasKey('banner', get_post_meta($post_id, '_yaml_cf_data', true));
+		$this->assertSame('Current banner', ycf_get_field('banner', $post_id));
+		$this->assertSame('Current banner', ycf_get_fields($post_id)['banner']);
 	}
 
 	public function testInvalidNonceSavesNothing() {

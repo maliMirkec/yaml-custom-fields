@@ -9,10 +9,12 @@ if (!defined('ABSPATH')) {
 
 // Variables received from controller via extract():
 // - $validation_results : array - Validation results for this page ('post' and 'missing_attachments' keys)
-// - $total_posts : int - Total number of imported posts with custom field data (all pages)
+// - $total_posts : int - Total number of pages and posts with custom field data (all pages)
 // - $page_posts : int - Number of posts validated on this page
 // - $posts_with_issues : int - Posts on this page with missing attachments
 // - $total_missing_attachments : int - Missing attachments on this page
+// - $total_orphaned_fields : int - Stored values with no field, on this page
+// - $posts_without_schema : int - Posts on this page whose template has no schema
 // - $paged : int - Current page
 // - $total_pages : int - Number of pages
 // - $per_page : int - Posts per page
@@ -37,7 +39,7 @@ $yaml_cf_pagination = paginate_links([
         <img src="<?php echo esc_url(YAML_CF_PLUGIN_URL . 'assets/icon-256x256.png'); ?>" alt="<?php esc_attr_e('YAML Custom Fields', 'yaml-custom-fields'); ?>" class="yaml-cf-logo" />
         <div class="yaml-cf-header-text">
           <h1><?php esc_html_e('Content Check', 'yaml-custom-fields'); ?></h1>
-          <p class="yaml-cf-tagline"><?php esc_html_e('Find imported posts with missing images or files', 'yaml-custom-fields'); ?></p>
+          <p class="yaml-cf-tagline"><?php esc_html_e('Find missing images and files, and content left behind by fields that are gone', 'yaml-custom-fields'); ?></p>
         </div>
       </div>
     </div>
@@ -67,7 +69,7 @@ $yaml_cf_pagination = paginate_links([
       <div class="yaml-cf-summary-grid">
         <div class="yaml-cf-stat-box">
           <div class="yaml-cf-stat-value"><?php echo esc_html($total_posts); ?></div>
-          <div class="yaml-cf-stat-label"><?php esc_html_e('Imported posts', 'yaml-custom-fields'); ?></div>
+          <div class="yaml-cf-stat-label"><?php esc_html_e('Pages and posts with fields', 'yaml-custom-fields'); ?></div>
         </div>
 
         <div class="yaml-cf-stat-box">
@@ -85,12 +87,60 @@ $yaml_cf_pagination = paginate_links([
         </div>
 
         <div class="yaml-cf-stat-box">
+          <div class="yaml-cf-stat-value <?php echo $total_orphaned_fields > 0 ? 'is-warning' : 'is-good'; ?>">
+            <?php echo esc_html($total_orphaned_fields); ?>
+          </div>
+          <div class="yaml-cf-stat-label"><?php esc_html_e('Values with no field', 'yaml-custom-fields'); ?></div>
+        </div>
+
+        <div class="yaml-cf-stat-box">
           <div class="yaml-cf-stat-value is-good">
             <?php echo esc_html($yaml_cf_healthy); ?>
           </div>
           <div class="yaml-cf-stat-label"><?php esc_html_e('Posts that are OK', 'yaml-custom-fields'); ?></div>
         </div>
       </div>
+
+      <?php if ($total_orphaned_fields > 0) : ?>
+        <div class="yaml-cf-orphans-intro notice notice-info inline">
+          <p>
+            <?php
+            echo esc_html(sprintf(
+              /* translators: %d: number of stored values */
+              _n(
+                '%d stored value belongs to a field that is no longer in a schema.',
+                '%d stored values belong to fields that are no longer in a schema.',
+                $total_orphaned_fields,
+                'yaml-custom-fields'
+              ),
+              $total_orphaned_fields
+            ));
+            ?>
+          </p>
+          <p>
+            <?php esc_html_e('Nothing displays them. They are kept on purpose, so that putting a field back under the same name brings its content back. Remove them only when you are sure the content is not wanted.', 'yaml-custom-fields'); ?>
+          </p>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($posts_without_schema > 0) : ?>
+        <div class="yaml-cf-notice-muted notice notice-info inline">
+          <p>
+            <?php
+            echo esc_html(sprintf(
+              /* translators: %d: number of pages and posts */
+              _n(
+                '%d page uses a template with no schema, so its stored content was not checked.',
+                '%d pages use templates with no schema, so their stored content was not checked.',
+                $posts_without_schema,
+                'yaml-custom-fields'
+              ),
+              $posts_without_schema
+            ));
+            ?>
+          </p>
+        </div>
+      <?php endif; ?>
 
       <?php if ($posts_with_issues === 0) : ?>
         <div class="notice notice-success inline yaml-cf-notice-spaced">
@@ -131,6 +181,9 @@ $yaml_cf_pagination = paginate_links([
     <?php endif; ?>
 
     <!-- Validation Results -->
+    <form method="post" action="" class="yaml-cf-validation-form"
+          onsubmit="return confirm('<?php echo esc_js(__('Remove the stored values listed here? This cannot be undone.', 'yaml-custom-fields')); ?>');">
+      <?php wp_nonce_field('yaml_cf_remove_orphans', 'yaml_cf_remove_orphans_nonce'); ?>
     <div class="card yaml-cf-card-wide">
       <div class="yaml-cf-card-header">
         <h2><?php esc_html_e('Posts', 'yaml-custom-fields'); ?></h2>
@@ -188,6 +241,20 @@ $yaml_cf_pagination = paginate_links([
                   </div>
                 </td>
                 <td>
+                  <?php if (!empty($yaml_cf_result['orphaned_fields'])) : ?>
+                    <div class="yaml-cf-orphan-list">
+                      <span class="yaml-cf-muted-small"><?php esc_html_e('No field for:', 'yaml-custom-fields'); ?></span>
+                      <?php foreach ($yaml_cf_result['orphaned_fields'] as $yaml_cf_orphan) : ?>
+                        <code><?php echo esc_html($yaml_cf_orphan); ?></code>
+                        <input type="hidden"
+                               name="yaml_cf_orphans[<?php echo esc_attr($yaml_cf_post->ID); ?>][]"
+                               value="<?php echo esc_attr($yaml_cf_orphan); ?>" />
+                      <?php endforeach; ?>
+                    </div>
+                  <?php elseif (empty($yaml_cf_result['has_schema'])) : ?>
+                    <span class="yaml-cf-muted-small"><?php esc_html_e('No schema for this template — not checked', 'yaml-custom-fields'); ?></span>
+                  <?php endif; ?>
+
                   <?php if ($yaml_cf_has_issues) : ?>
                     <span class="dashicons dashicons-warning yaml-cf-status-bad"></span>
                     <span class="yaml-cf-status-bad"><?php esc_html_e('Needs attention', 'yaml-custom-fields'); ?></span>
@@ -238,6 +305,26 @@ $yaml_cf_pagination = paginate_links([
           </tbody>
         </table>
 
+        <?php if ($total_orphaned_fields > 0) : ?>
+          <p class="yaml-cf-orphans-actions">
+            <button type="submit" class="button">
+              <?php
+              echo esc_html(sprintf(
+                /* translators: %d: number of stored values */
+                _n(
+                  'Remove %d value with no field',
+                  'Remove %d values with no field',
+                  $total_orphaned_fields,
+                  'yaml-custom-fields'
+                ),
+                $total_orphaned_fields
+              ));
+              ?>
+            </button>
+            <span class="yaml-cf-hint"><?php esc_html_e('Only the pages listed on this page of results are touched.', 'yaml-custom-fields'); ?></span>
+          </p>
+        <?php endif; ?>
+
         <?php if ($yaml_cf_pagination) : ?>
           <div class="tablenav bottom">
             <div class="tablenav-pages"><?php echo wp_kses_post($yaml_cf_pagination); ?></div>
@@ -245,6 +332,7 @@ $yaml_cf_pagination = paginate_links([
         <?php endif; ?>
       <?php endif; ?>
     </div>
+    </form>
     </div>
   </div>
 </div>

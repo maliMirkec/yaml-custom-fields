@@ -191,6 +191,15 @@ class DataObjectController extends AdminController {
       $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema);
 
       $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
+
+      // A field dropped from the collection's schema keeps its content, the
+      // same as on a page: this entry's value for it is stranded, not rubbish.
+      $entry_data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
+        $entry_data,
+        isset($entries[$entry_id_to_save]) && is_array($entries[$entry_id_to_save]) ? $entries[$entry_id_to_save] : [],
+        $schema
+      );
+
       $entries[$entry_id_to_save] = $entry_data;
       update_option('yaml_cf_data_object_entries_' . $type_id, $entries, false);
 

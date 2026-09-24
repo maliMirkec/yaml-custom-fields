@@ -397,7 +397,9 @@ class Plugin {
       return new \YamlCF\Admin\Controllers\ValidationController(
         $c->get('attachment_validator'),
         $c->get('post_data_repository'),
-        $c->get('post_schema_locator')
+        $c->get('post_schema_locator'),
+        $c->get('schema_diff'),
+        $c->get('notification_manager')
       );
     });
 

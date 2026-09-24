@@ -3722,3 +3722,14 @@
 .yaml-cf-summary-list li {
   margin: 4px 0;
 }
+
+/* The classic editor prints the fields above the content, in a postbox of our
+   own rather than one WordPress drew. It carries the same id as the block
+   editor's meta box, so every rule above already applies to it; all it needs
+   is the outer spacing core would have given a meta box. Do not set padding on
+   its .inside here: the header bleeds to the edges with a negative margin that
+   is measured against the 16px in "#yaml-cf-meta-box .inside". */
+.yaml-cf-after-title {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
