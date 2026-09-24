@@ -73,4 +73,55 @@ class DashboardTest extends WPTestCase {
 		$this->assertSame(3, substr_count($html, 'yaml-cf-row is-enabled'));
 		$this->assertSame(1, substr_count($html, 'yaml-cf-row is-disabled'));
 	}
+	/**
+	 * An empty table has to say why it is empty. "The active theme has no page
+	 * or post templates yet" told a block-theme user nothing, and was simply
+	 * untrue on a child theme whose parent had plenty.
+	 */
+	private function renderWithNoTemplates() {
+		set_transient('yaml_cf_templates_' . get_stylesheet(), [
+			'templates' => [],
+			'partials' => [],
+		], HOUR_IN_SECONDS);
+
+		ob_start();
+		try {
+			\YamlCF\Core\Plugin::getInstance()->get('template_schema_controller')->render();
+		} finally {
+			$html = ob_get_clean();
+		}
+		return $html;
+	}
+
+	public function testAnEmptyTableNamesTheThemeItLookedIn() {
+		$this->actingAs($this->createTestUser('administrator'));
+
+		$html = $this->renderWithNoTemplates();
+		$theme_name = wp_get_theme()->get('Name');
+
+		$this->assertStringContainsString(esc_html($theme_name), $html);
+	}
+
+	public function testABlockThemeIsToldWhereItsTemplatesComeFrom() {
+		$this->actingAs($this->createTestUser('administrator'));
+
+		$was = get_stylesheet();
+		switch_theme('twentytwentyfour');
+		if (!wp_is_block_theme()) {
+			switch_theme($was);
+			$this->markTestSkipped('No block theme is installed in this test environment.');
+		}
+
+		try {
+			$html = $this->renderWithNoTemplates();
+		} finally {
+			switch_theme($was);
+		}
+
+		$this->assertStringContainsString('builds its pages out of blocks', $html);
+		$this->assertStringContainsString('Site Editor', $html);
+		// The @ycf marker hint is meaningless without .php files to put it in
+		$this->assertStringNotContainsString('put @ycf in a comment', $html);
+	}
+
 }

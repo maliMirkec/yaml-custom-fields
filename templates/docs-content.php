@@ -339,6 +339,14 @@ if (!defined('ABSPATH')) {
 
 <p>A site part works like a template: switch it on, create its schema, then use <strong>Edit content</strong>.</p>
 
+<h3>Block themes</h3>
+<p>A block theme keeps its templates as blocks rather than as <code>.php</code> files, and names them without the <code>.php</code>: <code>page</code>, <code>single</code>, <code>single-event</code>. They are listed on the YAML Custom Fields page the same way, and fields are read in the theme with the same functions.</p>
+<p>Templates made in the Site Editor appear after they are saved. Use <strong>Refresh templates</strong> if a new one is not in the list yet.</p>
+<p>Templates that show a list of posts, like <code>index</code> or <code>archive</code>, are treated as site parts, because their content is not tied to one page.</p>
+
+<h3>Child themes</h3>
+<p>A child theme is scanned together with the theme it builds on, so the parent's templates are listed too. When both have a file of the same name, the child's is the one that runs, and there is one entry for it.</p>
+
 <h2 id="shared">Shared fields</h2>
 
 <p>Shared fields have one value for every page with the same template. Useful for something like a banner on all event pages.</p>

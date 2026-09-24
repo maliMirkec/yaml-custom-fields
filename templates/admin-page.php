@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 // - $partial_rows : array - Partials and archives (same keys)
 // - $global_field_count : int - Number of fields in the global schema
 // - $show_getting_started : bool - Show first-run guidance
+// - $theme_kind : array - name, is_block, is_child, parent of the active theme
 
 $yaml_cf_admin_url = function ($page, $template = null) {
   $args = ['page' => $page];
@@ -63,6 +64,46 @@ $yaml_cf_toggle = function ($row) {
     </span>
   </label>
   <?php
+};
+
+/**
+ * Say why a table is empty, in terms of the theme that is switched on
+ */
+$yaml_cf_empty_reason = function ($kind, $what) {
+  if (!empty($kind['is_block'])) {
+    echo '<p>';
+    echo esc_html(sprintf(
+      /* translators: 1: theme name, 2: what is missing, e.g. "page or post templates" */
+      __('%1$s builds its pages out of blocks, and this plugin found no %2$s in it.', 'yaml-custom-fields'),
+      $kind['name'],
+      $what
+    ));
+    echo '</p>';
+    echo '<p>' . esc_html__('Templates made in the Site Editor show up here once they are saved. Use Refresh templates after adding one.', 'yaml-custom-fields') . '</p>';
+    return;
+  }
+
+  if (!empty($kind['is_child'])) {
+    echo '<p>';
+    echo esc_html(sprintf(
+      /* translators: 1: child theme name, 2: parent theme name, 3: what is missing */
+      __('%1$s and the theme it builds on, %2$s, have no %3$s between them.', 'yaml-custom-fields'),
+      $kind['name'],
+      $kind['parent'],
+      $what
+    ));
+    echo '</p>';
+    return;
+  }
+
+  echo '<p>';
+  echo esc_html(sprintf(
+    /* translators: 1: theme name, 2: what is missing */
+    __('%1$s has no %2$s.', 'yaml-custom-fields'),
+    $kind['name'],
+    $what
+  ));
+  echo '</p>';
 };
 
 ?>
@@ -167,7 +208,7 @@ $yaml_cf_toggle = function ($row) {
 
       <?php if (empty($template_rows)) : ?>
         <div class="yaml-cf-empty">
-          <p><?php esc_html_e('The active theme has no page or post templates yet.', 'yaml-custom-fields'); ?></p>
+          <?php $yaml_cf_empty_reason($theme_kind, __('page or post templates', 'yaml-custom-fields')); ?>
         </div>
       <?php else : ?>
         <table class="yaml-cf-table">
@@ -245,7 +286,10 @@ $yaml_cf_toggle = function ($row) {
 
       <?php if (empty($partial_rows)) : ?>
         <div class="yaml-cf-empty">
-          <p><?php esc_html_e('The active theme has no site parts yet. To add one, put @ycf in a comment at the top of the template file, then refresh.', 'yaml-custom-fields'); ?></p>
+          <?php $yaml_cf_empty_reason($theme_kind, __('site parts', 'yaml-custom-fields')); ?>
+          <?php if (empty($theme_kind['is_block'])) : ?>
+            <p><?php esc_html_e('To add one, put @ycf in a comment at the top of the template file, then refresh.', 'yaml-custom-fields'); ?></p>
+          <?php endif; ?>
         </div>
       <?php else : ?>
         <table class="yaml-cf-table">

@@ -56,14 +56,46 @@ class TemplateSchemaController extends AdminController {
     // First-run guidance is shown until the first schema exists
     $show_getting_started = count(array_filter($schemas)) === 0 && $global_field_count === 0;
 
+    // An empty table needs to say why. A theme with no templates of its own is
+    // almost always a child theme whose parent could not be read, or a theme
+    // this plugin cannot see into.
+    $theme_kind = $this->themeKind();
+
     $this->localizePageInit(['hasRefreshButton' => true]);
 
     $this->loadTemplate('admin-page.php', compact(
       'template_rows',
       'partial_rows',
       'global_field_count',
-      'show_getting_started'
+      'show_getting_started',
+      'theme_kind'
     ));
+  }
+
+  /**
+   * What the empty tables should say about the active theme
+   *
+   * @return array {
+   *   @type string $name Theme name
+   *   @type bool $is_block Whether it builds its pages out of blocks
+   *   @type bool $is_child Whether it is a child of another theme
+   *   @type string $parent Parent theme name, when there is one
+   * }
+   */
+  private function themeKind() {
+    $theme = wp_get_theme();
+    $parent = $theme->parent();
+
+    $is_block = function_exists('wp_is_block_theme')
+      ? (bool) wp_is_block_theme()
+      : (method_exists($theme, 'is_block_theme') && $theme->is_block_theme());
+
+    return [
+      'name' => $theme->get('Name'),
+      'is_block' => $is_block,
+      'is_child' => (bool) $parent,
+      'parent' => $parent ? $parent->get('Name') : '',
+    ];
   }
 
   /**

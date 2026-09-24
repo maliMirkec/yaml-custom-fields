@@ -94,7 +94,7 @@ Not for writers, who only fill in fields. Setting up the fields and showing them
 
 = Does it work with any theme? =
 
-Yes. The theme decides where each field shows up.
+Yes, classic themes and block themes alike. The theme decides where each field shows up. A child theme is scanned together with the theme it builds on, so the parent's templates are listed too.
 
 = Does it work with the block editor? =
 
@@ -145,6 +145,9 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * **FIXED: ycf_get_field() and ycf_get_fields() Could Disagree** - The two functions worked out values by different rules, so the same field on the same page could come back with two different values. In particular `ycf_get_fields()` ignored the "Use the shared value on this page" ticks entirely. Both now read from one place, in the order the documentation describes
 * **FIXED: A Typo in a Field Type Passed Unnoticed** - `type: strng` used to save with "The schema looks good.", render nothing at all, and then drop the field's content the next time the page was saved. Types are now checked when the schema is saved, inside groups and sections too, and the message suggests the type that was probably meant. Content belonging to a field with an unknown type is left alone rather than dropped
 * **IMPROVED: Fewer Repeated Lookups Per Page** - A page's field values are worked out once per request instead of once per `ycf_get_field()` call, which re-read the same options for every field on the page
+* **FIXED: Child Themes Showed No Templates** - The theme scan asked for the active theme's files without asking for the parent's, so a child theme that overrides only style.css reported an empty template list although the parent had page.php and single.php. A partial belonging to the child was also stored under its full path instead of its name
+* **NEW: Block Themes Are Supported** - A block theme's templates (`page`, `single`, `single-event` and templates made in the Site Editor) are now listed and can hold fields, and templates that show a list of posts are sorted into site parts. Before this, a block theme showed an empty table
+* **IMPROVED: An Empty Template List Says Why** - Instead of "The active theme has no page or post templates yet", the page now names the theme it looked in and, for a block theme, says that Site Editor templates appear once saved
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"

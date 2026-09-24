@@ -338,10 +338,19 @@ class SchemaValidator {
       '404.php',
     ];
 
+    // A block theme addresses its templates by slug, with no .php on the end,
+    // so "index" has to be caught by the same rule that catches "index.php".
+    $candidates = [$basename];
+    if (substr($basename, -4) !== '.php') {
+      $candidates[] = $basename . '.php';
+    }
+
     // Check if template matches any disallowed pattern
     foreach ($disallowed_patterns as $pattern) {
-      if ($pattern === $basename || fnmatch($pattern, $basename)) {
-        return false; // This is a partial/archive, not allowed
+      foreach ($candidates as $candidate) {
+        if ($pattern === $candidate || fnmatch($pattern, $candidate)) {
+          return false; // This is a partial/archive, not allowed
+        }
       }
     }
 
