@@ -2754,7 +2754,16 @@ class YAML_Custom_Fields {
     if (isset($block_def['fields']) && is_array($block_def['fields'])) {
       echo '<div class="yaml-cf-block-fields" id="' . esc_attr($fields_id) . '">';
 
-      foreach ($block_def['fields'] as $block_field) {
+      // This loop builds ids and snippets from each field's name before handing
+      // it to render_schema_fields(), which expands shorthand itself. Without
+      // expanding here first, an "- info:" inside a section has no name yet.
+      $block_fields = $this->normalize_field_shorthand($block_def['fields']);
+
+      foreach ($block_fields as $block_field) {
+        if (!is_array($block_field) || !isset($block_field['name'])) {
+          continue;
+        }
+
         $block_field_id = 'ycf_' . $field['name'] . '_' . $index . '_' . $block_field['name'] . $id_suffix;
         $block_field_value = isset($block_data[$block_field['name']]) ? $block_data[$block_field['name']] : '';
         $block_field_type = isset($block_field['type']) ? $block_field['type'] : 'string';
@@ -2784,16 +2793,24 @@ class YAML_Custom_Fields {
         $block_popover_id = 'snippet-' . sanitize_html_class($block_field_id);
 
         echo '<div class="yaml-cf-field" data-type="' . esc_attr($block_field_type) . '">';
-        // For image/file/object fields with hidden inputs or no direct input, don't use 'for' attribute
-        if ($block_field_type === 'image' || $block_field_type === 'file') {
-          echo '<p class="yaml-cf-field-label">' . esc_html($block_field['label']) . '</p>';
-        } elseif ($block_field_type === 'object') {
-          // Use heading for object fields (container fields with nested fields)
-          echo '<h4 class="yaml-cf-field-heading">' . esc_html($block_field['label']) . '</h4>';
-        } else {
-          echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field['label']) . '</label>';
+
+        // The same rules as render_fields_flat(): a field with no label of its
+        // own falls back to its name, and the kinds that are not inputs at all
+        // get no label element.
+        $block_field_label = isset($block_field['label']) ? $block_field['label'] : ucfirst($block_field['name']);
+
+        if ($block_field_type !== 'block' && $block_field_type !== 'info' && $block_field_type !== 'section') {
+          // For image/file/object fields with hidden inputs or no direct input, don't use 'for' attribute
+          if ($block_field_type === 'image' || $block_field_type === 'file') {
+            echo '<p class="yaml-cf-field-label">' . esc_html($block_field_label) . '</p>';
+          } elseif ($block_field_type === 'object') {
+            // Use heading for object fields (container fields with nested fields)
+            echo '<h4 class="yaml-cf-field-heading">' . esc_html($block_field_label) . '</h4>';
+          } else {
+            echo '<label for="' . esc_attr($block_field_id) . '">' . esc_html($block_field_label) . '</label>';
+          }
+          $this->render_field_help($block_field);
         }
-        $this->render_field_help($block_field);
 
         if ($block_field_type === 'boolean') {
           echo '<input type="checkbox" name="yaml_cf[' . esc_attr($field['name']) . '][' . esc_attr($index) . '][' . esc_attr($block_field['name']) . ']" id="' . esc_attr($block_field_id) . '" value="1" ' . checked($block_field_value, 1, false) . disabled($readonly, true, false) . ' />';

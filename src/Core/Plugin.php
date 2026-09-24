@@ -97,7 +97,8 @@ class Plugin {
     $this->container->register('post_schema_locator', function($c) {
       return new \YamlCF\Schema\PostSchemaLocator(
         $c->get('template_resolver'),
-        $c->get('schema_parser')
+        $c->get('schema_parser'),
+        $c->get('field_normalizer')
       );
     });
 

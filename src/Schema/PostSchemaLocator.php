@@ -39,9 +39,12 @@ class PostSchemaLocator {
    */
   private $parsed = [];
 
-  public function __construct($templateResolver, $schemaParser) {
+  private $normalizer;
+
+  public function __construct($templateResolver, $schemaParser, $normalizer = null) {
     $this->templateResolver = $templateResolver;
     $this->schemaParser = $schemaParser;
+    $this->normalizer = $normalizer ?: new FieldNormalizer();
   }
 
   /**
@@ -99,6 +102,13 @@ class PostSchemaLocator {
     $key = md5($yaml);
     if (!array_key_exists($key, $this->parsed)) {
       $parsed = $this->schemaParser->parse($yaml);
+
+      // Expand shorthand here, so that every caller sees the same shape the
+      // editor renders: "- info:" and "- section:" become fields with a name.
+      if (is_array($parsed) && isset($parsed['fields']) && is_array($parsed['fields'])) {
+        $parsed['fields'] = $this->normalizer->normalizeAll($parsed['fields']);
+      }
+
       $this->parsed[$key] = is_array($parsed) ? $parsed : null;
     }
 
