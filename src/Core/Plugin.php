@@ -94,6 +94,18 @@ class Plugin {
     });
 
     // Template Management
+    $this->container->register('shortcode', function($c) {
+      return new \YamlCF\Rendering\Shortcode($c->get('post_schema_locator'));
+    });
+
+    $this->container->register('rest_api', function($c) {
+      return new \YamlCF\Rest\RestApi(
+        $c->get('post_data_repository'),
+        $c->get('data_object_repository'),
+        $c->get('post_schema_locator')
+      );
+    });
+
     $this->container->register('post_schema_locator', function($c) {
       return new \YamlCF\Schema\PostSchemaLocator(
         $c->get('template_resolver'),
@@ -496,7 +508,7 @@ class Plugin {
     $data_object_types = get_option('yaml_cf_data_object_types', []);
     if (!empty($data_object_types)) {
       foreach ($data_object_types as $type_slug => $type_data) {
-        delete_option('yaml_cf_data_object_entries_' . $type_slug);
+        (new \YamlCF\Data\Repositories\DataObjectRepository())->deleteAllEntries($type_slug);
       }
     }
     delete_option('yaml_cf_data_object_types');

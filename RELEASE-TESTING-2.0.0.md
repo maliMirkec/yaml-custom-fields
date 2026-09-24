@@ -4,7 +4,7 @@ What to click through by hand before publishing, and why each thing is on the li
 
 `MANUAL-TESTING.md` covers the plugin as a whole. This file covers only what
 changed in 2.0.0, ordered by how much damage it would do if it were wrong.
-Everything here is already covered by automated tests (245 unit, 136
+Everything here is already covered by automated tests (245 unit, 446
 integration) — what those tests cannot do is start from a site that already has
 real data in it, or notice that a button stopped responding.
 
@@ -63,11 +63,11 @@ the first admin page load after the update, and is tracked by the
 `yaml_cf_db_version` option.
 
 - [ ] Upgrade Site A and load **any** admin page.
-- [ ] `wp option get yaml_cf_db_version` returns `4`.
+- [ ] `wp option get yaml_cf_db_version` returns `5`.
 - [ ] Every page you noted down still shows exactly what it showed before.
 - [ ] Schemas, shared fields, site details and collections are all still there
       and unchanged.
-- [ ] Load another admin page. `yaml_cf_db_version` is still `4` and nothing
+- [ ] Load another admin page. `yaml_cf_db_version` is still `5` and nothing
       else changed — it must not run twice.
 
 **If it fails:** restore the snapshot before doing anything else. A partial
@@ -286,6 +286,66 @@ not true — the next save of any page on the template threw it away.
 - [ ] Put a field back into the schema, then submit a removal form that was
       already on screen: that field is **not** removed.
 
+## 5d. Collections
+
+**Why:** a collection's items moved from one shared database row to one row each,
+with a small index beside them. This is the third data migration in the release,
+and it is the one that touches the most rows.
+
+- [ ] On Site A, before upgrading, make a collection with a handful of items and
+      use one of them in a page field. After upgrading: the item list still shows
+      them all, the page still resolves its item, and the picker still finds it.
+- [ ] Add, edit and delete an item. All three still work.
+- [ ] Delete a whole collection: its items go with it, leaving nothing behind.
+- [ ] Export and re-import a bundle containing a collection; the items survive.
+- [ ] A collection with more than fifty items is paged, and page two shows
+      different items from page one.
+- [ ] `wp option list --search='yaml_cf_do_*' --fields=option_name,autoload`
+      shows one row per item plus one index, none of them autoloaded, and
+      `yaml_cf_data_object_entries_*` is gone.
+
+## 5e. The REST API
+
+**Why:** this is a new public surface, and the write half is the highest-risk
+thing added in this release. Everything the plugin does to keep content safe
+happens at a small number of write points, and this adds one reachable over HTTP.
+
+- [ ] `/wp-json/wp/v2/pages/<id>` includes a `yaml_cf` object with the values the
+      theme shows, including decoded code fields.
+- [ ] A **draft** page is not readable when logged out, and neither are its fields.
+- [ ] `/wp-json/yaml-cf/v1/site-details` returns the site details.
+- [ ] `/wp-json/yaml-cf/v1/collections/<slug>?page=2&per_page=50` pages, and
+      `?search=` finds items.
+- [ ] Logged out, `POST`ing a `yaml_cf` object changes nothing.
+- [ ] As a Contributor, writing to somebody else's page changes nothing.
+- [ ] As an administrator, sending **one** field leaves the others alone.
+- [ ] As an Editor (no `unfiltered_html`), sending `<script>` in a rich-text
+      field stores it stripped, exactly as the editor would.
+- [ ] `add_filter('yaml_cf_rest_public_read', '__return_false');` makes the two
+      site-wide routes require a logged-in editor.
+
+**Decide before release:** those two routes read **publicly** by default. That is
+deliberate — they hold content the plugin renders into public pages — but if any
+of your sites keeps something private in site details or a collection, set the
+filter before updating.
+
+## 5f. The [ycf] shortcode
+
+**Why:** this is what finally lets a block theme display field content. It is
+also reachable by anybody who can edit a post, so the `post=` attribute needs
+checking.
+
+- [ ] On a **block theme**: put `[ycf field="headline"]` in a Shortcode block on a
+      page that has that field filled in. It shows the value.
+- [ ] `source="site"` shows a site detail.
+- [ ] An image field renders a picture; `size="thumbnail"` changes it.
+- [ ] A file field renders a link; a text-with-formatting field keeps bold and
+      links; a code field prints as it stands.
+- [ ] `default="..."` shows when the field is empty.
+- [ ] A group field prints nothing rather than the word "Array".
+- [ ] **Logged out**, `[ycf field="x" post="<id of a draft>"]` prints nothing.
+- [ ] Logged out, `post="<id of a published page>"` does print that page's value.
+
 ## 6. Messaging
 
 - [ ] On Site B, before creating any schema, the dashboard reads **"Get started
@@ -348,10 +408,17 @@ Tested by: ____________________  Version: ____________  Date: ____________
 These are deliberate, not defects. They are worth knowing before someone reports
 them as bugs:
 
-- **Block themes can hold fields but cannot display them on their own.** There is
-  no `.php` template to call `ycf_get_field()` from. A shortcode or a block would
-  close this.
-- **Collections keep every entry in one option.** Fine for hundreds, slow for
-  thousands. Fixing it means moving entries to a custom post type or table.
-- **Fields are not in the REST API.** No `register_meta()`, so headless front
-  ends and most integrations cannot see them.
+- **A block theme needs a shortcode to display a field.** `[ycf]` closes the gap,
+  but there is still no block, so a field cannot be placed by dragging it.
+- **A collection's item labels are written when the item is saved.** Reordering a
+  collection's schema so a different field comes first does not relabel the items
+  already stored; they take their new label the next time each one is saved.
+- **Searching a collection over the REST API returns one page.** `search` is
+  capped at `per_page` and reports how many matched in `total`; it does not page
+  through the matches.
+- **`ycf_get_fields()` resolves every field on the page.** Asking for one value is
+  cheaper through `ycf_get_field()`.
+
+The three limitations listed here in 1.2.9 — block themes being unable to display
+fields, collections sharing one option, and fields being absent from the REST API
+— are all fixed in this release.

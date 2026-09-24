@@ -158,7 +158,9 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 		$this->assertTrue($response['success']);
 		$types = get_option('yaml_cf_data_object_types');
 		$this->assertArrayHasKey('uniscript', $types);
-		$this->assertSame('MIT', get_option('yaml_cf_data_object_entries_uniscript')['entry_1']['name']);
+		// Read through the repository: items live in an option each since 2.0.0
+		$entry = (new \YamlCF\Data\Repositories\DataObjectRepository())->getEntry('uniscript', 'entry_1');
+		$this->assertSame('MIT', $entry['name']);
 	}
 
 	public function testGetPostsWithDataIsPaginated() {

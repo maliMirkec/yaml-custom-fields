@@ -345,6 +345,22 @@ if (!defined('ABSPATH')) {
 
 <p>A site part works like a template: switch it on, create its schema, then use <strong>Edit content</strong>.</p>
 
+<h3>Showing a field without editing the theme</h3>
+<p>A field normally shows up when the theme asks for it, which means editing a template file. A block theme has no template file to edit, so there is a shortcode. Put it in a <strong>Shortcode</strong> block, a widget, or straight into the content:</p>
+<pre><code>[ycf field="headline"]
+[ycf field="hero" size="large"]
+[ycf field="phone" source="site"]
+[ycf field="headline" default="Untitled"]</code></pre>
+<ul>
+  <li><code>field</code> is the name from the schema.</li>
+  <li><code>source="site"</code> reads a site detail instead of a field on the page.</li>
+  <li><code>size</code> picks the image size, for image fields.</li>
+  <li><code>default</code> is shown when the field is empty.</li>
+  <li><code>post</code> reads from another page by its ID. Pages that are not published are only read by somebody allowed to see them.</li>
+</ul>
+<p>Each kind of field is printed as it should be: text as text, text with formatting keeps its formatting, an image becomes a picture, a file becomes a link, and a code field prints as it stands.</p>
+<p>A group or a set of sections prints nothing, because neither is a single value. Those are read field by field, from a theme or through the REST API.</p>
+
 <h3>Block themes</h3>
 <p>A block theme keeps its templates as blocks rather than as <code>.php</code> files, and names them without the <code>.php</code>: <code>page</code>, <code>single</code>, <code>single-event</code>. They are listed on the YAML Custom Fields page the same way, and fields are read in the theme with the same functions.</p>
 <p>Templates made in the Site Editor appear after they are saved. Use <strong>Refresh templates</strong> if a new one is not in the list yet.</p>
@@ -602,6 +618,18 @@ if (!defined('ABSPATH')) {
   <h3>Deleting the plugin</h3>
   <p>Deactivating the plugin changes nothing. <strong>Deleting</strong> it removes the schemas, the site details, the collections and the content filled into the fields on every page and post, and that cannot be undone.</p>
   <p>To keep the content, tick <strong>Keep the content if the plugin is deleted</strong> at the bottom of the YAML Custom Fields page before deleting. The content then stays in the database and comes back if the plugin is installed again.</p>
+
+  <h3>The REST API</h3>
+  <p>Field content is available over the WordPress REST API, for a front end built in something other than PHP, a mobile app, or another plugin.</p>
+  <ul>
+    <li>Every page and post carries a <code>yaml_cf</code> object beside its usual fields, holding the values a theme would see: <code>/wp-json/wp/v2/pages/42</code>.</li>
+    <li><code>/wp-json/yaml-cf/v1/site-details</code> returns the site details.</li>
+    <li><code>/wp-json/yaml-cf/v1/collections/&lt;short-name&gt;</code> returns a page of a collection. It takes <code>page</code>, <code>per_page</code> (up to 100) and <code>search</code>.</li>
+  </ul>
+  <p>Sending a <code>yaml_cf</code> object back to a page saves it. Only the fields named in the request change; the rest are left alone. Whoever sends it has to be allowed to edit that page, and what they send is cleaned exactly as the editor cleans it.</p>
+  <p>A page that is not published is not readable without permission, and neither are its fields.</p>
+  <p>Site details and collections can be read without logging in, because they hold content this plugin puts into public pages. To require a logged-in editor instead:</p>
+  <pre><code>add_filter('yaml_cf_rest_public_read', '__return_false');</code></pre>
 
   <h3>Function signatures</h3>
   <pre><code>ycf_get_field($field_name, $post_id = null, $context_data = null)

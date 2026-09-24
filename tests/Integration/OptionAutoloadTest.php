@@ -119,8 +119,8 @@ class OptionAutoloadTest extends WPTestCase {
 	}
 
 	/**
-	 * Collections are stored one option per collection, so their names have to be
-	 * worked out from the list of collections rather than guessed.
+	 * A collection's items move out of the single option they used to share, and
+	 * neither the items nor the index they are listed in may be autoloaded.
 	 */
 	public function testUpgradeAlsoCoversCollectionEntries() {
 		update_option('yaml_cf_data_object_types', ['people' => ['name' => 'People', 'schema' => '']], false);
@@ -128,8 +128,13 @@ class OptionAutoloadTest extends WPTestCase {
 
 		(new Upgrader())->maybeUpgrade();
 
-		$this->assertFalse($this->isAutoloaded('yaml_cf_data_object_entries_people'));
-		$this->assertSame(['1' => ['name' => 'Ada']], get_option('yaml_cf_data_object_entries_people'));
+		// The old option is gone, its content carried across
+		$this->assertFalse(get_option('yaml_cf_data_object_entries_people', false));
+
+		$repository = new \YamlCF\Data\Repositories\DataObjectRepository();
+		$this->assertSame(['name' => 'Ada'], $repository->getEntry('people', '1'));
+
+		$this->assertFalse($this->isAutoloaded(\YamlCF\Data\EntryStore::INDEX_PREFIX . 'people'));
 	}
 
 	// ------------------------------------- site parts stranded by a full path

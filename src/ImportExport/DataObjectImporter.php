@@ -115,7 +115,15 @@ class DataObjectImporter {
           $cleaned_entries[$entry_id] = $this->sanitizer->sanitize($entry_data, $schema);
           $entries_imported++;
         }
-        update_option('yaml_cf_data_object_entries_' . $type_slug, $cleaned_entries, false);
+        // The collection's first field labels an item, the same rule the admin
+        // list and the pickers use. Without it the label falls back to whatever
+        // the entry's first value happens to be, which is the file's key order
+        // rather than the schema's.
+        (new \YamlCF\Data\Repositories\DataObjectRepository())->replaceEntries(
+          $type_slug,
+          $cleaned_entries,
+          !empty($schema['fields'][0]['name']) ? (string) $schema['fields'][0]['name'] : ''
+        );
       }
 
       $types_imported++;

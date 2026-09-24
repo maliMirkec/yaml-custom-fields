@@ -12,7 +12,10 @@ if (!defined('ABSPATH')) {
 // - $type_id: The data object type slug
 // - $type_name: The data object type name
 // - $schema: The parsed schema
-// - $entries: All entries for this type
+// - $entries: The items on the page being shown (not every item)
+// - $entries_total: How many items the collection holds in all
+// - $entries_total_pages: Number of pages
+// - $entries_paged: Which page is being shown
 
 $yaml_cf_type_slug = $type_id;
 $yaml_cf_entry_id = YAML_Custom_Fields::get_param('entry', ''); // Use get_param to preserve periods in entry IDs
@@ -21,6 +24,10 @@ $yaml_cf_type_name = $type_name;
 $yaml_cf_schema = $schema;
 $yaml_cf_entries = $entries;
 $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
+
+// The list is paged, so every link away from it and back carries the page being
+// worked on. Without this, editing or cancelling on page seven lands on page one.
+$yaml_cf_paged_arg = $entries_paged > 1 ? '&paged=' . (int) $entries_paged : '';
 
 // Get entry data for editing
 $yaml_cf_entry_data = [];
@@ -87,7 +94,7 @@ if ($yaml_cf_action === 'edit') {
             <?php esc_html_e('Add an item', 'yaml-custom-fields'); ?>
           </a>
         <?php else : ?>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . $yaml_cf_paged_arg)); ?>" class="button">
             <span class="dashicons dashicons-arrow-left-alt2"></span>
             <?php esc_html_e('Back to items', 'yaml-custom-fields'); ?>
           </a>
@@ -130,7 +137,7 @@ if ($yaml_cf_action === 'edit') {
                   ?>
                 </td>
                 <td>
-                  <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . '&action=edit&entry=' . rawurlencode($yaml_cf_entry_id))); ?>" class="button">
+                  <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . '&action=edit&entry=' . rawurlencode($yaml_cf_entry_id) . $yaml_cf_paged_arg)); ?>" class="button">
                     <?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
                   </a>
                   <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php esc_attr_e('Delete this item? This cannot be undone.', 'yaml-custom-fields'); ?>');">
@@ -143,6 +150,36 @@ if ($yaml_cf_action === 'edit') {
             <?php endforeach; ?>
           </tbody>
         </table>
+
+        <?php
+        // A collection of thousands is shown a page at a time now, rather than
+        // every item being read to display fifty of them.
+        $yaml_cf_entries_pagination = $entries_total_pages > 1 ? paginate_links([
+          'base' => add_query_arg('paged', '%#%'),
+          'format' => '',
+          'current' => $entries_paged,
+          'total' => $entries_total_pages,
+          'prev_text' => __('&laquo;', 'yaml-custom-fields'),
+          'next_text' => __('&raquo;', 'yaml-custom-fields'),
+        ]) : '';
+        ?>
+
+        <?php if ($yaml_cf_entries_pagination) : ?>
+          <div class="tablenav bottom">
+            <div class="tablenav-pages">
+              <span class="displaying-num">
+                <?php
+                echo esc_html(sprintf(
+                  /* translators: %s: number of items */
+                  _n('%s item', '%s items', $entries_total, 'yaml-custom-fields'),
+                  number_format_i18n($entries_total)
+                ));
+                ?>
+              </span>
+              <?php echo wp_kses_post($yaml_cf_entries_pagination); ?>
+            </div>
+          </div>
+        <?php endif; ?>
       <?php endif; ?>
 
     <?php else : ?>
@@ -168,7 +205,7 @@ if ($yaml_cf_action === 'edit') {
           <button type="submit" class="button button-primary button-large">
             <?php esc_html_e('Save item', 'yaml-custom-fields'); ?>
           </button>
-          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button button-large">
+          <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . $yaml_cf_paged_arg)); ?>" class="button button-large">
             <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
           </a>
         </p>

@@ -47,7 +47,7 @@ class DataObjectExporter {
       $schema = is_string($schema_yaml) && $schema_yaml !== '' ? $this->parser->parse($schema_yaml) : null;
       $schema = is_array($schema) ? $schema : null;
 
-      $entries = get_option('yaml_cf_data_object_entries_' . $type_slug, []);
+      $entries = $this->repositoryForEntries()->getEntries($type_slug);
       $cleaned_entries = [];
       foreach ((array) $entries as $entry_id => $entry_data) {
         $cleaned_entries[$entry_id] = $this->attachmentValidator->validateAndClean($entry_data, $schema);
@@ -71,5 +71,14 @@ class DataObjectExporter {
   public function download($data) {
     $filename = 'yaml-cf-data-objects-' . sanitize_file_name(wp_parse_url(get_site_url(), PHP_URL_HOST)) . '-' . gmdate('Y-m-d-His') . '.json';
     JsonDownload::send($data, $filename);
+  }
+
+  /**
+   * Where a collection's items are read from
+   *
+   * @return \YamlCF\Data\Repositories\DataObjectRepository
+   */
+  private function repositoryForEntries() {
+    return new \YamlCF\Data\Repositories\DataObjectRepository();
   }
 }

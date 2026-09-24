@@ -49,16 +49,24 @@ function yaml_cf_uninstall_site() {
     delete_option( $yaml_cf_option );
   }
 
-  // Data object entries (one option per type) - names are looked up, then deleted via the API
+  // Collection items: one option per item since 2.0.0, plus the index beside
+  // them, plus the single option each collection used to keep them all in.
   // Direct SQL is required to find dynamic option names (documented exception in Rule #5)
-  $yaml_cf_entry_options = $wpdb->get_col(
-    $wpdb->prepare(
-      "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-      $wpdb->esc_like( 'yaml_cf_data_object_entries_' ) . '%'
-    )
+  $yaml_cf_entry_prefixes = array(
+    'yaml_cf_do_entry_',
+    'yaml_cf_do_index_',
+    'yaml_cf_data_object_entries_',
   );
-  foreach ( $yaml_cf_entry_options as $yaml_cf_option ) {
-    delete_option( $yaml_cf_option );
+  foreach ( $yaml_cf_entry_prefixes as $yaml_cf_prefix ) {
+    $yaml_cf_entry_options = $wpdb->get_col(
+      $wpdb->prepare(
+        "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+        $wpdb->esc_like( $yaml_cf_prefix ) . '%'
+      )
+    );
+    foreach ( $yaml_cf_entry_options as $yaml_cf_option ) {
+      delete_option( $yaml_cf_option );
+    }
   }
 
   // Transients (template cache, notices, import status, invalid schema drafts)

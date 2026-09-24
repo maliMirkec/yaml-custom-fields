@@ -379,7 +379,7 @@ class BundleCatalog {
       if (isset($type['entries']) && is_array($type['entries'])) {
         $count = count($type['entries']);
       } else {
-        $count = count((array) get_option('yaml_cf_data_object_entries_' . $slug, []));
+        $count = (new \YamlCF\Data\Repositories\DataObjectRepository())->countEntries($slug);
       }
 
       $items[] = [

@@ -139,7 +139,7 @@ class BundleExporter {
       $types[$slug] = [
         'name' => isset($type['name']) ? $type['name'] : $slug,
         'schema' => isset($type['schema']) ? $type['schema'] : '',
-        'entries' => (array) get_option('yaml_cf_data_object_entries_' . $slug, []),
+        'entries' => (array) (new \YamlCF\Data\Repositories\DataObjectRepository())->getEntries($slug),
       ];
     }
 

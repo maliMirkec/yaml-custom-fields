@@ -143,6 +143,8 @@ $yaml_cf_empty_reason = function ($kind, $what) {
             <span>
               <?php esc_html_e('A field shows up on the website once the theme asks for it. That is one line per field, and the Copy code button next to each field copies the exact line.', 'yaml-custom-fields'); ?>
               <code>&lt;?php echo esc_html( ycf_get_field( 'headline' ) ); ?&gt;</code>
+              <?php esc_html_e('A block theme has no template file to edit, so put this in a Shortcode block instead:', 'yaml-custom-fields'); ?>
+              <code>[ycf field="headline"]</code>
             </span>
           </li>
         </ol>

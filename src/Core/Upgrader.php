@@ -25,8 +25,9 @@ class Upgrader {
    * 2: plugin options are no longer loaded on every page view.
    * 3: the copy of the schema kept in every post is gone.
    * 4: site parts of a child theme are keyed by name, not by full path.
+   * 5: each item of a collection has an option of its own.
    */
-  const CURRENT_VERSION = 4;
+  const CURRENT_VERSION = 5;
 
   /**
    * Options the plugin keeps under a fixed name
@@ -71,7 +72,47 @@ class Upgrader {
       $this->repairChildThemePaths();
     }
 
+    if ($installed < 5) {
+      $this->splitCollectionEntries();
+    }
+
     update_option(self::VERSION_OPTION, self::CURRENT_VERSION, false);
+  }
+
+  /**
+   * Give every item of a collection an option of its own
+   *
+   * A collection used to keep all of its items in one option, read and written
+   * whole. Showing one item, searching for one, or saving one meant unserialising
+   * every item in the collection. Each now has an option to itself, beside a
+   * small index of id => label that listing and searching read instead.
+   *
+   * YamlCF\Data\EntryStore falls back to the old option until this has run, so
+   * a site works either way and nothing depends on when it happens.
+   *
+   * @return void
+   */
+  private function splitCollectionEntries() {
+    $types = get_option('yaml_cf_data_object_types', []);
+    if (!is_array($types)) {
+      return;
+    }
+
+    $store = new \YamlCF\Data\EntryStore();
+    $parser = new \YamlCF\Schema\SchemaParser();
+
+    foreach ($types as $type_slug => $type) {
+      // The first field labels an item, matching what the pickers have shown
+      $label_field = '';
+      if (is_array($type) && !empty($type['schema']) && is_string($type['schema'])) {
+        $schema = $parser->parse($type['schema']);
+        if (!empty($schema['fields'][0]['name'])) {
+          $label_field = (string) $schema['fields'][0]['name'];
+        }
+      }
+
+      $store->ensureMoved((string) $type_slug, $label_field);
+    }
   }
 
   /**
@@ -187,6 +228,7 @@ class Upgrader {
     if (is_array($types)) {
       foreach (array_keys($types) as $type_slug) {
         $options[] = 'yaml_cf_data_object_entries_' . $type_slug;
+        $options[] = \YamlCF\Data\EntryStore::INDEX_PREFIX . $type_slug;
       }
     }
 

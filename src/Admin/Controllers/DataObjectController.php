@@ -14,6 +14,9 @@ use YamlCF\Helpers\RequestHelper;
  * Handles: data objects list, edit data object type, manage entries
  */
 class DataObjectController extends AdminController {
+  /** Items shown on one page of a collection */
+  const ENTRIES_PER_PAGE = 50;
+
   private $schemaStorage;
   private $savedTypeSlug = null;
   private $schemaValidator;
@@ -79,7 +82,7 @@ class DataObjectController extends AdminController {
           update_option('yaml_cf_data_object_types', $data_object_types, false);
 
           // Delete all entries for this type
-          delete_option('yaml_cf_data_object_entries_' . $type_slug);
+          (new \YamlCF\Data\Repositories\DataObjectRepository())->deleteAllEntries($type_slug);
 
           /* translators: %s: data object type slug */
           $this->notifications->success(sprintf(__('The list "%s" and all its items were deleted.', 'yaml-custom-fields'), $type_slug));
@@ -190,23 +193,26 @@ class DataObjectController extends AdminController {
 
       $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema);
 
-      $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
+      $repository = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository');
+      $stored_entry = $repository->getEntry($type_id, $entry_id_to_save);
 
       // A field dropped from the collection's schema keeps its content, the
       // same as on a page: this entry's value for it is stranded, not rubbish.
       $entry_data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
         $entry_data,
-        isset($entries[$entry_id_to_save]) && is_array($entries[$entry_id_to_save]) ? $entries[$entry_id_to_save] : [],
+        is_array($stored_entry) ? $stored_entry : [],
         $schema
       );
 
-      $entries[$entry_id_to_save] = $entry_data;
-      update_option('yaml_cf_data_object_entries_' . $type_id, $entries, false);
+      $repository->saveEntry($type_id, $entry_id_to_save, $entry_data, $this->labelFieldFor($schema));
 
       $this->notifications->success(__('Item saved.', 'yaml-custom-fields'));
 
       // Redirect back to edit page to prevent form resubmission
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($type_id) . '&action=edit&entry=' . rawurlencode($entry_id_to_save)));
+      wp_safe_redirect($this->entriesUrl($type_id, [
+        'action' => 'edit',
+        'entry' => $entry_id_to_save,
+      ]));
       exit;
     }
 
@@ -227,17 +233,16 @@ class DataObjectController extends AdminController {
       }
 
       $entry_id_to_delete = isset($_POST['entry_id']) ? sanitize_text_field(wp_unslash($_POST['entry_id'])) : '';
-      $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
+      $repository = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository');
 
-      if (isset($entries[$entry_id_to_delete])) {
-        unset($entries[$entry_id_to_delete]);
-        update_option('yaml_cf_data_object_entries_' . $type_id, $entries, false);
+      if ($repository->getEntry($type_id, $entry_id_to_delete) !== null) {
+        $repository->deleteEntry($type_id, $entry_id_to_delete);
 
         $this->notifications->success(__('Item deleted.', 'yaml-custom-fields'));
       }
 
       // Redirect to prevent form resubmission
-      wp_safe_redirect(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($type_id)));
+      wp_safe_redirect($this->entriesUrl($type_id));
       exit;
     }
   }
@@ -310,8 +315,17 @@ class DataObjectController extends AdminController {
     // Parse schema using schemaStorage
     $schema = $this->schemaStorage->parseSchema($schema_yaml);
 
-    // Get all entries
-    $entries = get_option('yaml_cf_data_object_entries_' . $type_id, []);
+    // One page of items. A collection of thousands used to be read in full to
+    // show fifty of them.
+    $entry_page = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->getEntryPage(
+      $type_id,
+      \YamlCF\Helpers\RequestHelper::getParamInt('paged', 1),
+      self::ENTRIES_PER_PAGE
+    );
+    $entries = $entry_page['entries'];
+    $entries_total = $entry_page['total'];
+    $entries_total_pages = $entry_page['total_pages'];
+    $entries_paged = $entry_page['paged'];
 
     // Localize the schema and which one it is, so that adding a section can ask
     // the server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem). The
@@ -327,7 +341,10 @@ class DataObjectController extends AdminController {
       'type_id',
       'type_name',
       'schema',
-      'entries'
+      'entries',
+      'entries_total',
+      'entries_total_pages',
+      'entries_paged'
     ));
   }
 
@@ -337,5 +354,42 @@ class DataObjectController extends AdminController {
   public function render() {
     // Default to list view
     $this->renderList();
+  }
+
+  /**
+   * The field whose value stands for an item in lists and pickers
+   *
+   * The collection's first field, matching what the picker has always shown.
+   *
+   * @param array|null $schema Parsed collection schema
+   * @return string Field name, or '' when the schema has none
+   */
+  private function labelFieldFor($schema) {
+    return !empty($schema['fields'][0]['name']) ? (string) $schema['fields'][0]['name'] : '';
+  }
+
+  /**
+   * A link to a collection's items, staying on the page being worked on
+   *
+   * The list is paged since 2.0.0, so dropping `paged` on the way back from
+   * saving or deleting would send somebody working on page seven of a long
+   * collection to page one.
+   *
+   * @param string $type_id Collection slug
+   * @param array $args Extra query arguments
+   * @return string Admin URL
+   */
+  private function entriesUrl($type_id, $args = []) {
+    $query = array_merge([
+      'page' => 'yaml-cf-manage-data-object-entries',
+      'type_id' => $type_id,
+    ], $args);
+
+    $paged = RequestHelper::getParamInt('paged', 1);
+    if ($paged > 1) {
+      $query['paged'] = $paged;
+    }
+
+    return admin_url('admin.php?' . http_build_query($query));
   }
 }

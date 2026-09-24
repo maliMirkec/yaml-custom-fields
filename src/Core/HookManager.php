@@ -35,6 +35,12 @@ class HookManager {
     // Bring stored data up to date before any screen reads it
     add_action('admin_init', [$this, 'maybeUpgrade'], 1);
 
+    // Field content over the REST API, for front ends and other software
+    add_action('rest_api_init', [$this, 'registerRestApi']);
+
+    // [ycf field="..."], so a block theme can show a field without a PHP template
+    add_action('init', [$this, 'registerShortcode']);
+
     // Admin menu and assets
     add_action('admin_menu', [$this, 'registerAdminMenu']);
     add_action('admin_init', [$this, 'hideSubmenuItems']);
@@ -59,6 +65,20 @@ class HookManager {
 
     // Body class for plugin screens (used to show notices only after WordPress moves them below the header)
     add_filter('admin_body_class', [$this, 'adminBodyClass']);
+  }
+
+  /**
+   * Add the [ycf] shortcode
+   */
+  public function registerShortcode() {
+    $this->plugin->get('shortcode')->register();
+  }
+
+  /**
+   * Add the REST field and routes
+   */
+  public function registerRestApi() {
+    $this->plugin->get('rest_api')->register();
   }
 
   /**

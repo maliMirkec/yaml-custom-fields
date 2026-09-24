@@ -96,9 +96,15 @@ Not for writers, who only fill in fields. Setting up the fields and showing them
 
 Yes, classic themes and block themes alike. The theme decides where each field shows up. A child theme is scanned together with the theme it builds on, so the parent's templates are listed too.
 
+In a block theme there is no template file to edit, so use the `[ycf field="name"]` shortcode in a Shortcode block.
+
 = Does it work with the block editor? =
 
 Yes. The fields appear in a "Custom fields" panel, below the content in the block editor and below the title in the classic editor. The Classic Editor plugin is not needed.
+
+= Is there an API? =
+
+Yes. Field content is available over the WordPress REST API: every page and post carries a `yaml_cf` object, and there are routes for the site details and for collections. The Documentation page inside the plugin has the details.
 
 = Which content types are supported? =
 
@@ -167,6 +173,9 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * **FIXED: The Same on Every Screen** - Site parts, site details, shared fields and collections all threw away the content of a removed field too, and worse: they emptied the whole entry whenever a form sent nothing. Importing a file no longer removes content the file says nothing about either
 * **NEW: Content Check Finds Content Left Behind** - Values belonging to fields that are no longer in a schema are listed under "Values with no field", with a button to remove them when they really are not wanted. Pages whose template has no schema are reported as unchecked rather than treated as entirely stranded
 * **FIXED: Schema Editors That Said Nothing** - Saving the site details schema or a shared fields schema never mentioned dropped fields, so content quietly stopped showing. Both now say which fields lost their place, as the template schema editor always has
+* **IMPROVED: Collections Scale** - Every item of a collection used to share one database row, read and written whole: showing one item, searching for one, or saving one meant loading all of them, on every keystroke in the picker. Each item now has a row of its own beside a small index of names, so searching reads the names and then only the handful of items being shown. The item list is paged fifty at a time. An existing site is moved across once, automatically, and works either way in the meantime
+* **NEW: REST API** - Field content was invisible to anything but a PHP theme, so a front end built in something else, a mobile app or another plugin could not read a single value. Every page and post now carries its resolved values as `yaml_cf`, and there are routes for the site details and for a collection. Sending values back saves them, changing only the fields named in the request, with the same permission check and the same cleaning as the editor. Site details and collections read publicly, since they hold content the plugin renders into public pages; the `yaml_cf_rest_public_read` filter closes them
+* **NEW: Show a Field Without Editing the Theme** - `[ycf field="headline"]` puts a field on the page from a Shortcode block, a widget or the content, so a block theme can display field content at last. It handles each kind of field properly: formatting is kept, an image becomes a picture, a file becomes a link, and a code field prints as it stands
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"

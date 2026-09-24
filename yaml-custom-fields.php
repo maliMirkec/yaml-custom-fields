@@ -2146,7 +2146,7 @@ class YAML_Custom_Fields {
           }
 
           // Get entries for this object type
-          $data_entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+          $data_entries = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->getEntries($object_type);
           $data_types = get_option('yaml_cf_data_object_types', []);
 
           if (!isset($data_types[$object_type])) {
@@ -2693,7 +2693,7 @@ class YAML_Custom_Fields {
    * @return array [entry_id => label]
    */
   private function get_selected_data_object_labels($values, $object_type) {
-    $entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+    $entries = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->getEntries($object_type);
     $types = get_option('yaml_cf_data_object_types', []);
 
     $label_field = '';
@@ -3120,7 +3120,7 @@ class YAML_Custom_Fields {
 
           if (!empty($object_type)) {
             // Get data object entries
-            $data_object_entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+            $data_object_entries = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->getEntries($object_type);
             $data_object_types = get_option('yaml_cf_data_object_types', []);
             $type_name = isset($data_object_types[$object_type]) ? $data_object_types[$object_type]['name'] : ucfirst($object_type);
             $type_schema_yaml = isset($data_object_types[$object_type]) ? $data_object_types[$object_type]['schema'] : '';
@@ -4377,17 +4377,22 @@ function yaml_cf_get_data_object($field_name, $post_id = null, $context_data = n
     return null;
   }
 
-  // We need to know which object type this entry belongs to
-  // The field should have stored just the entry_id, but we need to search all types
-  // This is not ideal - better to store object_type:entry_id or have a way to know the type
-
-  // For now, search all object types for this entry_id
+  // The field stores only the entry id, not which collection it came from, so
+  // every collection is asked for that one id. Asked for the id rather than for
+  // all of its items: since 2.0.0 each item is an option of its own, so reading
+  // a whole collection to look one id up would read every item of every
+  // collection on a front-end page view.
   $data_object_types = get_option('yaml_cf_data_object_types', []);
+  if (!is_array($data_object_types)) {
+    return null;
+  }
 
-  foreach ($data_object_types as $type_slug => $type_data) {
-    $entries = get_option('yaml_cf_data_object_entries_' . $type_slug, []);
-    if (isset($entries[$entry_id])) {
-      return $entries[$entry_id];
+  $repository = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository');
+
+  foreach (array_keys($data_object_types) as $type_slug) {
+    $entry = $repository->getEntry($type_slug, $entry_id);
+    if ($entry !== null) {
+      return $entry;
     }
   }
 
@@ -4434,7 +4439,7 @@ function yaml_cf_get_data_objects($object_type) {
     return [];
   }
 
-  $entries = get_option('yaml_cf_data_object_entries_' . $object_type, []);
+  $entries = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->getEntries($object_type);
   return is_array($entries) ? $entries : [];
 }
 

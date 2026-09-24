@@ -42,27 +42,18 @@ class SearchDataObjects extends AjaxHandler {
     $limit = absint($this->postText('limit', (string) self::DEFAULT_LIMIT));
     $limit = $limit > 0 ? min($limit, self::MAX_LIMIT) : self::DEFAULT_LIMIT;
 
-    $label_field = $this->getLabelField($type);
-    $entries = $this->repository->getEntries($object_type);
+    // Matched against the collection's index of labels, so a search reads that
+    // and the handful of items it is about — not every item in the collection.
+    $found = $this->repository->searchEntries($object_type, $search, $limit);
 
     $results = [];
-    $matched = 0;
-    foreach ($entries as $entry_id => $entry) {
-      $label = $this->getEntryLabel($entry, $label_field, $entry_id);
-
-      if ($search !== '' && stripos($label, $search) === false) {
-        continue;
-      }
-
-      $matched++;
-      if (count($results) < $limit) {
-        $results[] = ['id' => (string) $entry_id, 'label' => $label];
-      }
+    foreach ($found['labels'] as $entry_id => $label) {
+      $results[] = ['id' => (string) $entry_id, 'label' => (string) $label];
     }
 
     $this->sendSuccess([
       'results' => $results,
-      'truncated' => $matched > count($results),
+      'truncated' => $found['total'] > count($results),
     ]);
   }
 
