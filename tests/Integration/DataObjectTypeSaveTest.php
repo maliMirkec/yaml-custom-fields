@@ -90,4 +90,41 @@ class DataObjectTypeSaveTest extends WPTestCase {
 		$this->assertSame('People and teams', $types['people']['name']);
 		$this->assertSame(trim(self::OTHER_SCHEMA), $types['people']['schema']);
 	}
+
+	/**
+	 * Items are listed and picked by the label worked out when each was saved.
+	 * A schema that puts another field first used to leave every old label in
+	 * place until each item happened to be saved again.
+	 */
+	public function testPuttingAnotherFieldFirstRelabelsTheItems() {
+		update_option('yaml_cf_data_object_types', [
+			'people' => ['name' => 'People', 'schema' => "fields:\n  - name: name\n    type: string\n  - name: email\n    type: string\n"],
+		], false);
+		$repository = new \YamlCF\Data\Repositories\DataObjectRepository();
+		$repository->saveEntry('people', 'entry_a', ['name' => 'Ana', 'email' => 'ana@example.org'], 'name');
+		$this->assertSame(['entry_a' => 'Ana'], $repository->getLabels('people'));
+
+		$_GET['type_id'] = 'people';
+		$this->submit([
+			'type_name' => 'People',
+			'type_slug' => 'people',
+			'schema' => "fields:\n  - name: email\n    type: string\n  - name: name\n    type: string\n",
+		]);
+
+		$this->assertSame(['entry_a' => 'ana@example.org'], $repository->getLabels('people'));
+	}
+
+	/**
+	 * A section break or an info box holds no value, so it cannot label an item
+	 */
+	public function testTheLabelFieldSkipsSectionsAndInfoBoxes() {
+		$schema = ['fields' => [
+			['name' => 'intro', 'type' => 'info'],
+			['name' => 'details', 'type' => 'section'],
+			['name' => 'title', 'type' => 'string'],
+		]];
+
+		$this->assertSame('title', \YamlCF\Data\EntryStore::labelFieldOf($schema));
+		$this->assertSame('', \YamlCF\Data\EntryStore::labelFieldOf(null));
+	}
 }

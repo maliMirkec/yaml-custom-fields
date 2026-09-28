@@ -254,6 +254,24 @@ $yaml_cf_empty_reason = function ($kind, $what) {
                       <?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
                     </a>
                   </div>
+                  <?php if ($global_field_count > 0) : ?>
+                    <?php
+                    // Pages on this template read site details for names they
+                    // have no value of their own for, and show them in the
+                    // editor. Every released version read this switch, but none
+                    // showed it.
+                    ?>
+                    <div class="yaml-cf-when-enabled yaml-cf-spaced-top">
+                      <label>
+                        <input type="checkbox"
+                               class="yaml-cf-use-global"
+                               data-template="<?php echo esc_attr($yaml_cf_row['file']); ?>"
+                               <?php checked($yaml_cf_row['uses_site_details']); ?> />
+                        <?php esc_html_e('Use site details on these pages', 'yaml-custom-fields'); ?>
+                      </label>
+                      <span class="yaml-cf-th-help"><?php esc_html_e('These pages can read site details as their own fields, and show them in the editor. A page\'s own field of the same name wins.', 'yaml-custom-fields'); ?></span>
+                    </div>
+                  <?php endif; ?>
                   <span class="yaml-cf-when-disabled yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span>
                 </td>
                 <td data-label="<?php esc_attr_e('Shared fields', 'yaml-custom-fields'); ?>">

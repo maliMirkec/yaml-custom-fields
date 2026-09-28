@@ -573,8 +573,8 @@ class SchemaValidatorTest extends TestCase {
 	}
 
 	/**
-	 * The plugin reads _template_global_override out of a post's own data, so a
-	 * schema must not be able to define a field with that name.
+	 * The plugin strips _template_global_override from a post's values, so a
+	 * field by that name could never be read back.
 	 */
 	public function testRejectsAReservedFieldName() {
 		$yaml = "fields:\n" .
@@ -587,4 +587,35 @@ class SchemaValidatorTest extends TestCase {
 		$this->assertStringContains('uses itself', $result['message']);
 	}
 
+	/**
+	 * A name is the key in yaml_cf[name]. A list is no name, and a bracket ends
+	 * the key early, so the value would be saved under another name.
+	 */
+	public function testRejectsANameThatIsAList() {
+		$result = $this->validator->validate("fields:\n  - name: [a, b]\n    type: string\n");
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('needs a name', $result['message']);
+	}
+
+	public function testRejectsANameWithSquareBrackets() {
+		$result = $this->validator->validate("fields:\n  - name: \"links[0]\"\n    type: string\n");
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('square brackets', $result['message']);
+	}
+
+	public function testANameWithDigitsOnlyOrAHyphenIsFine() {
+		$this->assertTrue($this->validator->validate("fields:\n  - name: 2024\n    type: string\n")['valid']);
+		$this->assertTrue($this->validator->validate("fields:\n  - name: hero-title\n    type: string\n")['valid']);
+	}
+
+	public function testRejectsABracketedNameInsideAGroup() {
+		$yaml = "fields:\n  - name: contact\n    type: object\n    fields:\n      - name: \"phone]\"\n        type: string\n";
+
+		$result = $this->validator->validate($yaml);
+
+		$this->assertFalse($result['valid']);
+		$this->assertStringContains('Inside "contact"', $result['message']);
+	}
 }

@@ -102,9 +102,12 @@ class PageDataImporter {
     $data = $this->sanitizer->sanitize($data, $schema);
 
     // An import file carries whatever the site it came from had. Where it says
-    // nothing about a field this site's schema does not define either, the value
-    // already here is left alone: importing a headline is not a request to throw
-    // away content that has nothing to do with the file.
+    // nothing about a field, the value already here is left alone: importing a
+    // headline is not a request to throw away content that has nothing to do
+    // with the file. That holds for fields this site's schema defines as much
+    // as for ones it does not; only restoring the second kind emptied every
+    // field a trimmed file, or one from a site with fewer fields, left out.
+    // A field the file does name wins, even when it names it empty.
     $stored = get_post_meta($post->ID, '_yaml_cf_data', true);
     $data = \YamlCF\Core\Plugin::getInstance()->get('schema_diff')->restoreStranded(
       $data,
@@ -112,6 +115,7 @@ class PageDataImporter {
       $schema,
       \YamlCF\Schema\SchemaValidator::RESERVED_NAMES
     );
+    $data = $this->keepUnmentioned($data, is_array($stored) ? $stored : []);
 
     // update_post_meta() unslashes its value; slash first so backslashes in field values survive
     $data_updated = update_post_meta($post->ID, '_yaml_cf_data', wp_slash($data));
@@ -237,6 +241,27 @@ class PageDataImporter {
       'imported_from' => isset($data['site_url']) && is_string($data['site_url']) ? esc_url_raw($data['site_url']) : 'unknown',
       'exported_at' => isset($data['exported_at']) && is_string($data['exported_at']) ? sanitize_text_field($data['exported_at']) : 'unknown',
     ];
+  }
+
+  /**
+   * Keep what is stored for top-level fields the file does not name
+   *
+   * @param array $imported Sanitised values from the file
+   * @param array $stored Values already on the post
+   * @return array
+   */
+  private function keepUnmentioned($imported, $stored) {
+    foreach ($stored as $name => $value) {
+      if (in_array((string) $name, \YamlCF\Schema\SchemaValidator::RESERVED_NAMES, true)) {
+        continue;
+      }
+
+      if (!array_key_exists($name, $imported)) {
+        $imported[$name] = $value;
+      }
+    }
+
+    return $imported;
   }
 
   /**

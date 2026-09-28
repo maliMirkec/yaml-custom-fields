@@ -118,10 +118,7 @@ class Upgrader {
       // The first field labels an item, matching what the pickers have shown
       $label_field = '';
       if (is_array($type) && !empty($type['schema']) && is_string($type['schema'])) {
-        $schema = $parser->parse($type['schema']);
-        if (!empty($schema['fields'][0]['name'])) {
-          $label_field = (string) $schema['fields'][0]['name'];
-        }
+        $label_field = \YamlCF\Data\EntryStore::labelFieldOf($parser->parse($type['schema']));
       }
 
       $store->ensureMoved((string) $type_slug, $label_field);

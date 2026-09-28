@@ -25,13 +25,17 @@ class SettingsImporter {
   private $validator;
   private $parser;
   private $cacheManager;
+  private $attachmentValidator;
 
-  public function __construct($sanitizer = null, $validator = null, $parser = null, $cacheManager = null) {
+  public function __construct($sanitizer = null, $validator = null, $parser = null, $cacheManager = null, $attachmentValidator = null) {
     // Values here come out of an import file, never from this user's own typing
     $this->sanitizer = ($sanitizer ?: new \YamlCF\Form\DataSanitizer())->forUntrustedSource();
     $this->validator = $validator ?: new \YamlCF\Schema\SchemaValidator();
     $this->parser = $parser ?: new \YamlCF\Schema\SchemaParser();
     $this->cacheManager = $cacheManager ?: new \YamlCF\Cache\CacheManager();
+    // Image and file IDs in the file are the other site's; the ones that point
+    // at nothing here are cleared, as the page and collection imports do
+    $this->attachmentValidator = $attachmentValidator ?: new \YamlCF\Form\AttachmentValidator();
   }
 
   /**
@@ -76,7 +80,7 @@ class SettingsImporter {
         $template_settings[sanitize_text_field($key)] = (bool) $value;
       }
       if ($merge) {
-        $template_settings = array_merge((array) get_option('yaml_cf_template_settings', []), $template_settings);
+        $template_settings = array_replace((array) get_option('yaml_cf_template_settings', []), $template_settings);
       }
       update_option('yaml_cf_template_settings', $template_settings, false);
       $imported++;
@@ -116,9 +120,11 @@ class SettingsImporter {
     }
 
     if (isset($settings['global_data']) && is_array($settings['global_data'])) {
-      $global_data = $this->sanitizer->sanitize($settings['global_data'], $this->parse(get_option('yaml_cf_global_schema', '')));
+      $global_schema = $this->parse(get_option('yaml_cf_global_schema', ''));
+      $global_data = $this->sanitizer->sanitize($this->attachmentValidator->validateAndClean($settings['global_data'], $global_schema), $global_schema);
       if ($merge) {
-        $global_data = array_merge((array) get_option('yaml_cf_global_data', []), $global_data);
+        // Keyed by field name, which can be all digits: array_merge() would renumber those
+        $global_data = array_replace((array) get_option('yaml_cf_global_data', []), $global_data);
       }
       update_option('yaml_cf_global_data', $global_data, false);
       $imported++;
@@ -200,7 +206,7 @@ class SettingsImporter {
     $written = count($result);
     $existing = (array) get_option($option, []);
     if ($merge) {
-      $result = array_merge($existing, $result);
+      $result = array_replace($existing, $result);
     } else {
       // Replacing still leaves a skipped template as it was. Without this, a
       // schema the file got wrong deleted the one this site had for it.
@@ -229,11 +235,21 @@ class SettingsImporter {
     foreach ($data_map as $template => $data) {
       $template = sanitize_text_field($template);
       $schema = !empty($schema_map[$template]) ? $this->parse($schema_map[$template]) : null;
-      $result[$template] = $this->sanitizer->sanitize(is_array($data) ? $data : [], $schema);
+      $data = $this->attachmentValidator->validateAndClean(is_array($data) ? $data : [], $schema);
+      $result[$template] = $this->sanitizer->sanitize($data, $schema);
     }
     $written = count($result);
     if ($merge) {
-      $result = array_merge((array) get_option($option, []), $result);
+      // Merging keeps every field of a template the file does not name, not
+      // just every template: replacing a site part's whole set of values
+      // emptied each field the file left out.
+      $existing = (array) get_option($option, []);
+      foreach ($result as $template => $values) {
+        if (isset($existing[$template]) && is_array($existing[$template])) {
+          $result[$template] = array_replace($existing[$template], $values);
+        }
+      }
+      $result = array_replace($existing, $result);
     }
     update_option($option, $result, false);
 

@@ -78,7 +78,7 @@ class AssetManager {
    *
    * @param bool $is_post_edit Whether this is the post editor
    * @param string $page The plugin screen (?page=), or '' elsewhere
-   * @return array|null ['source' => string, 'key' => string], or null
+   * @return array|null ['source' => string, 'key' => string, 'post_id' => int (post editor only)], or null
    */
   public function schemaSource($is_post_edit, $page) {
     if ($is_post_edit) {
@@ -90,7 +90,9 @@ class AssetManager {
       $template = $this->templateResolver->resolveForPost($post);
       $schemas = get_option('yaml_cf_schemas', []);
 
-      return !empty($schemas[$template]) ? ['source' => 'template', 'key' => $template] : null;
+      // The post goes along so the server can check this writer may edit a
+      // post that really uses this template, rather than ask for any schema
+      return !empty($schemas[$template]) ? ['source' => 'template', 'key' => $template, 'post_id' => (int) $post->ID] : null;
     }
 
     if ($page === 'yaml-cf-manage-global-data') {

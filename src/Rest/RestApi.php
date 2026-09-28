@@ -142,7 +142,18 @@ class RestApi {
       return [];
     }
 
-    return $this->resolver->resolvePostFields((int) $post['id']);
+    $values = $this->resolver->resolvePostFields((int) $post['id']);
+
+    // A template that uses site details fills names in from them, and those
+    // would reach anyone who can read the page, although the site details route
+    // itself is closed to them. They follow that route's rule here too.
+    if (!$this->mayRead()) {
+      foreach ($this->resolver->siteDetailNames((int) $post['id']) as $name) {
+        unset($values[$name]);
+      }
+    }
+
+    return $values;
   }
 
   /**
@@ -221,7 +232,9 @@ class RestApi {
     // field, and anything missing from it really has been cleared. Over HTTP a
     // caller sends the one field it cares about, and treating the others as
     // deleted would empty a page on a partial update.
-    $data = array_merge($this->postRepository->getData($post->ID), $sent);
+    // array_replace(), not array_merge(): a field named with digits only has an
+    // integer key, which array_merge() would renumber onto a different field.
+    $data = array_replace($this->postRepository->getData($post->ID), $sent);
 
     $this->postRepository->saveData($post->ID, $data);
 

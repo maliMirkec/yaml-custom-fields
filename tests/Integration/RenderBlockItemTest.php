@@ -146,8 +146,9 @@ YAML;
 	 */
 	public function testAuthorCanAddASection() {
 		$this->_setRole('author');
+		$post_id = self::factory()->post->create(['post_type' => 'post', 'post_author' => get_current_user_id()]);
 
-		$response = $this->render();
+		$response = $this->render(['post_id' => (string) $post_id]);
 
 		$this->assertTrue($response['success']);
 	}
@@ -169,6 +170,7 @@ YAML;
 		$post_id = self::factory()->post->create(['post_type' => 'post']);
 
 		$_POST = wp_slash([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			'yaml_cf' => [
 				'sections' => [

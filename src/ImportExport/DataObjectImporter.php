@@ -128,7 +128,7 @@ class DataObjectImporter {
         (new \YamlCF\Data\Repositories\DataObjectRepository())->replaceEntries(
           $type_slug,
           $cleaned_entries,
-          !empty($schema['fields'][0]['name']) ? (string) $schema['fields'][0]['name'] : ''
+          \YamlCF\Data\EntryStore::labelFieldOf($schema)
         );
       }
 

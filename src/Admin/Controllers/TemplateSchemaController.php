@@ -251,6 +251,7 @@ class TemplateSchemaController extends AdminController {
       'has_schema' => !empty($schemas[$key]),
       'shared_field_count' => $this->countFields(isset($template_global_schemas[$key]) ? $template_global_schemas[$key] : ''),
       'has_shared_schema' => !empty($template_global_schemas[$key]),
+      'uses_site_details' => !empty($template_settings[$key . '_use_global']),
     ];
   }
 

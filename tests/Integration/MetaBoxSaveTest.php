@@ -46,6 +46,7 @@ YAML;
 	 */
 	private function submit($post_id, array $fields, array $extra = []) {
 		$_POST = wp_slash(array_merge([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			'yaml_cf' => $fields,
 		], $extra));
@@ -158,6 +159,7 @@ YAML;
 		update_post_meta($post_id, '_yaml_cf_data', ['dropped_field' => 'Still here']);
 
 		$_POST = wp_slash([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			'yaml_cf' => ['title' => 'Hello', 'body' => '<p><strong>Bold</strong></p>'],
 		]);
@@ -168,6 +170,32 @@ YAML;
 		$this->assertSame('<p><strong>Bold</strong></p>', $stored['body']);
 		$this->assertSame('Still here', $stored['dropped_field'] ?? null);
 		$this->assertSame([$post_id], array_values(get_option('yaml_cf_tracked_posts', [])), 'Only the post is tracked, not its revision.');
+	}
+
+	/**
+	 * Another plugin saving a second post during the same request (a translation,
+	 * a copy) fires save_post for it with this form still in $_POST. The fields
+	 * belong to the post the form was drawn for, never to that one.
+	 */
+	public function testSavingAnotherPostInTheSameRequestLeavesItsFieldsAlone() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$post_id = $this->createTestPost();
+		$other_id = $this->createTestPost();
+		update_post_meta($other_id, '_yaml_cf_data', ['title' => 'The other post']);
+
+		$_POST = wp_slash([
+			'post_ID' => $post_id,
+			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
+			'yaml_cf' => ['title' => 'Typed on the first post'],
+			'yaml_cf_use_template_global_fields' => ['title' => '1'],
+		]);
+		wp_update_post(['ID' => $other_id, 'post_title' => 'Touched by another plugin']);
+
+		$this->assertSame(['title' => 'The other post'], get_post_meta($other_id, '_yaml_cf_data', true));
+		$this->assertSame('', get_post_meta($other_id, '_yaml_cf_use_template_global_fields', true));
+
+		wp_update_post(['ID' => $post_id, 'post_title' => 'The post being edited']);
+		$this->assertSame('Typed on the first post', get_post_meta($post_id, '_yaml_cf_data', true)['title'] ?? null);
 	}
 
 	/**

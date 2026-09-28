@@ -126,8 +126,8 @@ class OrphanCleanupTest extends WPTestCase {
 	}
 
 	/**
-	 * The plugin's own bookkeeping keys are not the writer's content, and
-	 * removing one changes what a page renders. Not cleanup; not listed.
+	 * The plugin's own bookkeeping keys are not the writer's content. Not
+	 * cleanup; not listed.
 	 */
 	public function testThePluginsOwnKeysAreNotOffered() {
 		$this->createTestPost([], [
@@ -281,5 +281,50 @@ class OrphanCleanupTest extends WPTestCase {
 		remove_all_filters('user_has_cap');
 
 		$this->assertSame('Stranded', $this->storedFor($post_id)['subtitle']);
+	}
+
+	/**
+	 * A page's own copy of a field that moved into the shared fields is kept on
+	 * purpose, so moving it back restores it. It is not cleanup.
+	 */
+	public function testACopyOfASharedFieldIsNotOffered() {
+		update_option('yaml_cf_template_global_schemas', [self::TEMPLATE => "fields:\n  - name: disclaimer\n    type: string\n"], false);
+		$post_id = $this->createTestPost([], ['headline' => 'Headline', 'disclaimer' => 'Page copy']);
+
+		$this->assertStringNotContainsString('No field for:', $this->render());
+
+		$this->submitRemoval([$post_id => ['disclaimer']]);
+		$this->assertSame('Page copy', $this->storedFor($post_id)['disclaimer'] ?? null);
+	}
+
+	/**
+	 * YAML reads "name: 2024" as a number. That field is as live as any other.
+	 */
+	public function testAFieldNamedWithDigitsIsNotTakenForStranded() {
+		update_option('yaml_cf_schemas', [self::TEMPLATE => self::SCHEMA . "  - name: 2024\n    type: string\n"], false);
+		$post_id = $this->createTestPost([], ['headline' => 'Headline', '2024' => 'The year in review']);
+
+		$this->assertStringNotContainsString('No field for:', $this->render());
+
+		$this->submitRemoval([$post_id => ['2024']]);
+		$this->assertSame('The year in review', $this->storedFor($post_id)['2024'] ?? null);
+	}
+
+	/**
+	 * A stranded value is still returned to a theme that asks for it by name, so
+	 * removing it changes the page: page caches are told, as on a save.
+	 */
+	public function testRemovingClearsThePagesCache() {
+		$post_id = $this->createTestPost([], ['headline' => 'Headline', 'subtitle' => 'Stranded']);
+		$cleaned = [];
+		$record = function ($id) use (&$cleaned) {
+			$cleaned[] = (int) $id;
+		};
+		add_action('clean_post_cache', $record);
+
+		$this->submitRemoval([$post_id => ['subtitle']]);
+		remove_action('clean_post_cache', $record);
+
+		$this->assertContains($post_id, $cleaned);
 	}
 }

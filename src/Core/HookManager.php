@@ -69,7 +69,11 @@ class HookManager {
     // Cache clearing
     add_action('switch_theme', [$this, 'clearTemplateCache']);
 
-    // Queued notices (saves, imports, errors) shown as standard admin notices
+    // Queued notices (saves, imports, errors) shown as standard admin notices,
+    // or in the block editor's own notice area, which admin_notices never reaches
+    add_action('enqueue_block_editor_assets', function () {
+      $this->plugin->get('notification_manager')->sendToBlockEditor();
+    });
     add_action('admin_notices', [$this, 'renderNotices']);
 
     // Plugin credit in the admin footer on plugin screens
@@ -337,16 +341,7 @@ class HookManager {
       'yaml_cf_save_template_settings' => 'ajax_save_template_settings',
       'yaml_cf_refresh_templates' => 'ajax_refresh_templates',
       'yaml_cf_toggle_use_global' => 'ajax_toggle_use_global',
-      'yaml_cf_save_schema' => 'ajax_save_schema',
-      'yaml_cf_get_schema' => 'ajax_get_schema',
-      'yaml_cf_get_partial_data' => 'ajax_get_partial_data',
-      'yaml_cf_save_partial_data' => 'ajax_save_partial_data',
-      'yaml_cf_export_settings' => 'ajax_export_settings',
-      'yaml_cf_import_settings' => 'ajax_import_settings',
       'yaml_cf_get_posts_with_data' => 'ajax_get_posts_with_data',
-      'yaml_cf_export_page_data' => 'ajax_export_page_data',
-      'yaml_cf_import_page_data' => 'ajax_import_page_data',
-      'yaml_cf_import_data_objects' => 'ajax_import_data_objects',
       'yaml_cf_export_bundle' => 'ajax_export_bundle',
       'yaml_cf_inspect_bundle' => 'ajax_inspect_bundle',
       'yaml_cf_import_bundle' => 'ajax_import_bundle',

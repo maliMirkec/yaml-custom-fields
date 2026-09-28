@@ -184,6 +184,65 @@ class RestApiTest extends WPTestCase {
 		$this->assertSame('555-0199', yaml_cf_get_field('phone', $post_id));
 	}
 
+	/**
+	 * A page's fields are as public as the page, but site details are not: the
+	 * site details route is closed by default. A template that uses them must not
+	 * hand every site detail to anyone who can read one of its pages.
+	 */
+	public function testAPostDoesNotRevealSiteDetailsToAVisitorWhenTheyAreClosed() {
+		delete_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION);
+		update_option('yaml_cf_global_schema', "fields:\n  - name: internal_email\n    type: string\n  - name: headline\n    type: string\n", false);
+		update_option('yaml_cf_global_data', ['internal_email' => 'ops@example.org', 'headline' => 'Site wide'], false);
+		update_option('yaml_cf_template_settings', [self::TEMPLATE => true, self::TEMPLATE . '_use_global' => true], false);
+		$post_id = $this->createTestPost([], ['headline' => 'The page\'s own']);
+		wp_set_current_user(0);
+
+		$fields = $this->get('/wp/v2/posts/' . $post_id)->get_data()['yaml_cf'];
+
+		$this->assertSame('The page\'s own', $fields['headline'], 'A name the page fills in is the page\'s value.');
+		$this->assertArrayNotHasKey('internal_email', $fields);
+	}
+
+	public function testAPostCarriesSiteDetailsWhenTheyArePublic() {
+		update_option('yaml_cf_global_data', ['internal_email' => 'ops@example.org'], false);
+		update_option('yaml_cf_template_settings', [self::TEMPLATE => true, self::TEMPLATE . '_use_global' => true], false);
+		$post_id = $this->createTestPost([], ['headline' => 'Hello']);
+		wp_set_current_user(0);
+
+		$fields = $this->get('/wp/v2/posts/' . $post_id)->get_data()['yaml_cf'];
+
+		$this->assertSame('ops@example.org', $fields['internal_email']);
+	}
+
+	public function testAWriterStillSeesSiteDetailsInAPost() {
+		delete_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION);
+		update_option('yaml_cf_global_data', ['internal_email' => 'ops@example.org'], false);
+		update_option('yaml_cf_template_settings', [self::TEMPLATE => true, self::TEMPLATE . '_use_global' => true], false);
+		$post_id = $this->createTestPost([], ['headline' => 'Hello']);
+		wp_set_current_user($this->createTestUser('author'));
+
+		$fields = $this->get('/wp/v2/posts/' . $post_id)->get_data()['yaml_cf'];
+
+		$this->assertSame('ops@example.org', $fields['internal_email']);
+	}
+
+	/**
+	 * A field may be named with digits only ("2024"). PHP keys it as an integer,
+	 * and array_merge() renumbered it to 0 on every partial update.
+	 */
+	public function testAPartialUpdateKeepsAFieldNamedWithDigits() {
+		update_option('yaml_cf_schemas', [self::TEMPLATE => self::SCHEMA . "  - name: \"2024\"\n    type: string\n"], false);
+		wp_set_current_user($this->createTestUser('administrator'));
+		$post_id = $this->createTestPost([], ['headline' => 'Before', '2024' => 'The year in review']);
+
+		$this->assertSame(200, $this->write($post_id, ['headline' => 'After'])->get_status());
+
+		$stored = get_post_meta($post_id, '_yaml_cf_data', true);
+		$this->assertSame('After', $stored['headline']);
+		$this->assertSame('The year in review', $stored['2024'] ?? null);
+		$this->assertArrayNotHasKey(0, $stored);
+	}
+
 	public function testAnEditorCanWriteFields() {
 		wp_set_current_user($this->createTestUser('administrator'));
 		$post_id = $this->createTestPost([], ['headline' => 'Before']);

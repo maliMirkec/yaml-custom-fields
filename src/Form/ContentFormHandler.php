@@ -47,8 +47,10 @@ class ContentFormHandler {
    */
   public function savePartialData() {
     // Handle partial data save
-    if (isset($_POST['yaml_cf_partial_nonce']) &&
-        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_partial_nonce'])), 'yaml_cf_save_partial')) {
+    if (isset($_POST['yaml_cf_partial_nonce'])) {
+      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_partial_nonce'])), 'yaml_cf_save_partial')) {
+        RequestHelper::stopStaleForm();
+      }
 
       if (!current_user_can('manage_options')) {
         wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
@@ -108,8 +110,10 @@ class ContentFormHandler {
    */
   public function saveGlobalData() {
     // Handle global data save
-    if (isset($_POST['yaml_cf_global_data_nonce']) &&
-        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_global_data_nonce'])), 'yaml_cf_save_global_data')) {
+    if (isset($_POST['yaml_cf_global_data_nonce'])) {
+      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_global_data_nonce'])), 'yaml_cf_save_global_data')) {
+        RequestHelper::stopStaleForm();
+      }
 
       if (!current_user_can('manage_options')) {
         wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
@@ -163,8 +167,10 @@ class ContentFormHandler {
    */
   public function saveTemplateGlobalData() {
     // Handle template global data save
-    if (isset($_POST['yaml_cf_save_template_global_data_nonce']) &&
-        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_template_global_data_nonce'])), 'yaml_cf_save_template_global_data')) {
+    if (isset($_POST['yaml_cf_save_template_global_data_nonce'])) {
+      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_save_template_global_data_nonce'])), 'yaml_cf_save_template_global_data')) {
+        RequestHelper::stopStaleForm();
+      }
 
       if (!current_user_can('manage_options')) {
         wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));

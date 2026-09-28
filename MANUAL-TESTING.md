@@ -1,689 +1,605 @@
-# Manual Testing Checklist for YAML Custom Fields Plugin
+# Manual testing guide
 
-This guide provides comprehensive manual testing procedures for the admin JavaScript functionality.
+A step-by-step click-through of every feature of YAML Custom Fields 2.0.0.
 
-## Table of Contents
-
-- [Pre-Testing Setup](#pre-testing-setup)
-- [Template Settings Page](#template-settings-page)
-- [Schema Editor](#schema-editor)
-- [Post/Page Editor Meta Box](#postpage-editor-meta-box)
-- [Block Fields](#block-fields)
-- [Media Fields](#media-fields)
-- [Import/Export](#importexport)
-- [Template Global Fields](#template-global-fields)
-- [Code Snippets](#code-snippets)
-- [Reset All Data](#reset-all-data)
-- [Browser Compatibility](#browser-compatibility)
-- [Error Scenarios](#error-scenarios)
-- [Performance Testing](#performance-testing)
-- [Accessibility Testing](#accessibility-testing)
-- [Testing Sign-Off](#testing-sign-off)
-- [Regression Testing Checklist](#regression-testing-checklist)
-- [Known Limitations](#known-limitations)
-- [Troubleshooting](#troubleshooting)
-- [Next Steps](#next-steps)
+- Each section is one feature. Do the steps in order; each ✅ line is what you should see.
+- If a ✅ line is not what happens, that is a bug. Note the section number and step.
+- For the upgrade from 1.2.9, use `RELEASE-TESTING-2.0.0.md` as well. This guide starts from a clean site.
 
 ---
 
-## Pre-Testing Setup
+## 0. Before you start
 
-### Required Environment
-- [ ] WordPress 6.4+ installed
-- [ ] Plugin activated
-- [ ] At least one theme template with YAML schema defined
-- [ ] Test post/page created
+- Use a test site, never a live one. Take a database backup first.
+- Install and activate the plugin.
+- Use a classic theme with `page.php` and `single.php` (for example Twenty Twenty-One) unless a section says otherwise.
+- Create three extra users: an **Editor**, an **Author** and a **Contributor**.
+- Upload to the media library: three images and one PDF.
+- Create 60 tags (needed for the search picker in section 6). A quick way: `wp term generate post_tag --count=60`.
+- Keep this test schema at hand. Sections below refer to it as **the test schema**:
 
-### Browser Testing Matrix
-Test all critical features in:
-- [ ] Chrome (latest)
-- [ ] Firefox (latest)
-- [ ] Safari (latest)
-- [ ] Edge (latest)
-
-### Test Data Preparation
-- [ ] Create test images (JPG, PNG, GIF)
-- [ ] Create test files (PDF, DOC, ZIP)
-- [ ] Prepare sample JSON export file
-- [ ] Have YAML schema samples ready
-
----
-
-## Template Settings Page
-
-**Location:** `wp-admin/admin.php?page=yaml-cf-settings`
-
-### Enable/Disable YAML
-
-#### Test Case: Enable YAML for Template
-1. [ ] Navigate to Template Settings page
-2. [ ] Find a template with YAML disabled
-3. [ ] Check the "Enable YAML" checkbox
-4. [ ] **Expected:**
-   - Success message appears
-   - "Add Schema" button appears in Schema column
-   - Template Global columns update (for template tables)
-   - "Add schema first" message appears in Data column (for partial tables)
-5. [ ] Refresh page
-6. [ ] **Expected:** Checkbox remains checked
-
-#### Test Case: Disable YAML for Template
-1. [ ] Navigate to Template Settings page
-2. [ ] Find a template with YAML enabled
-3. [ ] Uncheck the "Enable YAML" checkbox
-4. [ ] **Expected:**
-   - Success message appears
-   - Schema, Template Global, and Data columns show "Enable YAML first"
-5. [ ] Refresh page
-6. [ ] **Expected:** Checkbox remains unchecked
-
-### Toggle Use Global
-
-#### Test Case: Enable Use Global
-1. [ ] Navigate to Template Settings page
-2. [ ] Find a template with "Use Global" unchecked
-3. [ ] Check the "Use Global" checkbox
-4. [ ] **Expected:**
-   - "Global schema setting saved" message appears
-   - No page reload required
-5. [ ] Refresh page
-6. [ ] **Expected:** Setting persists
-
----
-
-## Schema Editor
-
-**Location:** `wp-admin/admin.php?page=yaml-cf-edit-schema&template=<template-name>`
-
-### Schema Editing
-1. [ ] Navigate to Schema Editor
-2. [ ] Edit YAML schema in textarea
-3. [ ] Click "Save Schema"
-4. [ ] **Expected:** Success message appears
-5. [ ] Refresh page
-6. [ ] **Expected:** Schema persists
-
-### Schema Validation
-1. [ ] Enter invalid YAML syntax (e.g., unmatched brackets)
-2. [ ] Click "Save Schema"
-3. [ ] **Expected:** Error message with details
-4. [ ] Fix the syntax
-5. [ ] Save again
-6. [ ] **Expected:** Success message
-
----
-
-## Post/Page Editor Meta Box
-
-**Location:** Any post/page edit screen with YAML Custom Fields meta box
-
-### Meta Box Collapse/Expand
-
-#### Test Case: Collapse State Persists
-1. [ ] Open post editor with YAML Custom Fields meta box
-2. [ ] Click meta box header to collapse
-3. [ ] Refresh page
-4. [ ] **Expected:** Meta box remains collapsed
-5. [ ] Click header to expand
-6. [ ] Refresh page
-7. [ ] **Expected:** Meta box remains expanded
-
-### Change Tracking
-
-#### Test Case: Unsaved Changes Warning
-1. [ ] Open post editor
-2. [ ] Modify any YAML custom field
-3. [ ] **Expected:** Warning message appears: "You have unsaved changes in YAML Custom Fields"
-4. [ ] Click "Update" or "Publish"
-5. [ ] **Expected:** Warning disappears
-6. [ ] Modify field again
-7. [ ] Try to navigate away from page
-8. [ ] **Expected:** Browser shows "unsaved changes" warning
-
-### Field Types
-
-#### String Field
-1. [ ] Enter text in string field
-2. [ ] **Expected:** Text appears normally
-3. [ ] Enter special characters: `& < > " '`
-4. [ ] Save post
-5. [ ] Reload page
-6. [ ] **Expected:** Special characters are properly escaped/preserved
-
-#### Textarea Field
-1. [ ] Enter multi-line text
-2. [ ] **Expected:** Line breaks preserved
-3. [ ] Save and reload
-4. [ ] **Expected:** Text displays correctly
-
-#### Number Field
-1. [ ] Enter a valid number
-2. [ ] **Expected:** Accepts number
-3. [ ] Try entering text
-4. [ ] **Expected:** Browser validation prevents non-numeric input
-5. [ ] Test min/max constraints (if defined in schema)
-
-#### Checkbox Field
-1. [ ] Check checkbox
-2. [ ] Save post
-3. [ ] Reload
-4. [ ] **Expected:** Checkbox remains checked
-5. [ ] Uncheck and repeat
-6. [ ] **Expected:** Checkbox remains unchecked
-
-#### Select Field
-1. [ ] Select an option
-2. [ ] Save post
-3. [ ] Reload
-4. [ ] **Expected:** Selected option persists
-
-#### Date Field
-1. [ ] Click date field
-2. [ ] **Expected:** Date picker appears
-3. [ ] Select a date
-4. [ ] Save and reload
-5. [ ] **Expected:** Date persists
-
-#### Rich Text Field (WordPress Editor)
-1. [ ] Enter formatted text
-2. [ ] Add bold, italic, links
-3. [ ] Save post
-4. [ ] Reload
-5. [ ] **Expected:** Formatting preserved
+```yaml
+fields:
+  - section: Basics
+  - name: headline
+    label: Headline
+    type: string
+  - name: intro
+    label: Intro
+    type: text
+  - name: body
+    label: Body
+    type: rich-text
+  - name: embed
+    label: Embed
+    type: code
+    options:
+      language: html
+  - name: count
+    label: Count
+    type: number
+  - name: event_date
+    label: Event date
+    type: date
+  - name: featured
+    label: Featured
+    type: boolean
+  - name: color
+    label: Colour
+    type: select
+    options:
+      values:
+        - red
+        - blue
+  - info: "This is an info box for writers."
+  - section: Media
+  - name: hero
+    label: Hero image
+    type: image
+  - name: gallery
+    label: Gallery
+    type: image
+    list: true
+  - name: brochure
+    label: Brochure
+    type: file
+  - name: downloads
+    label: Downloads
+    type: file
+    list: true
+  - section: Links
+  - name: topic
+    label: Topic
+    type: taxonomy
+    options:
+      taxonomy: category
+  - name: tags
+    label: Tags
+    type: taxonomy
+    multiple: true
+    options:
+      taxonomy: post_tag
+  - name: kind
+    label: Post type
+    type: post_type
+  - name: contact
+    label: Contact
+    type: object
+    fields:
+      - name: phone
+        label: Phone
+        type: string
+      - name: email
+        label: Email
+        type: string
+  - name: sections
+    label: Sections
+    type: block
+    list: true
+    blocks:
+      - name: banner
+        label: Banner
+        fields:
+          - name: title
+            label: Title
+            type: string
+          - name: photo
+            label: Photo
+            type: image
+      - name: quote
+        label: Quote
+        fields:
+          - name: text
+            label: Text
+            type: text
+```
 
 ---
 
-## Block Fields
+## 1. Main screen (YAML CF menu)
 
-**Location:** Post/Page editor with block field type
+- Go to **YAML CF** in the admin menu.
+- ✅ First visit shows **Get started in four steps**.
+- ✅ **Page & post templates** lists `page.php` and `single.php` first, then the rest A–Z.
+- ✅ **Site parts & archive pages** lists `header.php`, `footer.php`, `index.php`, `archive.php` and so on.
+- Switch **Custom fields** on for `page.php`.
+- ✅ A success message appears without a page reload.
+- ✅ The row shows **No fields yet** and a **Create schema** button.
+- Reload the page.
+- ✅ The switch is still on.
+- Switch it off.
+- ✅ The row shows **Switch on to add fields**.
+- Switch it back on.
+- Add a new template file to the theme (for example `page-landing.php` with a `Template Name:` header).
+- Click **Refresh list**.
+- ✅ The new template appears.
 
-### Add Block
-
-#### Test Case: Add New Block
-1. [ ] Locate a block field container
-2. [ ] Select block type from dropdown
-3. [ ] Click "Add Block" button
-4. [ ] **Expected:**
-   - New block appears with correct fields
-   - Block header shows block type label
-   - Move up/down/remove buttons present
-5. [ ] Add multiple blocks of different types
-6. [ ] **Expected:** Each block has unique fields
-
-### Remove Block
-
-#### Test Case: Remove Block
-1. [ ] Add at least 2 blocks
-2. [ ] Click "Remove" on middle block
-3. [ ] **Expected:**
-   - Block fades out and disappears
-   - Warning message: "Block removed. Don't forget to save"
-   - Remaining blocks re-index correctly
-4. [ ] Save post
-5. [ ] Reload
-6. [ ] **Expected:** Removed block does not appear
-
-### Move Block Up/Down
-
-#### Test Case: Move Block Up
-1. [ ] Add at least 3 blocks
-2. [ ] Click "Move Up" on 3rd block
-3. [ ] **Expected:**
-   - Block moves to 2nd position
-   - Block order visually updates
-4. [ ] Save and reload
-5. [ ] **Expected:** Block order persists
-
-#### Test Case: Move Block Down
-1. [ ] Add at least 3 blocks
-2. [ ] Click "Move Down" on 1st block
-3. [ ] **Expected:**
-   - Block moves to 2nd position
-   - Block order visually updates
-4. [ ] Save and reload
-5. [ ] **Expected:** Block order persists
-
-#### Test Case: Move Up on First Block
-1. [ ] Click "Move Up" on first block
-2. [ ] **Expected:** Nothing happens (already at top)
-
-#### Test Case: Move Down on Last Block
-1. [ ] Click "Move Down" on last block
-2. [ ] **Expected:** Nothing happens (already at bottom)
-
-### Block Field Rendering
-
-#### Test Case: Different Field Types in Blocks
-Test each field type within a block:
-1. [ ] String field renders as text input
-2. [ ] Textarea field renders with 5 rows
-3. [ ] Number field renders with min/max constraints
-4. [ ] Boolean field renders as checkbox
-5. [ ] Select field renders with options
-6. [ ] Date field renders with date picker
-7. [ ] Image field renders with upload button
-8. [ ] File field renders with upload button
-9. [ ] Code field renders as textarea with language attribute
-10. [ ] Rich-text shows placeholder message (requires save)
+### 1a. Empty table messages
+- Switch to a block theme (for example Twenty Twenty-Four).
+- ✅ The tables list block templates such as `page` and `single`.
+- ✅ If a table is empty, it names the theme and says Site Editor templates appear once saved.
+- Switch back to the classic theme.
 
 ---
 
-## Media Fields
+## 2. Template schema editor
 
-**Location:** Post/Page editor with image or file field
+- On the main screen, click **Create schema** for `page.php`.
+- ✅ The editor opens with the theme file name shown.
+- Paste the test schema and click **Save schema**.
+- ✅ Success message. The main screen row shows a green badge with the field count.
 
-### Image Upload
+### 2a. Mistakes are refused, and the text is kept
+- Replace `type: string` on `headline` with `type: strng` and save.
+- ✅ Error names the field and asks "Did you mean "string"?". Your text is still in the editor.
+- Give two fields the same name and save.
+- ✅ Error: there are two fields with that name.
+- Name a field `_template_global_override` and save.
+- ✅ Error: it is a name the plugin uses itself.
+- Name a field `links[0]` and save.
+- ✅ Error: field names cannot contain square brackets.
+- Write `name: [a, b]` and save.
+- ✅ Error: the field needs a proper name.
+- Break the YAML (for example an unclosed `[`) and save.
+- ✅ Error: the schema has a typing mistake, with details.
+- Name a field `2024` (digits only) and save.
+- ✅ Saved. Digit-only names are allowed.
+- Put the test schema back and save.
 
-#### Test Case: Upload New Image
-1. [ ] Click "Upload Image" button
-2. [ ] **Expected:** WordPress media library opens
-3. [ ] Upload a new image or select existing
-4. [ ] Click "Use This Image"
-5. [ ] **Expected:**
-   - Media library closes
-   - Image preview appears (max 200px width)
-   - "Clear" button appears
-   - Hidden input stores attachment ID (not URL)
-6. [ ] Save post
-7. [ ] Reload
-8. [ ] **Expected:** Image preview persists
-
-#### Test Case: Change Image
-1. [ ] Click "Upload Image" on field with existing image
-2. [ ] **Expected:** Media library opens with current image selected
-3. [ ] Select different image
-4. [ ] Click "Use This Image"
-5. [ ] **Expected:** Preview updates to new image
-6. [ ] Save and reload
-7. [ ] **Expected:** New image persists
-
-#### Test Case: Clear Image
-1. [ ] Click "Clear" button on image field
-2. [ ] **Expected:**
-   - Image preview disappears
-   - "Clear" button disappears
-   - Hidden input value cleared
-   - Warning: "Don't forget to save"
-3. [ ] Save post
-4. [ ] Reload
-5. [ ] **Expected:** Image remains cleared
-
-### File Upload
-
-#### Test Case: Upload File
-1. [ ] Click "Upload File" button
-2. [ ] **Expected:** WordPress media library opens
-3. [ ] Upload a file (PDF, DOC, etc.)
-4. [ ] Click "Use This File"
-5. [ ] **Expected:**
-   - Media library closes
-   - File name displays
-   - "Clear" button appears
-   - Hidden input stores attachment ID
-6. [ ] Save and reload
-7. [ ] **Expected:** File selection persists
-
-#### Test Case: Clear File
-1. [ ] Click "Clear" button on file field
-2. [ ] **Expected:**
-   - File name display disappears
-   - "Clear" button disappears
-   - Hidden input cleared
-3. [ ] Save and reload
-4. [ ] **Expected:** File remains cleared
+### 2b. Removing a field keeps its content
+- Fill in **Headline** on a page (see section 3) and update it.
+- In the schema, delete the `headline` field and save.
+- ✅ A notice says which field lost its place and that its content is still saved.
+- Open the page and click **Update**.
+- Put `headline` back in the schema and save.
+- Reopen the page.
+- ✅ The old headline is back.
 
 ---
 
-## Import/Export
+## 3. Post editor – the "Custom fields" box
 
-**Location:** `wp-admin/admin.php?page=yaml-cf-import-export`
+### 3a. The box appears
+- Create a new page (template: default).
+- ✅ Block editor: a **Custom fields** box appears below the content.
+- ✅ Classic editor (install the Classic Editor plugin to check): the box sits under the title.
+- ✅ The box shows a **Template: page.php** chip, and **Edit schema**, **Export fields**, **Import fields** and **Empty all fields** buttons.
+- Log in as the Author and open one of their pages.
+- ✅ **Edit schema** is not shown to the Author.
+- Switch `page.php` off on the main screen.
+- ✅ The box is gone from the page editor. Switch it back on.
 
-### Export Settings
+### 3b. Every field type saves and comes back
+Fill in each field, click **Update** or **Publish**, then reload the editor. Check each line.
+- **Headline** with `& < > " '` – ✅ comes back exactly as typed.
+- **Intro** with several lines – ✅ line breaks kept.
+- **Body** with bold, italic and a link – ✅ formatting kept.
+- **Embed** with `<div class="x">Hi</div>` – ✅ kept exactly as an Administrator.
+- **Count** – ✅ letters are refused; a number is kept.
+- **Event date** – ✅ a date picker opens; the date is kept.
+- **Featured** ticked, then unticked on a second save – ✅ both states are kept (unticking really saves).
+- **Colour** – ✅ the chosen option is kept.
+- ✅ The info box shows its text and has no input.
+- ✅ **Basics**, **Media** and **Links** show as headed groups.
+- **Hero image**: click **Choose image**, pick one – ✅ preview appears. Click **Remove** – ✅ preview goes; after Update it stays empty.
+- **Brochure**: click **Choose file**, pick the PDF – ✅ file name shows; it is kept.
+- **Topic** (short list) – ✅ the chosen category is kept.
+- **Post type** – ✅ the choice is kept.
+- **Contact → Phone / Email** – ✅ both kept inside the group.
 
-#### Test Case: Export All Settings
-1. [ ] Navigate to Import/Export page
-2. [ ] Click "Export Settings"
-3. [ ] **Expected:**
-   - JSON file downloads
-   - File name: `yaml-cf-settings-YYYY-MM-DD.json`
-   - File contains schemas, template settings, global data
+### 3c. Unsaved changes warning
+- Change any field.
+- ✅ A warning says there are unsaved changes.
+- Try to leave the page.
+- ✅ The browser asks to confirm.
+- Click **Update**.
+- ✅ The warning disappears.
 
-#### Test Case: Export Post Data
-1. [ ] Navigate to post/page editor
-2. [ ] Click "Export Post Data" (if available)
-3. [ ] **Expected:**
-   - JSON file downloads
-   - File contains post custom field data and schema
-
-### Import Settings
-
-#### Test Case: Import Settings (Replace Mode)
-1. [ ] Click "Import Settings" button
-2. [ ] **Expected:** File picker opens
-3. [ ] Select valid JSON file
-4. [ ] **Expected:** Confirmation dialog appears
-5. [ ] Confirm "Replace all settings"
-6. [ ] **Expected:**
-   - Success message shows
-   - Page reloads after 1.5 seconds
-   - Settings are updated
-   - Import metadata displayed (from, date)
-
-#### Test Case: Import Settings (Merge Mode)
-1. [ ] Click "Import Settings"
-2. [ ] Select JSON file
-3. [ ] Click "Cancel" on first dialog (triggers merge option)
-4. [ ] Confirm "Merge"
-5. [ ] **Expected:**
-   - Success message
-   - Existing settings preserved, new settings added
-   - Page reloads
-
-#### Test Case: Import Invalid JSON
-1. [ ] Click "Import Settings"
-2. [ ] Select non-JSON file or malformed JSON
-3. [ ] **Expected:** Error message: "Invalid JSON file"
-
-#### Test Case: Import Wrong File Type
-1. [ ] Click "Import Settings"
-2. [ ] Select .txt or other file
-3. [ ] **Expected:** Error message: "Please select a valid JSON file"
-
-### Import Post Data
-
-#### Test Case: Import Post Data
-1. [ ] Navigate to post/page editor
-2. [ ] Trigger post data import (click hidden file input)
-3. [ ] Select valid post data JSON
-4. [ ] Confirm warning dialog
-5. [ ] **Expected:**
-   - Data imports via AJAX
-   - Page redirects with success parameter
-   - All custom fields populated
+### 3d. Writers cannot slip in code
+- Log in as the Author (no `unfiltered_html`) and put `<script>alert(1)</script><p>ok</p>` into **Embed** and **Body**, then update.
+- ✅ Reload: the script is gone and `<p>ok</p>` remains.
+- As the Author, set **Embed**'s language to `js` in the schema (as admin), then save `alert(1)` as the Author.
+- ✅ The JavaScript is emptied for the Author. An Administrator can save it.
 
 ---
 
-## Template Global Fields
+## 4. Repeating sections
 
-**Location:** Post/Page editor with template global fields enabled
-
-### Use Template Global Toggle
-
-#### Test Case: Enable Template Global
-1. [ ] Find field with template global option
-2. [ ] Check "Use Template Global" checkbox
-3. [ ] **Expected:**
-   - Local field becomes disabled (grayed out)
-   - Container has `yaml-cf-container-disabled` class
-   - Global value displays
-4. [ ] Try to interact with disabled field
-5. [ ] **Expected:** No interaction possible (CSS prevents it)
-
-#### Test Case: Disable Template Global
-1. [ ] Uncheck "Use Template Global" checkbox
-2. [ ] **Expected:**
-   - Local field becomes enabled
-   - Container loses `yaml-cf-container-disabled` class
-   - Can edit local value
-
-### Override Template Global
-
-#### Test Case: Enable Override
-1. [ ] Find template global field with "Enable Override" button
-2. [ ] Click "Enable Override"
-3. [ ] **Expected:**
-   - Indicator changes to "⚠️ OVERRIDDEN" (orange)
-   - Button changes to "Reset to Global"
-   - Field becomes editable
-   - Hidden input added to mark override
-   - Field names update to override namespace
-
-#### Test Case: Reset Override
-1. [ ] Click "Reset to Global" on overridden field
-2. [ ] Confirm dialog
-3. [ ] **Expected:**
-   - Page reloads
-   - Field resets to global value
-   - Override indicator removed
+- In **Sections**, pick **Banner** and click the add button.
+- ✅ A Banner item appears with **Title** and **Photo**. It appears without reloading.
+- Add a **Quote** item.
+- Type a title in the Banner.
+- ✅ The Banner's header shows that title as its summary.
+- Use the arrow buttons to move the Quote above the Banner.
+- ✅ The order changes. After Update and reload, the order is kept.
+- With two or more items, click **Collapse all**.
+- ✅ All items fold away. Click the caret on one – ✅ it opens.
+- Click **Remove** on one item, then Update.
+- ✅ After reload the removed item is gone.
+- Add a Banner, choose an image in it, Update and reload.
+- ✅ The image is kept inside the item.
 
 ---
 
-## Code Snippets
+## 5. Galleries and file lists
 
-**Location:** Various admin pages with code snippet copy buttons
-
-### Copy Snippet
-
-#### Test Case: Copy to Clipboard
-1. [ ] Hover over "Copy" button next to code snippet
-2. [ ] **Expected:** Popover appears with full code
-3. [ ] Click "Copy" button
-4. [ ] **Expected:**
-   - Popover disappears immediately
-   - "Copied!" tooltip appears
-   - Button shows "copied" state (visual feedback)
-   - Success message: "Code snippet copied to clipboard!"
-   - Tooltip auto-hides after 2 seconds
-5. [ ] Paste into text editor
-6. [ ] **Expected:** Full code snippet pasted correctly
-
-#### Test Case: Popover Hover Behavior
-1. [ ] Hover over "Copy" button
-2. [ ] **Expected:** Popover appears
-3. [ ] Move mouse into popover
-4. [ ] **Expected:** Popover stays visible
-5. [ ] Move mouse out of popover
-6. [ ] **Expected:** Popover disappears after 100ms delay
+- In **Gallery**, click **Add images** and pick all three images in one go.
+- ✅ Three thumbnails appear.
+- Drag one to another position.
+- ✅ The order changes. After Update and reload, the order is kept.
+- Use the keyboard: tab to a thumbnail's **Move earlier / Move later** buttons and press Enter.
+- ✅ The image moves.
+- Remove one image and Update.
+- ✅ Two remain after reload.
+- Remove all images and Update.
+- ✅ The gallery is empty after reload (it does not bring the old images back).
+- Delete one of the used images from the media library, then reopen the page.
+- ✅ The tile says the image is missing instead of showing a broken picture.
+- In **Downloads**, click **Add files**, pick two files, remove one, then Update.
+- ✅ One file remains after reload. Removing the last one and updating leaves it empty.
 
 ---
 
-## Reset All Data
+## 6. Search pickers (big lists)
 
-**Location:** Post/Page editor meta box
-
-### Reset Local Data
-
-#### Test Case: Reset All Fields
-1. [ ] Fill in multiple custom fields (local, not template global)
-2. [ ] Click "Reset All Data" button
-3. [ ] Confirm warning dialog
-4. [ ] **Expected:**
-   - All LOCAL fields cleared (checkboxes unchecked, inputs empty, selects reset)
-   - Image previews removed
-   - File name displays removed
-   - Blocks removed
-   - Template global fields NOT affected
-   - Alert confirms data cleared
-   - Warning to save changes
-5. [ ] Save post
-6. [ ] Reload
-7. [ ] **Expected:** All fields remain empty
-
-#### Test Case: Cancel Reset
-1. [ ] Click "Reset All Data"
-2. [ ] Click "Cancel" on confirmation
-3. [ ] **Expected:** No changes made, fields remain as they were
+- Open a page with the **Tags** field (60 tags exist).
+- ✅ Instead of a long list, a search box shows "60 choices, so search for the one you want".
+- Type part of a tag name.
+- ✅ Matching tags appear. With many matches, a line says to keep typing.
+- Click one.
+- ✅ It appears as a chip. Choose two more.
+- Use the arrow keys and Enter in the results list.
+- ✅ Keyboard choice works.
+- Click the × on one chip, then Update.
+- ✅ After reload, only the remaining chips are shown.
+- Remove all chips and Update.
+- ✅ The field is empty after reload.
+- Create a tag named `R&D <team>` and pick it.
+- ✅ The chip shows the name as text, exactly `R&D <team>`.
 
 ---
 
-## Browser Compatibility
+## 7. Empty all fields
 
-### Chrome Testing
-- [ ] All features work
-- [ ] Console shows no errors
-- [ ] Media upload works
-- [ ] Clipboard copy works
-
-### Firefox Testing
-- [ ] All features work
-- [ ] Console shows no errors
-- [ ] Media upload works
-- [ ] Clipboard copy works
-
-### Safari Testing
-- [ ] All features work
-- [ ] Console shows no errors
-- [ ] Media upload works
-- [ ] Clipboard copy works (may need permissions)
-
-### Edge Testing
-- [ ] All features work
-- [ ] Console shows no errors
-- [ ] Media upload works
-- [ ] Clipboard copy works
+- Fill in every field on a page, including Gallery, Downloads, Tags, Topic and Sections. Update.
+- Click **Empty all fields** and confirm.
+- ✅ Every field on the page empties: text, rich text, images, the gallery, file lists, picker chips and repeating sections.
+- ✅ Shared values and site details on the page are not touched.
+- ✅ A message says to click Update.
+- Click **Update** and reload.
+- ✅ Everything stays empty.
+- Click **Empty all fields** and **Cancel**.
+- ✅ Nothing changes.
 
 ---
 
-## Error Scenarios
+## 8. Shared fields (same on every page of a template)
 
-### Network Errors
+- On the main screen, for `page.php`, click **Add shared fields**.
+- Save this schema:
 
-#### Test Case: AJAX Timeout
-1. [ ] Enable network throttling (Developer Tools)
-2. [ ] Perform AJAX action (save template settings)
-3. [ ] **Expected:** Error message appears if request times out
+```yaml
+fields:
+  - name: headline
+    label: Headline
+    type: string
+  - name: disclaimer
+    label: Disclaimer
+    type: text
+```
 
-#### Test Case: 500 Server Error
-1. [ ] Temporarily break PHP code to trigger 500 error
-2. [ ] Perform AJAX action
-3. [ ] **Expected:** Error message: "Error saving settings"
-4. [ ] Fix PHP code
-
-### Invalid Input
-
-#### Test Case: Non-Numeric in Number Field
-1. [ ] Try entering letters in number field
-2. [ ] **Expected:** Browser validation prevents input
-
-#### Test Case: Invalid Date Format
-1. [ ] Manually edit date field with invalid date
-2. [ ] **Expected:** Browser validation or field clears on blur
-
-### WordPress Editor Issues
-
-#### Test Case: TinyMCE Not Loaded
-1. [ ] If TinyMCE fails to load
-2. [ ] **Expected:** Fallback to textarea still works
-3. [ ] Save still functions correctly
+- Click **Edit content** for shared fields, fill in both, click **Save content**.
+- Open a page on `page.php`.
+- ✅ **Headline** shows the shared value (read-only, with **Edit**), a **This page only** box, and a **Use the shared value on this page** tick box.
+- ✅ **Disclaimer** is shown read-only under **Shared fields**, with an **Edit shared content** link.
+- Tick **Use the shared value on this page**, Update.
+- ✅ The page's own box is greyed out. In the theme (section 16), `ycf_get_field('headline')` shows the shared value.
+- Untick it, type a page value, Update.
+- ✅ The theme shows the page's own value.
 
 ---
 
-## Performance Testing
+## 9. Site details (same on the whole site)
 
-### Large Data Sets
-
-#### Test Case: 50+ Blocks
-1. [ ] Add 50+ blocks to a repeater field
-2. [ ] **Expected:**
-   - Page remains responsive
-   - Block reordering works smoothly
-   - Save completes successfully
-
-#### Test Case: Large Text Content
-1. [ ] Paste 10,000+ characters into textarea
-2. [ ] Save post
-3. [ ] **Expected:** No performance degradation
-
-### Multiple Meta Boxes
-1. [ ] Open post with multiple meta boxes
-2. [ ] **Expected:**
-   - All meta boxes load correctly
-   - No duplicate nonce IDs
-   - No JavaScript conflicts
+- On the main screen, click **Create site details**, save a schema with `phone` and `email`.
+- ✅ **Site details** now appears in the menu.
+- Click **Edit site details**, fill in both, click **Save content**.
+- ✅ Success message.
+- On the main screen, in the `page.php` row, tick **Use site details on these pages**.
+- ✅ A "Site details setting saved" message appears. Reload – ✅ still ticked.
+- Open a page on `page.php`.
+- ✅ A read-only **Site details** part is shown, with an **Edit site details** link.
+- ✅ In the theme, `ycf_get_field('phone')` on that page returns the site detail.
+- Untick the switch.
+- ✅ The page no longer shows site details, and `ycf_get_field('phone')` returns nothing.
+- ✅ `ycf_get_global_field('phone')` works anywhere, switch or not.
 
 ---
 
-## Accessibility Testing
+## 10. Site parts (header, footer and your own)
 
-### Keyboard Navigation
-1. [ ] Tab through all form fields
-2. [ ] **Expected:** Logical tab order, all fields accessible
-3. [ ] Use Enter/Space on buttons
-4. [ ] **Expected:** Buttons activate correctly
-
-### Screen Reader Testing (Optional)
-1. [ ] Use screen reader (NVDA, JAWS, VoiceOver)
-2. [ ] Navigate fields
-3. [ ] **Expected:** Labels read correctly, helpful descriptions provided
+- Switch **Custom fields** on for `header.php` and click **Create schema**. Save a schema with a `tagline` field.
+- Click **Edit content**, fill in the tagline, **Save content**.
+- ✅ In `header.php`: `ycf_get_field('tagline', 'partial:header.php')` shows it.
+- Add `@ycf` in a comment at the top of a new theme file (for example `parts/promo.php`) and click **Refresh list**.
+- ✅ It appears under **Site parts & archive pages** as `parts/promo.php`.
 
 ---
 
-## Testing Sign-Off
+## 11. Collections
 
-Once all tests pass, sign off:
+- Go to **YAML CF → Collections** and click **Add a collection**.
+- Name: `Team`, Short name: `team`. Schema:
 
-**Tested By:** ________________
-**Date:** ________________
-**Browser:** ________________
-**WordPress Version:** ________________
-**Plugin Version:** ________________
+```yaml
+fields:
+  - name: name
+    label: Name
+    type: string
+  - name: role
+    label: Role
+    type: string
+```
 
-**Notes:**
-_______________________________________
-_______________________________________
-_______________________________________
+- Click **Save collection**.
+- ✅ The collection is listed with **Edit schema**, **Edit items**, **Delete**.
+- Try to add another collection with short name `team`.
+- ✅ Refused: the short name is taken. The form keeps what you typed.
+- Try a short name longer than 64 characters.
+- ✅ Refused as too long.
+- Edit the Team collection and change the short name field in the page's HTML (developer tools), then save.
+- ✅ The short name does not change.
 
----
+### 11a. Items
+- Click **Edit items → Add an item**, fill in Ada / Engineer, **Save item**. Add two more.
+- ✅ Items are listed by name.
+- Edit one, change the role, save.
+- ✅ The change is kept.
+- Delete one and confirm.
+- ✅ It is gone.
+- Add more than 50 items (or import them, section 13).
+- ✅ The list is paged; saving an item on page 2 brings you back to page 2.
 
-## Regression Testing Checklist
+### 11b. Labels follow the schema
+- Edit the Team schema and move `role` above `name`. Save.
+- ✅ Items are now listed and picked by their role, not their name (without saving each item again).
 
-Run this shortened checklist after any JavaScript changes:
+### 11c. Using a collection on a page
+- Add to the page schema:
 
-- [ ] Template settings enable/disable works
-- [ ] Schema editor saves correctly
-- [ ] Block add/remove/reorder works
-- [ ] Image upload and clear works
-- [ ] File upload and clear works
-- [ ] Import/export completes successfully
-- [ ] Template global toggle works
-- [ ] Change tracking warns on unsaved changes
-- [ ] Copy snippet works
-- [ ] No console errors in Chrome
+```yaml
+  - name: member
+    label: Team member
+    type: data_object
+    options:
+      object_type: team
+```
 
----
+- ✅ The page editor lets you pick an item (a search picker if the collection is big).
+- Pick one and Update.
+- ✅ `ycf_get_data_object('member')` returns that item in the theme.
+- Add `multiple: true` and pick three.
+- ✅ `ycf_get_data_object('member')` returns the three items in the chosen order.
 
-## Known Limitations
-
-Document any known issues or browser-specific quirks:
-
-1. Safari may require clipboard permissions for copy functionality
-2. TinyMCE editors in dynamically added blocks require page reload
-3. beforeunload warning may vary by browser
-4. localStorage for meta box collapse state is per-browser
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue:** Media library doesn't open
-**Solution:** Check WordPress media scripts are enqueued, check console for errors
-
-**Issue:** AJAX requests fail
-**Solution:** Verify nonce is valid, check network tab for response
-
-**Issue:** Changes don't save
-**Solution:** Check for JavaScript errors, verify form submission works
-
-**Issue:** Blocks don't reindex properly
-**Solution:** Check console for errors, verify jQuery is loaded
+### 11d. Deleting a collection
+- Delete the collection and confirm.
+- ✅ It and all its items are gone.
 
 ---
 
-## Next Steps
+## 12. Per-page export and import (in the page editor)
 
-After completing manual testing:
-
-1. Document any bugs found in issue tracker
-2. Retest after bug fixes
-3. Update this checklist if new features added
-4. Consider automated E2E tests for critical workflows (future enhancement)
-
-**Happy Testing! 🧪**
+- On a filled-in page, click **Export fields**.
+- ✅ A `.json` file downloads.
+- On another page with the same template, click **Import fields** and choose that file.
+- ✅ A message says the import worked. In the **block editor** it appears in the editor's own notice area at the top.
+- ✅ The fields are filled in.
+- Edit the file so it only contains `headline`, and import it onto a page whose other fields are filled.
+- ✅ Only the headline changes. The other fields keep their content.
+- Import a file made for a page with a different web address (when the file matches by address).
+- ✅ A clear error says the file has no content for this page.
+- Try a `.txt` file, a broken `.json`, and a file over 5 MB.
+- ✅ Each gives a clear error and changes nothing.
+- As the Contributor, try the export link of someone else's page (copy it from an admin's editor).
+- ✅ Refused with "You are not allowed to edit this page…".
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Maintained By:** Silvestar Bistrović
+## 13. Export & Import wizard
+
+### 13a. Export
+- Go to **YAML CF → Export & Import**.
+- ✅ Step 1 lists **Setup** (grouped per template), **Pages and posts**, and **Collections**.
+- Click the caret next to a template.
+- ✅ Its pieces (schema, shared fields, content) show. Untick one piece.
+- Tick **Pages and posts**, click **Next**.
+- ✅ Step 2 lists pages that have field content, paged, with select-all buttons.
+- Choose **By web address**, pick some pages, click **Next**.
+- ✅ Step 3 summarises what the file will hold.
+- Click **Export file**.
+- ✅ A `.json` file downloads.
+
+### 13b. Import
+- On a second test site (or after changing things), choose the file under **Import**.
+- ✅ A preview lists everything in the file. Items that already exist say **exists here – will overwrite**; new ones say **new**.
+- ✅ Pages not on this site are marked missing and cannot be ticked.
+- ✅ Pages from an **older export file** (one without post types) are still found, not marked missing.
+- Untick a few items, click **Import N selected**, confirm the overwrite warning.
+- ✅ A result lists what was imported and any problems.
+- ✅ A site part's content from the file is merged in: fields the file does not mention keep their content.
+- ✅ Images whose IDs do not exist on this site are left empty. Use **Check images and files** (section 14).
+- Choose a random `.json` file.
+- ✅ Error: not a YAML Custom Fields export file.
+
+---
+
+## 14. Content Check
+
+- Go to **YAML CF → Content Check**.
+- ✅ The summary shows pages with fields, missing images and files, and values with no field.
+- Delete an image used on a page from the media library, reload.
+- ✅ That page is listed under **Needs attention** with the missing image.
+- Remove a field from a page schema (section 2b), reload.
+- ✅ The page shows **No field for:** with the field name.
+- ✅ A field moved into the template's **shared fields** is not listed. That page copy is kept on purpose.
+- ✅ A field named with digits only (`2024`) that is still in the schema is not listed.
+- ✅ A page whose template has no schema says **not checked**.
+- Tick a listed value, click remove, and confirm.
+- ✅ A message says how many values were removed, and the value is gone.
+- ✅ With a page cache plugin active, that page's cache is cleared.
+- Use the **All / Issues** filter.
+- ✅ The list filters; the active button reads clearly.
+
+---
+
+## 15. Expired forms
+
+- Open **Site details**, type something, then wait until your login session's nonce expires (or edit the hidden `_nonce` field in developer tools to a wrong value), and click **Save content**.
+- ✅ A page says "Nothing was saved: this page was open for too long…" with a back link. Nothing is saved.
+- Repeat on: a schema editor, **Edit content** for a site part, shared content, and **Import fields**.
+- ✅ Same message each time.
+
+---
+
+## 16. Showing fields in the theme
+
+Put these lines in `page.php` (or use the **Copy code** buttons next to each field) and view the page on the front end.
+
+- `<?php echo esc_html(ycf_get_field('headline')); ?>` – ✅ shows the headline.
+- `<?php print_r(ycf_get_fields()); ?>` – ✅ shows all values; the same values `ycf_get_field()` returns.
+- `<?php var_dump(ycf_has_field('headline')); ?>` – ✅ `true` when filled, `false` when the field is cleared or missing. An unticked **Featured** box still gives `true`.
+- `<?php print_r(ycf_get_image('hero', null, 'medium')); ?>` – ✅ image data with url, alt, width, height.
+- `<?php print_r(ycf_get_image('hero', null, [300, 200])); ?>` – ✅ works (no fatal error).
+- `<?php print_r(ycf_get_image('gallery')); ?>` – ✅ a list of images in gallery order.
+- `<?php print_r(ycf_get_file('brochure')); ?>` – ✅ file data; for **Downloads**, a list.
+- `<?php print_r(ycf_get_term('tags')); ?>` – ✅ term objects.
+- `<?php print_r(ycf_get_post_type('kind')); ?>` – ✅ the post type.
+- `<?php echo ycf_get_field('embed'); ?>` – ✅ the code runs as HTML (not encoded text).
+- `<?php echo esc_html(ycf_get_field('tagline', 'partial:header.php')); ?>` – ✅ the site part value.
+- `<?php print_r(ycf_get_data_objects('team')); ?>` – ✅ every item of the collection.
+- Add a filter in the theme's `functions.php`:
+  `add_filter('yaml_cf_field_value', fn($v, $name) => $name === 'headline' ? strtoupper((string) $v) : $v, 10, 2);`
+- ✅ The headline shows in capitals.
+
+### 16a. Shortcode (works in block themes)
+- Add a **Shortcode** block with `[ycf field="headline"]`.
+- ✅ Shows the headline, escaped.
+- `[ycf field="hero" size="large"]` – ✅ shows the image.
+- `[ycf field="phone" source="site"]` – ✅ shows the site detail.
+- `[ycf field="missing" default="Nothing here"]` – ✅ shows "Nothing here".
+- `[ycf field="headline" post="123"]` with a **draft** page's ID, viewed while logged out – ✅ shows nothing.
+- Same with a **published** page's ID – ✅ shows its headline.
+- A page behind a password – ✅ its fields stay hidden until the password is entered.
+
+---
+
+## 17. Which template a page uses
+
+- Set a page's template to `page-landing.php` in the editor.
+- ✅ The box shows **Template: page-landing.php** and that template's fields.
+- Create `page-about.php` in the theme, give it a schema (switched on), and create a page with the address `about`.
+- ✅ That page uses `page-about.php`'s fields. Before that template has a schema, it uses `page.php`'s.
+- Switch to a theme that has `singular.php` but no `page.php` or `single.php` (for example Twenty Twenty).
+- ✅ `singular.php` is listed; pages and posts use it.
+- On a block theme, create a `page-about` template in the Site Editor and give `page-about` a schema.
+- ✅ The page with address `about` uses it.
+- Use a child theme that only has `style.css`.
+- ✅ The parent theme's templates are listed and work.
+
+---
+
+## 18. REST API
+
+Use a browser or a REST client. Replace `ID` with a page ID.
+
+- Logged out, open `/wp-json/wp/v2/pages/ID`.
+- ✅ A `yaml_cf` field holds the page's values.
+- ✅ With **Use site details on these pages** ticked, the site details are **not** in it while REST reading is closed (default).
+- Logged out, open `/wp-json/yaml-cf/v1/site-details` and `/wp-json/yaml-cf/v1/collections/team`.
+- ✅ Both are refused (401).
+- On the main screen, tick **Let anyone read the site details and collections, without logging in**, then **Save this choice**.
+- ✅ Both routes now return data; the page's `yaml_cf` field now includes site details.
+- `/wp-json/yaml-cf/v1/collections/team?per_page=2&page=2` – ✅ paged, with `X-WP-Total` headers.
+- `/wp-json/yaml-cf/v1/collections/team?search=ada` – ✅ only matches.
+- As an Editor (application password), send `POST /wp-json/wp/v2/pages/ID` with body `{"yaml_cf": {"headline": "From REST"}}`.
+- ✅ The headline changes; other fields keep their values.
+- Send a `<script>` in a rich-text field.
+- ✅ It is removed, as in the editor.
+- As the Contributor, write to someone else's page.
+- ✅ Refused.
+- A draft or password-protected page, logged out.
+- ✅ Not readable (draft) or `yaml_cf` is empty (password).
+
+---
+
+## 19. Permissions
+
+- As the Editor, Author and Contributor, open **YAML CF**.
+- ✅ The menu is not there. The plugin's admin URLs say permission is needed.
+- As the Author and the Contributor, edit their own page.
+- ✅ The Custom fields box works, including **Add section** and the search pickers.
+- As the Contributor, open a page of another user in the editor.
+- ✅ WordPress refuses, as for any page they cannot edit.
+
+---
+
+## 20. Page caches
+
+- With a page cache plugin active, edit **Site details** and save.
+- ✅ Pages with fields show the new value straight away.
+- On the main screen, untick **Clear the cache of every page with fields when site-wide content is saved**, **Save this choice**.
+- ✅ Saving site details is faster; cached pages keep the old value until the cache plugin purges them.
+
+---
+
+## 21. Deleting the plugin
+
+- On the main screen, tick **Keep the content if the plugin is deleted**, **Save this choice**.
+- Deactivate and delete the plugin, then install and activate it again.
+- ✅ Schemas, site details, collections and page content are all back.
+- Untick the choice, save, delete the plugin again.
+- ✅ The database has no `yaml_cf_` options, no `yaml_cf_do_` rows and no `_yaml_cf_` post meta left.
+- On a multisite network, repeat for two sites.
+- ✅ Each site follows its own choice.
+
+---
+
+## 22. Accessibility and browsers (quick pass)
+
+- Tab through the main screen and the Custom fields box using only the keyboard.
+- ✅ Every switch, button, picker and gallery control can be reached and used.
+- ✅ Notices are announced by a screen reader (VoiceOver or NVDA).
+- Repeat sections 3, 4, 5 and 6 in Chrome, Firefox and Safari.
+- ✅ Same behaviour, and no errors in the browser console.
+
+---
+
+## Sign-off
+
+- Tested by:
+- Date:
+- WordPress version:
+- PHP version:
+- Theme(s):
+- Browsers:
+- Problems found (section and step):

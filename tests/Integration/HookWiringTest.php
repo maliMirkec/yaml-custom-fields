@@ -32,6 +32,7 @@ class HookWiringTest extends WPTestCase {
 		$post_id = $this->createTestPost();
 
 		$_POST = wp_slash([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			'yaml_cf' => ['title' => 'Saved by the hook'],
 		]);

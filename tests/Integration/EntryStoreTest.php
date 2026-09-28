@@ -315,6 +315,39 @@ class EntryStoreTest extends WPTestCase {
 		$this->assertFalse($this->lockRowExists());
 	}
 
+	/**
+	 * Replacing a large collection can outlast the few seconds after which a
+	 * lock counts as left behind. Work that holds it keeps its time current, so
+	 * another save cannot take it over halfway through.
+	 */
+	public function testALockInUseIsKeptCurrent() {
+		$seen = null;
+
+		\YamlCF\Data\CollectionLock::run(self::COLLECTION, function () use (&$seen) {
+			global $wpdb;
+			$name = \YamlCF\Data\CollectionLock::PREFIX . self::COLLECTION;
+			// As if the work had been going for a minute
+			$wpdb->update($wpdb->options, ['option_value' => (string) (time() - 60)], ['option_name' => $name]);
+
+			// The request's own record of its last write is recent, so push it back too
+			$touched = new \ReflectionProperty(\YamlCF\Data\CollectionLock::class, 'touched');
+			$touched->setValue(null, [self::COLLECTION => time() - 60]);
+
+			\YamlCF\Data\CollectionLock::keepAlive(self::COLLECTION);
+
+			$seen = (int) $wpdb->get_var($wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name));
+		});
+
+		$this->assertGreaterThanOrEqual(time() - 1, $seen);
+		$this->assertFalse($this->lockRowExists());
+	}
+
+	public function testKeepingAliveALockNotHeldWritesNothing() {
+		\YamlCF\Data\CollectionLock::keepAlive(self::COLLECTION);
+
+		$this->assertFalse($this->lockRowExists());
+	}
+
 	private function lockRowExists() {
 		global $wpdb;
 
@@ -364,6 +397,38 @@ class EntryStoreTest extends WPTestCase {
 
 		$this->assertSame('<div>x</div>', yaml_cf_get_data_objects(self::COLLECTION)['entry_1']['embed']);
 		$this->assertSame('<div>x</div>', yaml_cf_get_data_object('speaker', $post_id)['embed']);
+	}
+
+	/**
+	 * An import keeps the item IDs in its file, so two collections can both hold
+	 * "entry_1". A field that picks from the second one used to get the first
+	 * one's item, because every collection was searched in turn.
+	 */
+	public function testAFieldGetsTheItemFromItsOwnCollection() {
+		update_option('yaml_cf_data_object_types', [
+			self::COLLECTION => ['name' => 'People', 'schema' => self::SCHEMA],
+			'venues' => ['name' => 'Venues', 'schema' => "fields:\n  - name: name\n    type: string\n"],
+		], false);
+		update_option('yaml_cf_schemas', ['single.php' => "fields:\n  - name: venue\n    type: data_object\n    options:\n      object_type: venues\n"], false);
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada'], 'name');
+		$this->store->save('venues', 'entry_1', ['name' => 'Main hall'], 'name');
+		$post_id = $this->createTestPost([], ['venue' => 'entry_1']);
+
+		$this->assertSame('Main hall', yaml_cf_get_data_object('venue', $post_id)['name']);
+
+		$this->store->deleteAll('venues');
+	}
+
+	/**
+	 * A field no schema describes has no collection to go by, so every
+	 * collection is still searched for it, as before.
+	 */
+	public function testAFieldWithNoSchemaStillFindsItsItem() {
+		update_option('yaml_cf_schemas', [], false);
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada'], 'name');
+		$post_id = $this->createTestPost([], ['speaker' => 'entry_1']);
+
+		$this->assertSame('Ada', yaml_cf_get_data_object('speaker', $post_id)['name']);
 	}
 
 	public function testAskingForACollectionThatDoesNotExistIsEmpty() {

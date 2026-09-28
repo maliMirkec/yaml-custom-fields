@@ -70,11 +70,13 @@ class DataObjectAccessor {
    */
   public function getDataObject($field_name, $post_id = null, $context_data = null) {
     $entry_id = $this->fields->getField($field_name, $post_id, $context_data);
+    // A block item's fields are not looked up; the old search stands in there
+    $collection = is_array($context_data) ? '' : $this->collectionOf($field_name, $post_id);
 
     if (is_array($entry_id)) {
       $entries = [];
       foreach ($entry_id as $one_id) {
-        $entry = is_string($one_id) && $one_id !== '' ? $this->findEntry($one_id) : null;
+        $entry = is_string($one_id) && $one_id !== '' ? $this->findEntry($one_id, $collection) : null;
         if ($entry !== null) {
           $entries[] = $entry;
         }
@@ -87,26 +89,54 @@ class DataObjectAccessor {
       return null;
     }
 
-    return $this->findEntry($entry_id);
+    return $this->findEntry($entry_id, $collection);
   }
 
   /**
-   * One item, from whichever collection holds it
+   * The collection a data_object field's schema says it picks from
+   *
+   * @param string $field_name The field's name
+   * @param int|string|null $post_id Post ID, 'partial:<file>', or null for the current post
+   * @return string Collection slug, or '' when no schema says
+   */
+  private function collectionOf($field_name, $post_id) {
+    $resolver = $this->resolver ?: \YamlCF\Core\Plugin::getInstance()->get('field_resolver');
+    $definition = $resolver->fieldDefinitionFor($field_name, $post_id);
+
+    return isset($definition['options']['object_type']) && is_string($definition['options']['object_type'])
+      ? $definition['options']['object_type']
+      : '';
+  }
+
+  /**
+   * One item, from the collection the field picks from, or from any
+   *
+   * Item IDs made on this site are unique across collections, but an import
+   * keeps the IDs in its file, so two collections can both hold "entry_1".
+   * Searching every collection then returned the first one's item for a field
+   * that picks from the second. The field's own collection is used whenever
+   * its schema names one that exists.
    *
    * @param string $entry_id Entry ID
+   * @param string $collection Collection the field picks from, or ''
    * @return array|null
    */
-  private function findEntry($entry_id) {
-    // The field stores only the entry id, not which collection it came from, so
-    // every collection is asked for that one id. Asked for the id rather than for
-    // all of its items: since 2.0.0 each item is an option of its own, so reading
-    // a whole collection to look one id up would read every item of every
-    // collection on a front-end page view.
+  private function findEntry($entry_id, $collection = '') {
     $data_object_types = get_option('yaml_cf_data_object_types', []);
     if (!is_array($data_object_types)) {
       return null;
     }
 
+    if ($collection !== '' && isset($data_object_types[$collection])) {
+      $entry = $this->repository->getEntry($collection, $entry_id);
+
+      return $entry !== null ? $this->decodeEntry($collection, $entry) : null;
+    }
+
+    // No schema to say which collection, so every collection is asked for that
+    // one id. Asked for the id rather than for all of its items: since 2.0.0
+    // each item is an option of its own, so reading a whole collection to look
+    // one id up would read every item of every collection on a page view.
     foreach (array_keys($data_object_types) as $type_slug) {
       $entry = $this->repository->getEntry($type_slug, $entry_id);
       if ($entry !== null) {

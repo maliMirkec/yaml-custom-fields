@@ -295,12 +295,16 @@ When editing a post that uses a template with Template Global fields, you'll see
 
 ### Data Priority
 
-When using template functions, data is returned in this priority order:
+The template functions, the REST API and the `[ycf]` shortcode all return a field's
+value from the first of these that has one:
 
-1. Page-specific value (if "use template global" is unchecked)
-2. Template global value (if "use template global" is checked)
-3. Site-wide global value (if template has site-wide global enabled)
-4. null (if no value exists)
+1. The template global value, when "Use the shared value on this page" is ticked for
+   the field and the shared value is filled in
+2. The template global value, for a field that exists only in the template global schema
+3. The page's own value. A field saved empty keeps its empty value: clearing it is a choice
+4. The template global value, for a field the page has never been saved with
+5. The site-wide global value, when the template uses site details
+6. `null` when none of them has a value
 
 ## Working with Partials
 
@@ -343,7 +347,7 @@ If you're developing or modifying the plugin, follow these steps:
 
 #### Prerequisites
 
-- PHP 7.4 or higher
+- PHP 8.1 or higher (the plugin's minimum)
 - Composer
 
 #### Installation
@@ -448,7 +452,7 @@ Before 2.0.0 the box was printed on `edit_form_after_title`, which the block edi
 
 ### What happens to my data if I deactivate the plugin?
 
-Your data remains in the database. Only when you **delete** the plugin (not just deactivate) will it clean up all settings, schemas, and custom field data.
+Your data remains in the database. Only when you **delete** the plugin (not just deactivate) will it clean up all settings, schemas, and custom field data. To keep the field content even then, tick the option to keep it on the plugin's main screen before deleting.
 
 ## Contributing
 

@@ -29,13 +29,15 @@ class PostImportHandler {
    */
   public function importPost() {
     // Handle single post import
-    if (isset($_POST['yaml_cf_import_post_nonce']) &&
-        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_import_post_nonce'])), 'yaml_cf_import_post')) {
+    if (isset($_POST['yaml_cf_import_post_nonce'])) {
+      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_import_post_nonce'])), 'yaml_cf_import_post')) {
+        \YamlCF\Helpers\RequestHelper::stopStaleForm();
+      }
 
       $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
 
       if (!current_user_can('edit_post', $post_id)) {
-        wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
+        wp_die(esc_html__('You are not allowed to edit this page, so its fields cannot be exported or imported.', 'yaml-custom-fields'));
       }
 
       $redirect_with_error = function($code) use ($post_id) {

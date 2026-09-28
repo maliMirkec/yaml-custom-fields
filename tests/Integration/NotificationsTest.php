@@ -41,6 +41,25 @@ class NotificationsTest extends WPTestCase {
 		$this->assertSame('', $this->renderNotices(), 'Notices are shown only once');
 	}
 
+	/**
+	 * The block editor does not show admin_notices, so "Import fields" on a
+	 * block editor page used to report nothing at all. Queued notices go to the
+	 * editor's own notice store instead, as text.
+	 */
+	public function testTheBlockEditorGetsQueuedNoticesAsText() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$this->notifications()->error('The file has no content for this page.', ['title' => 'The import did not work.']);
+		wp_scripts()->registered['wp-notices']->extra['after'] = [];
+
+		do_action('enqueue_block_editor_assets');
+
+		$script = implode("\n", (array) wp_scripts()->get_data('wp-notices', 'after'));
+		$this->assertStringContainsString('core/notices', $script);
+		$this->assertStringContainsString('"error"', $script);
+		$this->assertStringContainsString('The import did not work. The file has no content for this page.', $script);
+		$this->assertSame([], $this->notifications()->peek(), 'Handed over once, not printed again.');
+	}
+
 	public function testNoticesArePerUser() {
 		$this->actingAs($this->createTestUser('administrator'));
 		$this->notifications()->success('For the first admin');

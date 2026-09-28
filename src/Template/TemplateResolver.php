@@ -63,7 +63,7 @@ class TemplateResolver {
         'page-' . $post->ID . '.php',
       ]);
 
-      return $specific !== null ? $specific : 'page.php';
+      return $specific !== null ? $specific : $this->generalTemplate('page.php');
     }
 
     // Any other post type can offer templates too ("Template Post Type:"). Only
@@ -97,12 +97,35 @@ class TemplateResolver {
 
     // Fall back to generic single.php for regular posts
     if ($post_type === 'post') {
-      return 'single.php';
+      return $this->generalTemplate('single.php');
     }
 
     // For custom post types without a specific template, return the expected name
     // This allows the user to create the template and schema
     return $specific_template;
+  }
+
+  /**
+   * page.php or single.php, or singular.php in a theme that has only that
+   *
+   * WordPress renders singular.php for a page or a post when the theme has no
+   * page.php or single.php, and themes such as Twenty Twenty are built that
+   * way. Resolving to a page.php that does not exist gave their pages a
+   * template no schema could be written for, because the template list only
+   * shows files the theme has.
+   *
+   * The general template still wins wherever it has a schema, so a site that
+   * wrote one before switching to such a theme keeps its fields.
+   *
+   * @param string $general page.php or single.php
+   * @return string Template file name
+   */
+  private function generalTemplate($general) {
+    if ($this->themeHasTemplate($general) || $this->templateHasSchema($general)) {
+      return $general;
+    }
+
+    return $this->themeHasTemplate('singular.php') ? 'singular.php' : $general;
   }
 
   /**
@@ -156,9 +179,10 @@ class TemplateResolver {
   /**
    * Which block template a post uses
    *
-   * Mirrors the classic rules one for one, with slugs in place of file names:
-   * a template chosen in the editor wins, then single-{post type}, then the
-   * general one for the kind of content.
+   * Mirrors the classic rules, with slugs in place of file names: a template
+   * chosen in the editor wins, then page-{slug} or page-{id} when they have a
+   * schema, then single-{post type}, then the general one for the kind of
+   * content, or singular when the theme has only that.
    *
    * @param \WP_Post $post Post object
    * @return string Block template slug
@@ -175,7 +199,15 @@ class TemplateResolver {
     }
 
     if ($post_type === 'page') {
-      return 'page';
+      // page-{slug} and page-{id} take over only once they have a schema,
+      // the same rule as page-about.php on a classic theme
+      foreach (['page-' . $this->decodedSlug($post), 'page-' . $post->ID] as $candidate) {
+        if ($this->templateHasSchema($candidate) && $this->blockTemplateExists($candidate)) {
+          return $candidate;
+        }
+      }
+
+      return $this->generalBlockTemplate('page');
     }
 
     $specific_template = "single-{$post_type}";
@@ -184,11 +216,43 @@ class TemplateResolver {
     }
 
     if ($post_type === 'post') {
-      return 'single';
+      return $this->generalBlockTemplate('single');
     }
 
     // No template of its own yet: name the one to create
     return $specific_template;
+  }
+
+  /**
+   * page or single, or singular in a block theme that has only that
+   *
+   * @param string $general "page" or "single"
+   * @return string Block template slug
+   */
+  private function generalBlockTemplate($general) {
+    if ($this->themeHasBlockTemplate($general) || $this->templateHasSchema($general)) {
+      return $general;
+    }
+
+    return $this->themeHasBlockTemplate('singular') ? 'singular' : $general;
+  }
+
+  /**
+   * Whether a block template exists, in the theme's files or the Site Editor
+   *
+   * Only asked about a template that already has a schema, so the database is
+   * read for a handful of candidates, not on every lookup.
+   *
+   * @param string $slug Block template slug
+   * @return bool
+   */
+  private function blockTemplateExists($slug) {
+    if ($this->themeHasBlockTemplate($slug)) {
+      return true;
+    }
+
+    return function_exists('get_block_template')
+      && get_block_template(get_stylesheet() . '//' . $slug, 'wp_template') !== null;
   }
 
   /**

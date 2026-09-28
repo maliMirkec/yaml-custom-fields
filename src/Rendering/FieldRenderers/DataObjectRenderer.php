@@ -131,11 +131,7 @@ class DataObjectRenderer extends BaseFieldRenderer implements BlockFieldRenderer
     $type_name = isset($data_object_types[$object_type]) ? $data_object_types[$object_type]['name'] : ucfirst($object_type);
     $type_schema_yaml = isset($data_object_types[$object_type]) ? $data_object_types[$object_type]['schema'] : '';
 
-    $parsed_schema = $this->root->parser()->parse($type_schema_yaml);
-    $label_field = null;
-    if (!empty($parsed_schema['fields']) && is_array($parsed_schema['fields'])) {
-      $label_field = $parsed_schema['fields'][0]['name'];
-    }
+    $label_field = $this->labelField($type_schema_yaml);
 
     // A big collection gets a search box rather than an option per entry
     // repeated in every block on the page. Counted before any item is read.
@@ -177,8 +173,7 @@ class DataObjectRenderer extends BaseFieldRenderer implements BlockFieldRenderer
    * @return string Field name, or '' when there is none
    */
   private function labelField($schema_yaml) {
-    $object_schema = $this->root->parser()->parse($schema_yaml);
-    return !empty($object_schema['fields']) ? $object_schema['fields'][0]['name'] : '';
+    return \YamlCF\Data\EntryStore::labelFieldOf($this->root->parser()->parse($schema_yaml));
   }
 
   /**

@@ -80,7 +80,7 @@ class ValidationController extends AdminController {
       // this the screen would list every value on the page and offer to delete
       // the lot, which is the opposite of what it is for.
       $has_schema = $schema !== null;
-      $orphaned = $has_schema ? $this->orphanedFieldNames($data, $schema) : [];
+      $orphaned = $has_schema ? $this->orphanedFieldNames($data, $schema, $post) : [];
 
       if (!$has_schema) {
         $posts_without_schema++;
@@ -117,12 +117,21 @@ class ValidationController extends AdminController {
    * path decides what to keep. A name reused inside a group is a different
    * field, so it does not make a stranded top-level value look current.
    *
+   * A page's own copy of a field that has since moved into the template's
+   * shared fields is not stranded either. It is kept on purpose, so that moving
+   * the field back gives each page its value again; offering to delete it here
+   * would undo that promise.
+   *
    * @param array $data Stored field data
    * @param array $schema Parsed schema for the post's template
+   * @param \WP_Post|null $post The post, to find its template's shared fields
    * @return string[] Field names with nothing describing them
    */
-  private function orphanedFieldNames($data, $schema) {
-    $known = array_flip($this->schemaDiff->topLevelFieldNames($schema));
+  private function orphanedFieldNames($data, $schema, $post = null) {
+    $known = array_flip(array_merge(
+      $this->schemaDiff->topLevelFieldNames($schema),
+      $this->sharedFieldNames($post)
+    ));
     $orphaned = [];
 
     foreach (array_keys($data) as $key) {
@@ -142,6 +151,24 @@ class ValidationController extends AdminController {
     }
 
     return $orphaned;
+  }
+
+  /**
+   * Top-level names in the shared fields of a post's template
+   *
+   * @param \WP_Post|null $post The post
+   * @return string[]
+   */
+  private function sharedFieldNames($post) {
+    if (!($post instanceof \WP_Post)) {
+      return [];
+    }
+
+    $plugin = \YamlCF\Core\Plugin::getInstance();
+    $template = $plugin->get('template_resolver')->getTemplateForPost($post);
+    $resolver = $plugin->get('field_resolver');
+
+    return $this->schemaDiff->topLevelFieldNames($resolver->parseSchemaCached($resolver->templateGlobalSchema($template)));
   }
 
   /**
@@ -237,7 +264,7 @@ class ValidationController extends AdminController {
 
       $removable = array_intersect(
         array_map('strval', $names),
-        $this->orphanedFieldNames($data, $schema)
+        $this->orphanedFieldNames($data, $schema, $post)
       );
 
       if (empty($removable)) {
@@ -257,6 +284,10 @@ class ValidationController extends AdminController {
       } else {
         $this->postRepository->saveData($post_id, $data);
       }
+
+      // A stranded value is still returned to a theme that asks for it by name,
+      // so the page may look different now: tell page caches, as a save does
+      \YamlCF\Core\Plugin::getInstance()->get('cache_manager')->clearDataCaches($post_id);
 
       $posts_changed++;
     }

@@ -61,6 +61,24 @@ class RequestHelper {
   }
 
   /**
+   * Stop a form submission whose nonce has expired, and say why
+   *
+   * These forms post back to the screen they are on. A check that only asked
+   * "is the nonce valid?" treated an expired one like no submission at all: the
+   * screen drew itself again from what was stored, and whatever had been typed
+   * into it was gone without a word.
+   *
+   * @return void Never returns
+   */
+  public static function stopStaleForm() {
+    wp_die(
+      esc_html__('Nothing was saved: this page was open for too long. Go back, copy anything you typed, reload the page and save again.', 'yaml-custom-fields'),
+      esc_html__('Not saved', 'yaml-custom-fields'),
+      ['response' => 403, 'back_link' => true]
+    );
+  }
+
+  /**
    * Get unslashed POST data for schema-aware sanitization
    * Use this when data will be sanitized by a custom function (e.g., DataSanitizer)
    *

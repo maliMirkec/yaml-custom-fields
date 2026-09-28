@@ -30,9 +30,11 @@ class SchemaSourceTest extends WPTestCase {
 
 	public function testThePostEditorNamesThePostsTemplate() {
 		update_option('yaml_cf_schemas', ['single.php' => self::SCHEMA]);
-		$_GET = ['post' => (string) $this->createTestPost()];
+		$post_id = $this->createTestPost();
+		$_GET = ['post' => (string) $post_id];
 
-		$this->assertSame(['source' => 'template', 'key' => 'single.php'], $this->source(true, ''));
+		// The post goes along so the server can check the writer may edit it
+		$this->assertSame(['source' => 'template', 'key' => 'single.php', 'post_id' => $post_id], $this->source(true, ''));
 	}
 
 	/**
@@ -40,9 +42,10 @@ class SchemaSourceTest extends WPTestCase {
 	 */
 	public function testANewPostNamesItsTemplate() {
 		update_option('yaml_cf_schemas', ['single.php' => self::SCHEMA]);
-		$GLOBALS['post'] = get_post($this->createTestPost(['post_status' => 'auto-draft']));
+		$post_id = $this->createTestPost(['post_status' => 'auto-draft']);
+		$GLOBALS['post'] = get_post($post_id);
 
-		$this->assertSame(['source' => 'template', 'key' => 'single.php'], $this->source(true, ''));
+		$this->assertSame(['source' => 'template', 'key' => 'single.php', 'post_id' => $post_id], $this->source(true, ''));
 	}
 
 	public function testTheSharedContentScreenNamesItsTemplate() {

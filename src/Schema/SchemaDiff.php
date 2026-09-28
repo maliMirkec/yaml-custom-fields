@@ -57,8 +57,10 @@ class SchemaDiff {
 
     $names = [];
     foreach ($schema['fields'] as $field) {
-      if (is_array($field) && !empty($field['name']) && is_string($field['name'])) {
-        $names[] = $field['name'];
+      // is_scalar(), not is_string(): YAML reads "name: 2024" as a number, and
+      // that field's value is as live as any other
+      if (is_array($field) && !empty($field['name']) && is_scalar($field['name'])) {
+        $names[] = (string) $field['name'];
       }
     }
 
@@ -102,8 +104,8 @@ class SchemaDiff {
     $known = [];
     if (is_array($schema) && !empty($schema['fields']) && is_array($schema['fields'])) {
       foreach ($schema['fields'] as $field) {
-        if (is_array($field) && !empty($field['name']) && is_string($field['name'])) {
-          $known[$field['name']] = $field;
+        if (is_array($field) && !empty($field['name']) && is_scalar($field['name'])) {
+          $known[(string) $field['name']] = $field;
         }
       }
     }
@@ -153,11 +155,11 @@ class SchemaDiff {
       }
 
       // "- section: Hero" and "- break: true" carry no data of their own
-      if (empty($field['name']) || !is_string($field['name'])) {
+      if (empty($field['name']) || !is_scalar($field['name'])) {
         continue;
       }
 
-      $names[] = $field['name'];
+      $names[] = (string) $field['name'];
 
       if (!empty($field['fields']) && is_array($field['fields'])) {
         $names = array_merge($names, $this->walk($field['fields']));

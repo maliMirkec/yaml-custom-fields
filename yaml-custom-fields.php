@@ -605,11 +605,14 @@ function yaml_cf_decode_all_code_fields($data, $schema = null) {
 }
 
 /**
- * Check if a field exists
+ * Check if a field has a value
+ *
+ * A field left empty or cleared in the editor ('' or an empty list) has none.
+ * An unticked box (false) and 0 are values.
  *
  * @param string $field_name The name of the field to check
  * @param int|string $post_id Optional. Post ID or 'partial:filename' for partials. Defaults to current post.
- * @return bool True if field exists, false otherwise
+ * @return bool True if the field has a value, false otherwise
  */
 function yaml_cf_has_field($field_name, $post_id = null) {
   return \YamlCF\Core\Plugin::getInstance()->get('field_accessor')->hasField($field_name, $post_id);
@@ -722,7 +725,7 @@ if (!function_exists('ycf_has_global_field')) {
  *
  * @param string $field_name The name of the image field
  * @param int|string|null $post_id Optional. Post ID or 'partial:filename' for partials. Defaults to current post.
- * @param string $size Optional. Image size (thumbnail, medium, large, full). Defaults to 'full'.
+ * @param string|int[] $size Optional. Image size name (thumbnail, medium, large, full) or [width, height]. Defaults to 'full'.
  * @param array|null $context_data Optional. Array data to search in (useful for nested blocks). Defaults to null.
  * @return array|null Array with 'id', 'url', 'alt', 'title', 'caption', 'description', 'width', 'height' keys, an array of such arrays if the field has list: true, or null if not found
  *
@@ -769,7 +772,7 @@ if (!function_exists('yaml_cf_resolve_image_data')) {
    * Build the image-info array for a single attachment ID
    *
    * @param int|string $attachment_id Attachment ID
-   * @param string $size Image size
+   * @param string|int[] $size Image size name, or [width, height]
    * @return array|null Image data, or null when the ID is not an attachment
    */
   function yaml_cf_resolve_image_data($attachment_id, $size = 'full') {

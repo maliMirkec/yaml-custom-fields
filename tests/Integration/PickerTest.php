@@ -178,6 +178,7 @@ class PickerTest extends WP_Ajax_UnitTestCase {
 		$post_id = self::factory()->post->create(['post_type' => 'post']);
 
 		$_POST = wp_slash([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			// The leading '' is the picker's clearing placeholder
 			'yaml_cf' => ['topics' => ['', (string) $term]],

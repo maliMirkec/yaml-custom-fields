@@ -71,7 +71,7 @@ class FieldAccessor {
     }
 
     if ($this->isPartial($post_id)) {
-      $partial_file = str_replace(self::PARTIAL_PREFIX, '', $post_id);
+      $partial_file = substr($post_id, strlen(self::PARTIAL_PREFIX));
       $partial_data = get_option('yaml_cf_partial_data', []);
 
       if (isset($partial_data[$partial_file][$field_name])) {
@@ -105,7 +105,7 @@ class FieldAccessor {
    */
   public function getFields($post_id = null) {
     if ($this->isPartial($post_id)) {
-      $partial_file = str_replace(self::PARTIAL_PREFIX, '', $post_id);
+      $partial_file = substr($post_id, strlen(self::PARTIAL_PREFIX));
       $partial_data = get_option('yaml_cf_partial_data', []);
       $data = isset($partial_data[$partial_file]) ? $partial_data[$partial_file] : [];
 
@@ -126,12 +126,20 @@ class FieldAccessor {
   /**
    * Whether a field has a value (after the filter)
    *
+   * What the documentation has always said, and what a theme means by
+   * `if (ycf_has_field('cta')) { ... }`: a field cleared in the editor is
+   * stored as '' (or [] for a list), and counting that as a value printed the
+   * markup around a value that was not there. An unticked box (false) and a
+   * zero are values. The same rule the [ycf] shortcode uses for its default.
+   *
    * @param string $field_name The field's name
    * @param int|string|null $post_id Post ID, 'partial:<file>', or null for the current post
    * @return bool
    */
   public function hasField($field_name, $post_id = null) {
-    return $this->getField($field_name, $post_id) !== null;
+    $value = $this->getField($field_name, $post_id);
+
+    return $value !== null && $value !== '' && $value !== [];
   }
 
   /**

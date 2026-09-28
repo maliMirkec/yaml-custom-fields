@@ -158,12 +158,25 @@ class DataObjectController extends AdminController {
         return;
       }
 
+      $old_schema_yaml = isset($data_object_types[$new_type_slug]['schema']) && is_string($data_object_types[$new_type_slug]['schema'])
+        ? $data_object_types[$new_type_slug]['schema']
+        : '';
+
       $data_object_types[$new_type_slug] = [
         'name' => $type_name,
         'schema' => $schema_yaml,
       ];
 
       update_option('yaml_cf_data_object_types', $data_object_types, false);
+
+      // Items are listed and picked by their label, worked out when each was
+      // saved. A schema that labels them by another field relabels them now,
+      // rather than one at a time as each item happens to be saved again.
+      $label_field = $this->labelFieldFor($this->schemaParser->parse($schema_yaml));
+      $old_label_field = $old_schema_yaml !== '' ? $this->labelFieldFor($this->schemaParser->parse($old_schema_yaml)) : '';
+      if ($old_schema_yaml !== '' && $label_field !== $old_label_field) {
+        (new \YamlCF\Data\EntryStore())->relabel($new_type_slug, $label_field);
+      }
 
       /* translators: %s: data object type name */
       $this->notifications->success(sprintf(__('The list "%s" was saved.', 'yaml-custom-fields'), $type_name));
@@ -391,7 +404,7 @@ class DataObjectController extends AdminController {
    * @return string Field name, or '' when the schema has none
    */
   private function labelFieldFor($schema) {
-    return !empty($schema['fields'][0]['name']) ? (string) $schema['fields'][0]['name'] : '';
+    return \YamlCF\Data\EntryStore::labelFieldOf($schema);
   }
 
   /**

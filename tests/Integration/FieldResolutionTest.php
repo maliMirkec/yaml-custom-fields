@@ -260,5 +260,44 @@ class FieldResolutionTest extends WPTestCase {
 
 		$this->assertSame('After', yaml_cf_get_field('nothing_here', $post_id));
 	}
-}
 
+	/**
+	 * _template_global_override was only ever written by development builds
+	 * before 1.2.0. It used to outrank the "Use the shared value" tick, against
+	 * the documented order; now it is dropped and the tick decides.
+	 */
+	public function testALeftoverOverrideDoesNotOutrankTheTick() {
+		$this->givenSharedFields(['headline' => 'Shared headline']);
+		$post_id = $this->createTestPost([], [
+			'headline' => 'Page headline',
+			'_template_global_override' => ['headline' => 'Leftover override'],
+		]);
+		update_post_meta($post_id, '_yaml_cf_use_template_global_fields', ['headline' => '1']);
+
+		$this->assertSame('Shared headline', yaml_cf_get_field('headline', $post_id));
+		$this->assertArrayNotHasKey('_template_global_override', yaml_cf_get_fields($post_id));
+		$this->assertAccessorsAgree('headline', $post_id);
+	}
+
+	/**
+	 * The documentation says yaml_cf_has_field() answers "does the field have a
+	 * value?". A field cleared in the editor is stored as '' and has none.
+	 */
+	public function testHasFieldMeansTheFieldHasAValue() {
+		$post_id = $this->createTestPost([], [
+			'headline' => 'Hello',
+			'byline' => '',
+			'tags' => [],
+			'featured' => false,
+			'count' => '0',
+		]);
+
+		$this->assertTrue(yaml_cf_has_field('headline', $post_id));
+		$this->assertFalse(yaml_cf_has_field('byline', $post_id), 'A cleared field has no value.');
+		$this->assertFalse(yaml_cf_has_field('tags', $post_id), 'An emptied list has no value.');
+		$this->assertFalse(yaml_cf_has_field('missing', $post_id));
+		$this->assertTrue(yaml_cf_has_field('featured', $post_id), 'An unticked box is a value.');
+		$this->assertTrue(yaml_cf_has_field('count', $post_id), 'Zero is a value.');
+		$this->assertFalse(ycf_has_field('byline', $post_id), 'The short alias agrees.');
+	}
+}

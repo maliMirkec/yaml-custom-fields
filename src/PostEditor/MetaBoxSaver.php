@@ -60,6 +60,15 @@ class MetaBoxSaver {
       return;
     }
 
+    // The form belongs to the post it was drawn for. Another plugin can save a
+    // different post inside this request (a translation, a copy, a related
+    // record), which fires save_post for it with this form still in $_POST, and
+    // the fields of the page being edited would be written into that one.
+    $form_post_id = isset($_POST['post_ID']) ? absint(wp_unslash($_POST['post_ID'])) : 0;
+    if ($form_post_id !== (int) $post_id) {
+      return;
+    }
+
     if (!current_user_can('edit_post', $post_id)) {
       return;
     }

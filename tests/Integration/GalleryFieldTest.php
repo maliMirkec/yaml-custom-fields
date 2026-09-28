@@ -32,6 +32,7 @@ YAML;
 
 	private function submit($post_id, array $fields) {
 		$_POST = wp_slash([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			'yaml_cf' => $fields,
 		]);
@@ -119,6 +120,29 @@ YAML;
 		$hero = yaml_cf_get_image('hero', $post_id);
 		$this->assertArrayHasKey('url', $hero);
 		$this->assertSame($first, $hero['id']);
+	}
+
+	/**
+	 * WordPress takes a size as [width, height] as well as by name. Used as an
+	 * array key, that was a TypeError that took the whole page down.
+	 */
+	public function testGetImageAcceptsASizeGivenAsWidthAndHeight() {
+		$image = $this->createImage();
+		wp_update_attachment_metadata($image, [
+			'width' => 1200,
+			'height' => 800,
+			'file' => 'gallery-image.jpg',
+			'sizes' => [
+				'medium' => ['file' => 'gallery-image-300x200.jpg', 'width' => 300, 'height' => 200, 'mime-type' => 'image/jpeg'],
+			],
+		]);
+		$post_id = $this->createTestPost();
+		update_post_meta($post_id, '_yaml_cf_data', ['hero' => $image]);
+
+		$hero = yaml_cf_get_image('hero', $post_id, [300, 200]);
+
+		$this->assertSame($image, $hero['id']);
+		$this->assertNotEmpty($hero['url']);
 	}
 
 	/**

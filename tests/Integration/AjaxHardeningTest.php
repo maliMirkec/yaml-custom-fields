@@ -55,11 +55,11 @@ class AjaxHardeningTest extends WP_Ajax_UnitTestCase {
 			// Only the writer-level token, as a contributor's page would carry
 			'nonce' => wp_create_nonce('yaml_cf_nonce'),
 			'template' => 'single.php',
-			'schema' => "fields:\n  - name: headline\n    type: string\n",
+			'enabled' => 'true',
 		]);
 
 		$this->expectException(WPAjaxDieStopException::class);
-		$this->_handleAjax('yaml_cf_save_schema');
+		$this->_handleAjax('yaml_cf_save_template_settings');
 	}
 
 	/**
@@ -152,16 +152,56 @@ class AjaxHardeningTest extends WP_Ajax_UnitTestCase {
 	public function testAWriterCanAddASectionToAPost() {
 		update_option('yaml_cf_schemas', ['single.php' => $this->blockSchema()], false);
 		$this->_setRole('contributor');
+		$post_id = self::factory()->post->create(['post_status' => 'draft', 'post_author' => get_current_user_id()]);
 
 		$response = $this->callAjax('yaml_cf_render_block_item', [
 			'source' => 'template',
 			'key' => 'single.php',
+			'post_id' => (string) $post_id,
 			'field_name' => 'sections',
 			'block_type' => 'banner',
 			'index' => '0',
 		]);
 
 		$this->assertTrue($response['success']);
+	}
+
+	/**
+	 * Site parts keep their schemas beside the templates' ones, so asking for a
+	 * "template" by a site part's name used to hand a writer that schema.
+	 */
+	public function testAWriterCannotAskForASitePartsSchemaAsATemplate() {
+		update_option('yaml_cf_schemas', ['single.php' => $this->blockSchema(), 'header.php' => $this->blockSchema()], false);
+		$this->_setRole('contributor');
+		$post_id = self::factory()->post->create(['post_status' => 'draft', 'post_author' => get_current_user_id()]);
+
+		$response = $this->callAjax('yaml_cf_render_block_item', [
+			'source' => 'template',
+			'key' => 'header.php',
+			'post_id' => (string) $post_id,
+			'field_name' => 'sections',
+			'block_type' => 'banner',
+			'index' => '0',
+		]);
+
+		$this->assertFalse($response['success']);
+	}
+
+	public function testAWriterCannotBorrowSomebodyElsesPost() {
+		update_option('yaml_cf_schemas', ['single.php' => $this->blockSchema()], false);
+		$other = self::factory()->post->create(['post_status' => 'draft', 'post_author' => self::factory()->user->create()]);
+		$this->_setRole('contributor');
+
+		$response = $this->callAjax('yaml_cf_render_block_item', [
+			'source' => 'template',
+			'key' => 'single.php',
+			'post_id' => (string) $other,
+			'field_name' => 'sections',
+			'block_type' => 'banner',
+			'index' => '0',
+		]);
+
+		$this->assertFalse($response['success']);
 	}
 
 	/**

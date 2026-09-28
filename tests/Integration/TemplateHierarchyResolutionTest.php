@@ -96,4 +96,92 @@ class TemplateHierarchyResolutionTest extends WPTestCase {
 		$this->withSchemas(['single.php', 'page-about.php']);
 		$this->assertSame('page-about.php', $this->templateFor($post));
 	}
+
+	// ------------------------------------------- themes built on singular
+
+	private function useTheme($stylesheet) {
+		switch_theme($stylesheet);
+		$this->refreshThemeState();
+		if (get_stylesheet() !== $stylesheet) {
+			$this->markTestSkipped('The test theme "' . $stylesheet . '" is not installed in this test environment.');
+		}
+	}
+
+	/**
+	 * WordPress renders singular.php when a theme has no page.php or single.php,
+	 * as Twenty Twenty does. Resolving to a page.php that does not exist left
+	 * those pages on a template the list never offered.
+	 */
+	public function testAThemeWithOnlySingularResolvesPagesAndPostsToIt() {
+		$this->useTheme('ycf-singular');
+
+		$page = $this->createTestPost(['post_type' => 'page']);
+		$post = $this->createTestPost(['post_type' => 'post']);
+
+		$this->assertSame('singular.php', $this->templateFor($page));
+		$this->assertSame('singular.php', $this->templateFor($post));
+	}
+
+	public function testSingularIsOfferedInTheTemplateList() {
+		$this->useTheme('ycf-singular');
+
+		$found = array_column(\YamlCF\Core\Plugin::getInstance()->get('template_scanner')->scan()['templates'], 'file');
+
+		$this->assertContains('singular.php', $found);
+	}
+
+	/**
+	 * A site that wrote a page.php schema before moving to such a theme keeps
+	 * its fields.
+	 */
+	public function testAPagePhpSchemaStillWinsOnASingularTheme() {
+		$this->useTheme('ycf-singular');
+		$this->withSchemas(['page.php']);
+
+		$page = $this->createTestPost(['post_type' => 'page']);
+
+		$this->assertSame('page.php', $this->templateFor($page));
+	}
+
+	public function testAThemeWithPagePhpIsUnchanged() {
+		$page = $this->createTestPost(['post_type' => 'page']);
+
+		$this->assertSame('page.php', $this->templateFor($page));
+	}
+
+	// ------------------------------------------------------ block themes
+
+	public function testABlockThemeWithOnlySingularResolvesToIt() {
+		$this->useTheme('ycf-block');
+
+		$page = $this->createTestPost(['post_type' => 'page', 'post_name' => 'contact']);
+		$post = $this->createTestPost(['post_type' => 'post']);
+
+		$this->assertSame('singular', $this->templateFor($page));
+		$this->assertSame('singular', $this->templateFor($post));
+	}
+
+	/**
+	 * page-{slug} on a block theme follows the classic rule: it takes over once
+	 * it has a schema, and not before.
+	 */
+	public function testABlockPageUsesItsSlugTemplateOnceThatHasASchema() {
+		$this->useTheme('ycf-block');
+		$page = $this->createTestPost(['post_type' => 'page', 'post_name' => 'about']);
+
+		$this->assertSame('singular', $this->templateFor($page));
+
+		$this->withSchemas(['page-about']);
+		$this->refreshThemeState();
+
+		$this->assertSame('page-about', $this->templateFor($page));
+	}
+
+	public function testABlockPageIgnoresASlugTemplateTheThemeDoesNotHave() {
+		$this->useTheme('ycf-block');
+		$this->withSchemas(['page-team']);
+		$page = $this->createTestPost(['post_type' => 'page', 'post_name' => 'team']);
+
+		$this->assertSame('singular', $this->templateFor($page));
+	}
 }

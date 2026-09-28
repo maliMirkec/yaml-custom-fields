@@ -31,7 +31,7 @@ class ImageAccessor {
    *
    * @param string $field_name The field's name
    * @param int|string|null $post_id Post ID, 'partial:<file>', or null for the current post
-   * @param string $size Image size
+   * @param string|int[] $size Image size name, or [width, height]
    * @param array|null $context_data Values of a block item to read from instead
    * @return array|null Image data, a list of it for a gallery, or null
    */
@@ -61,7 +61,7 @@ class ImageAccessor {
    * The image data for one attachment: what yaml_cf_resolve_image_data() returns
    *
    * @param int|string $attachment_id Attachment ID
-   * @param string $size Image size
+   * @param string|int[] $size Image size name, or [width, height]
    * @return array|null Image data, or null when the ID is not an attachment
    */
   public function resolveImageData($attachment_id, $size = 'full') {
@@ -98,8 +98,9 @@ class ImageAccessor {
       $image_data['height'] = $metadata['height'];
     }
 
-    // The dimensions of the size asked for, when it is not the original
-    if ($size !== 'full' && isset($metadata['sizes'][$size])) {
+    // The dimensions of the size asked for, when it is not the original. WordPress
+    // also takes a size as [width, height]; used as an array key that is a TypeError.
+    if (is_string($size) && $size !== 'full' && isset($metadata['sizes'][$size])) {
       $image_data['width'] = $metadata['sizes'][$size]['width'];
       $image_data['height'] = $metadata['sizes'][$size]['height'];
     }

@@ -223,7 +223,8 @@ class Plugin {
         $c->get('data_sanitizer'),
         $c->get('schema_validator'),
         $c->get('schema_parser'),
-        $c->get('cache_manager')
+        $c->get('cache_manager'),
+        $c->get('attachment_validator')
       );
     });
 
@@ -297,55 +298,11 @@ class Plugin {
       return new \YamlCF\Ajax\Handlers\ToggleUseGlobal();
     });
 
-    $this->container->register('ajax_save_schema', function($c) {
-      return new \YamlCF\Ajax\Handlers\SaveSchema(
-        $c->get('schema_validator'),
-        $c->get('schema_parser'),
-        $c->get('schema_diff')
-      );
-    });
-
-    $this->container->register('ajax_get_schema', function($c) {
-      return new \YamlCF\Ajax\Handlers\GetSchema();
-    });
-
-    $this->container->register('ajax_get_partial_data', function($c) {
-      return new \YamlCF\Ajax\Handlers\GetPartialData($c->get('schema_parser'));
-    });
-
-    $this->container->register('ajax_save_partial_data', function($c) {
-      return new \YamlCF\Ajax\Handlers\SavePartialData(
-        $c->get('data_sanitizer'),
-        $c->get('schema_parser'),
-        $c->get('cache_manager')
-      );
-    });
-
-    $this->container->register('ajax_export_settings', function($c) {
-      return new \YamlCF\Ajax\Handlers\ExportSettings($c->get('settings_exporter'));
-    });
-
-    $this->container->register('ajax_import_settings', function($c) {
-      return new \YamlCF\Ajax\Handlers\ImportSettings($c->get('settings_importer'));
-    });
-
     $this->container->register('ajax_get_posts_with_data', function($c) {
       return new \YamlCF\Ajax\Handlers\GetPostsWithData(
         $c->get('post_data_repository'),
         $c->get('template_resolver')
       );
-    });
-
-    $this->container->register('ajax_export_page_data', function($c) {
-      return new \YamlCF\Ajax\Handlers\ExportPageData($c->get('page_data_exporter'));
-    });
-
-    $this->container->register('ajax_import_page_data', function($c) {
-      return new \YamlCF\Ajax\Handlers\ImportPageData($c->get('page_data_importer'));
-    });
-
-    $this->container->register('ajax_import_data_objects', function($c) {
-      return new \YamlCF\Ajax\Handlers\ImportDataObjects($c->get('data_object_importer'));
     });
 
     $this->container->register('ajax_export_bundle', function($c) {

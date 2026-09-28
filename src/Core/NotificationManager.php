@@ -116,6 +116,40 @@ class NotificationManager {
   }
 
   /**
+   * Hand queued notices to the block editor, which does not show admin_notices
+   *
+   * The block editor draws over the classic notice area, so a notice printed
+   * there is never seen, and printing it also removes it from the queue. After
+   * "Import fields" on a block editor page the user was told nothing, success
+   * or failure. The editor's own notice store is used instead. Hooked to
+   * enqueue_block_editor_assets, which runs before admin_notices.
+   *
+   * @return void
+   */
+  public function sendToBlockEditor() {
+    $notices = $this->pull();
+    if (empty($notices)) {
+      return;
+    }
+
+    $script = '';
+    foreach ($notices as $notice) {
+      $type = in_array($notice['type'], self::TYPES, true) ? $notice['type'] : 'info';
+      $parts = array_merge([$notice['title'], $notice['message']], $notice['details']);
+      $text = trim(implode(' ', array_filter($parts, 'strlen')));
+
+      // Passed as JSON strings; the store shows them as text, never as markup
+      $script .= sprintf(
+        'wp.data.dispatch("core/notices").createNotice(%s,%s,{isDismissible:true});',
+        wp_json_encode($type),
+        wp_json_encode($text)
+      );
+    }
+
+    wp_add_inline_script('wp-notices', $script, 'after');
+  }
+
+  /**
    * Print one notice
    *
    * @param array $notice Notice from the queue

@@ -149,6 +149,9 @@ class TemplateScanner {
     $valid_template_patterns = [
       'page.php',
       'single.php',
+      // What WordPress renders for a page or a post when neither of the two
+      // above exists; some themes (Twenty Twenty) have only this one
+      'singular.php',
       'attachment.php',
       // Specific templates with prefixes
       'page-*.php',

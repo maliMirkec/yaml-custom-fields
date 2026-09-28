@@ -74,6 +74,29 @@ class DashboardTest extends WPTestCase {
 		$this->assertSame(1, substr_count($html, 'yaml-cf-row is-disabled'));
 	}
 	/**
+	 * Pages read site details only on templates switched over to them, and the
+	 * switch had no place on any screen: admin.js handled it, nothing drew it.
+	 */
+	public function testEachTemplateCanBeSwitchedToSiteDetails() {
+		$this->actingAs($this->createTestUser('administrator'));
+		update_option('yaml_cf_template_settings', ['page.php' => true, 'page.php_use_global' => true]);
+		update_option('yaml_cf_global_schema', "fields:\n  - name: phone\n    type: string\n");
+
+		$html = $this->render();
+
+		$this->assertSame(3, substr_count($html, 'class="yaml-cf-use-global"'), 'One switch per page and post template.');
+		$this->assertMatchesRegularExpression('/class="yaml-cf-use-global"\s+data-template="page\.php"\s+checked=\'checked\'/', $html);
+		$this->assertDoesNotMatchRegularExpression('/data-template="single\.php"\s+checked/', $html);
+	}
+
+	public function testTheSiteDetailsSwitchWaitsForSiteDetails() {
+		$this->actingAs($this->createTestUser('administrator'));
+		update_option('yaml_cf_template_settings', ['page.php' => true]);
+
+		$this->assertStringNotContainsString('yaml-cf-use-global', $this->render());
+	}
+
+	/**
 	 * An empty table has to say why it is empty. "The active theme has no page
 	 * or post templates yet" told a block-theme user nothing, and was simply
 	 * untrue on a child theme whose parent had plenty.

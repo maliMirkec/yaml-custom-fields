@@ -55,6 +55,16 @@ class FieldResolver {
   private $parsed = [];
 
   /**
+   * Names whose value came from site details alone, keyed by post ID
+   *
+   * Kept beside $resolved so the REST API can hold site details back from
+   * somebody who may read a page but not the site details themselves.
+   *
+   * @var array<int, string[]>
+   */
+  private $siteDetailNames = [];
+
+  /**
    * @param \YamlCF\Template\TemplateResolver $templateResolver Which template a post uses
    * @param \YamlCF\Schema\SchemaParser $parser Reads schemas
    * @param \YamlCF\Form\DataSanitizer $sanitizer Finds field definitions in a schema
@@ -146,22 +156,25 @@ class FieldResolver {
     }
 
     // Site details are the last resort, filling in names nothing above supplied.
+    $site_only = [];
     $template_settings = get_option('yaml_cf_template_settings', []);
     if (!empty($template_settings[$template . '_use_global'])) {
       $global_data = get_option('yaml_cf_global_data', []);
       if (is_array($global_data)) {
         $global_data = $this->decodeAll($global_data, get_option('yaml_cf_global_schema', ''));
+        $site_only = array_keys(array_diff_key($global_data, $values));
         $values += $global_data;
       }
     }
 
-    // Per-page overrides of shared fields, written by versions before 2.0.0.
-    if (isset($values['_template_global_override']) && is_array($values['_template_global_override'])) {
-      $values = array_merge($values, $values['_template_global_override']);
-    }
+    // A key the plugin reserves, never a field. Only unreleased development
+    // builds before 1.2.0 wrote it, from an "Override" button that shipped as
+    // the per-field tick instead, so it is dropped rather than obeyed: obeying
+    // it outranked the tick and contradicted the order documented above.
     unset($values['_template_global_override']);
 
     $this->resolved[$post_id] = $values;
+    $this->siteDetailNames[$post_id] = array_map('strval', array_values($site_only));
 
     return $values;
   }
@@ -175,10 +188,28 @@ class FieldResolver {
   public function flush($post_id = null) {
     if ($post_id === null) {
       $this->resolved = [];
+      $this->siteDetailNames = [];
       return;
     }
 
-    unset($this->resolved[(int) $post_id]);
+    unset($this->resolved[(int) $post_id], $this->siteDetailNames[(int) $post_id]);
+  }
+
+  /**
+   * Names in a post's values that only site details supplied
+   *
+   * @param int|string $post_id Post ID
+   * @return string[]
+   */
+  public function siteDetailNames($post_id) {
+    $post_id = (int) $post_id;
+    if (!isset($this->siteDetailNames[$post_id])) {
+      // Resolving records them; a value placed in the memo from outside has none
+      $this->flush($post_id);
+      $this->resolvePostFields($post_id);
+    }
+
+    return isset($this->siteDetailNames[$post_id]) ? $this->siteDetailNames[$post_id] : [];
   }
 
   /**
@@ -250,6 +281,54 @@ class FieldResolver {
     }
 
     return $this->parsed[$key];
+  }
+
+  /**
+   * The definition of a top-level field, looked for where its value comes from
+   *
+   * A site part's own schema, or for a post: its template's schema, then the
+   * template's shared fields, then site details when the template uses them.
+   *
+   * @param string $field_name The field's name
+   * @param int|string|null $post_id Post ID, 'partial:<file>', or null for the current post
+   * @return array|null Field definition, or null when no schema has the field
+   */
+  public function fieldDefinitionFor($field_name, $post_id = null) {
+    $schemas = get_option('yaml_cf_schemas', []);
+    $schemas = is_array($schemas) ? $schemas : [];
+
+    if (is_string($post_id) && strpos($post_id, 'partial:') === 0) {
+      $file = substr($post_id, strlen('partial:'));
+      $yaml = isset($schemas[$file]) ? $schemas[$file] : '';
+
+      return $this->sanitizer->getFieldDefinition($this->parseSchemaCached($yaml), $field_name);
+    }
+
+    $post_id = $post_id === null ? get_the_ID() : $post_id;
+    $post = $post_id ? get_post((int) $post_id) : null;
+    if (!$post) {
+      return null;
+    }
+
+    $template = $this->templateResolver->getTemplateForPost($post);
+    $sources = [
+      isset($schemas[$template]) ? $schemas[$template] : '',
+      $this->templateGlobalSchema($template),
+    ];
+
+    $settings = get_option('yaml_cf_template_settings', []);
+    if (is_array($settings) && !empty($settings[$template . '_use_global'])) {
+      $sources[] = get_option('yaml_cf_global_schema', '');
+    }
+
+    foreach ($sources as $yaml) {
+      $definition = $this->sanitizer->getFieldDefinition($this->parseSchemaCached($yaml), $field_name);
+      if ($definition !== null) {
+        return $definition;
+      }
+    }
+
+    return null;
   }
 
   /**

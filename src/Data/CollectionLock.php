@@ -57,6 +57,16 @@ class CollectionLock {
   private static $held = [];
 
   /**
+   * When this request last wrote the time into each lock it holds
+   *
+   * @var array<string, int>
+   */
+  private static $touched = [];
+
+  /** Least number of seconds between two keepAlive() writes */
+  const TOUCH_EVERY = 2;
+
+  /**
    * Run some work while holding a collection's lock
    *
    * If the lock cannot be had within WAIT_FOR seconds the work runs anyway:
@@ -80,6 +90,39 @@ class CollectionLock {
   }
 
   /**
+   * Tell other requests this lock is still in use
+   *
+   * A lock older than STALE_AFTER is taken to be left behind by a request that
+   * died. Replacing or moving a large collection can take longer than that, and
+   * another save would then take the lock over in the middle of it. Work that
+   * loops over items calls this as it goes; it writes at most once every
+   * TOUCH_EVERY seconds, so calling it per item costs nothing.
+   *
+   * @param string $type_slug Collection slug
+   * @return void
+   */
+  public static function keepAlive($type_slug) {
+    if (!isset(self::$held[$type_slug])) {
+      return;
+    }
+
+    $now = time();
+    if (isset(self::$touched[$type_slug]) && $now - self::$touched[$type_slug] < self::TOUCH_EVERY) {
+      return;
+    }
+
+    global $wpdb;
+    $wpdb->query(
+      $wpdb->prepare(
+        "UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s",
+        (string) $now,
+        self::PREFIX . $type_slug
+      )
+    );
+    self::$touched[$type_slug] = $now;
+  }
+
+  /**
    * Take the lock, waiting for it if another request has it
    *
    * @param string $type_slug Collection slug
@@ -96,6 +139,7 @@ class CollectionLock {
     do {
       if (self::tryLock($type_slug)) {
         self::$held[$type_slug] = 1;
+        self::$touched[$type_slug] = time();
         return true;
       }
 
@@ -162,7 +206,7 @@ class CollectionLock {
       return;
     }
 
-    unset(self::$held[$type_slug]);
+    unset(self::$held[$type_slug], self::$touched[$type_slug]);
     delete_option(self::PREFIX . $type_slug);
   }
 }

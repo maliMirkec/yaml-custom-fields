@@ -22,6 +22,9 @@ if (!defined('ABSPATH')) {
  *   exists bool    Only set for a file: this site already has it
  */
 class BundleCatalog {
+  /** Stands for "any type that can hold fields" in a lookup key */
+  const ANY_TYPE = '*';
+
   /**
    * Schemas bigger than this are listed without being parsed
    *
@@ -126,6 +129,13 @@ class BundleCatalog {
       $lookup = $this->lookupKey($match_by, $entry);
       $exists = $lookup !== '' && isset($found[$lookup]);
 
+      // By ID the importer also needs the post to be of the type the file
+      // names, when it names one, or it skips the entry
+      if ($exists && $match_by === 'id') {
+        $type = isset($entry['type']) && is_string($entry['type']) ? sanitize_key($entry['type']) : '';
+        $exists = $type === '' || $found[$lookup] === $type;
+      }
+
       $items[] = [
         'id' => 'post:' . $key,
         'group' => 'posts',
@@ -160,8 +170,11 @@ class BundleCatalog {
       return '';
     }
 
-    $type = isset($entry['type']) && is_string($entry['type']) ? sanitize_key($entry['type']) : 'post';
-    return ($type === '' ? 'post' : $type) . ':' . $slug;
+    // Files from before the type was recorded name none, and the importer then
+    // searches every type that can hold fields: so does the preview, or a page
+    // in such a file showed as missing and could not be ticked at all
+    $type = isset($entry['type']) && is_string($entry['type']) ? sanitize_key($entry['type']) : '';
+    return ($type === '' ? self::ANY_TYPE : $type) . ':' . $slug;
   }
 
   /**
@@ -172,7 +185,7 @@ class BundleCatalog {
    *
    * @param string $match_by 'id' or 'slug'
    * @param array $entries Import entries
-   * @return array Lookup keys that exist on this site
+   * @return array<string, string> Lookup keys that exist on this site, with the post type found
    */
   private function findPosts($match_by, $entries) {
     $ids = [];
@@ -196,17 +209,20 @@ class BundleCatalog {
 
     $found = [];
 
+    // Only the types the importer will write to: one that cannot hold fields
+    // (an attachment, a menu item) is skipped there, so it is not here
+    $supported = (new \YamlCF\Data\Repositories\PostDataRepository())->getSupportedPostTypes();
+
     if (!empty($ids)) {
-      // Every registered type, not 'any': the importer matches an ID with get_post(),
-      // which also finds types left out of 'any' such as attachments
-      foreach ($this->queryPosts(['post__in' => array_keys($ids), 'post_type' => array_values(get_post_types())]) as $post) {
-        $found['id:' . $post->ID] = true;
+      foreach ($this->queryPosts(['post__in' => array_keys($ids), 'post_type' => $supported]) as $post) {
+        $found['id:' . $post->ID] = $post->post_type;
       }
     }
 
     foreach ($slugs as $type => $names) {
-      foreach ($this->queryPosts(['post_name__in' => array_keys($names), 'post_type' => $type]) as $post) {
-        $found[$type . ':' . $post->post_name] = true;
+      $query_type = $type === self::ANY_TYPE ? $supported : $type;
+      foreach ($this->queryPosts(['post_name__in' => array_keys($names), 'post_type' => $query_type]) as $post) {
+        $found[$type . ':' . $post->post_name] = $post->post_type;
       }
     }
 

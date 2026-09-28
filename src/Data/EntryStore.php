@@ -175,7 +175,7 @@ class EntryStore {
   public function save($type_slug, $entry_id, $data, $label_field = '') {
     return CollectionLock::run($type_slug, function () use ($type_slug, $entry_id, $data, $label_field) {
       $this->forgetCachedIndex($type_slug);
-      $this->ensureMoved($type_slug);
+      $this->ensureMoved($type_slug, $label_field);
 
       update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $data, false);
 
@@ -222,6 +222,7 @@ class EntryStore {
 
       foreach (array_keys($this->index($type_slug)) as $entry_id) {
         delete_option(self::ENTRY_PREFIX . $this->key($type_slug, (string) $entry_id));
+        CollectionLock::keepAlive($type_slug);
       }
 
       delete_option(self::INDEX_PREFIX . $type_slug);
@@ -248,10 +249,82 @@ class EntryStore {
         $entry_id = (string) $entry_id;
         update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $entry, false);
         $index[$entry_id] = $this->labelFor($entry, $entry_id, $label_field);
+        CollectionLock::keepAlive($type_slug);
       }
 
       return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
     });
+  }
+
+  /**
+   * Work every item's label out again, after the field that labels them changed
+   *
+   * The index keeps each label as it was when the item was saved. When the
+   * collection's schema puts another field first, every picker and search went
+   * on showing the old labels until each item happened to be saved again.
+   * Reads every item, so it is for schema changes, not for page loads.
+   *
+   * @param string $type_slug Collection slug
+   * @param string $label_field Field whose value labels an item
+   * @return int How many labels changed
+   */
+  public function relabel($type_slug, $label_field) {
+    return CollectionLock::run($type_slug, function () use ($type_slug, $label_field) {
+      $this->forgetCachedIndex($type_slug);
+      $this->ensureMoved($type_slug, $label_field);
+
+      $index = $this->index($type_slug);
+      $changed = 0;
+
+      foreach (array_keys($index) as $entry_id) {
+        $entry_id = (string) $entry_id;
+        $entry = get_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), null);
+        $label = $this->labelFor($entry, $entry_id, $label_field);
+
+        if ($label !== $index[$entry_id]) {
+          $index[$entry_id] = $label;
+          $changed++;
+        }
+
+        CollectionLock::keepAlive($type_slug);
+      }
+
+      if ($changed > 0) {
+        update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+      }
+
+      return $changed;
+    });
+  }
+
+  /**
+   * The field whose value labels a collection's items
+   *
+   * The first field that holds a value: the rule the pickers, the admin list
+   * and imports all follow. A section break or an info box at the top of a
+   * schema holds nothing, so it is passed over.
+   *
+   * @param array|null $schema Parsed collection schema
+   * @return string Field name, or '' when there is none
+   */
+  public static function labelFieldOf($schema) {
+    if (!is_array($schema) || empty($schema['fields']) || !is_array($schema['fields'])) {
+      return '';
+    }
+
+    foreach ($schema['fields'] as $field) {
+      if (!is_array($field) || empty($field['name']) || !is_scalar($field['name'])) {
+        continue;
+      }
+
+      if (isset($field['type']) && in_array($field['type'], ['section', 'info'], true)) {
+        continue;
+      }
+
+      return (string) $field['name'];
+    }
+
+    return '';
   }
 
   /**
@@ -278,6 +351,7 @@ class EntryStore {
         $entry_id = (string) $entry_id;
         update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $entry, false);
         $index[$entry_id] = $this->labelFor($entry, $entry_id, $label_field);
+        CollectionLock::keepAlive($type_slug);
       }
 
       update_option(self::INDEX_PREFIX . $type_slug, $index, false);

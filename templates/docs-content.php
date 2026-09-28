@@ -305,7 +305,7 @@ if (!defined('ABSPATH')) {
   description: Shown in the footer of every page</code></pre>
 <p>Leave the heading out for a plain break with no title:</p>
 <pre><code>- section:</code></pre>
-<p>On a wide screen short fields sit two or three to a row. To start a new row without drawing anything &mdash; no heading, no line &mdash; use a row break:</p>
+<p>On the site details, site part, shared content and collection item screens, a wide screen puts short fields two or three to a row. (The page and post editor always shows one field per row.) To start a new row there without drawing anything &mdash; no heading, no line &mdash; use a row break:</p>
 <pre><code>- break: true</code></pre>
 <p>It is the quiet version of a section break, for when fields belong together but the form reads better with them on their own row.</p>
 <p>Section breaks hold no content, so they change nothing about how fields are saved or read in a theme. Fields written before the first break stay where they are, outside any group.</p>

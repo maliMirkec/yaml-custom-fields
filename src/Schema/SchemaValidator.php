@@ -28,9 +28,9 @@ class SchemaValidator {
   /**
    * Field names the plugin uses for its own bookkeeping.
    *
-   * _template_global_override was written into post data by versions before
-   * 2.0.0 to hold per-page overrides of shared fields. It is still read, so a
-   * schema must not be able to claim the name.
+   * _template_global_override was written into post data by development builds
+   * before 1.2.0, and the resolver strips it from every post's values, so a
+   * field by that name could never be read back.
    */
   const RESERVED_NAMES = ['_template_global_override'];
 
@@ -186,6 +186,25 @@ class SchemaValidator {
           $path,
           /* translators: %s: field index */
           sprintf(__('Field number %s needs a name. Add a line like "name: title".', 'yaml-custom-fields'), $index + 1)
+        );
+      }
+
+      // A name becomes the key in yaml_cf[name] on every form. A list there is
+      // not a name at all, and a bracket ends the key early, so PHP files the
+      // value under a different name and it is lost on the next save.
+      if (!is_scalar($field['name']) || is_bool($field['name']) || trim((string) $field['name']) === '') {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field index */
+          sprintf(__('Field number %s needs a name made of letters, numbers or underscores, like "name: title".', 'yaml-custom-fields'), $index + 1)
+        );
+      }
+
+      if (strpbrk((string) $field['name'], '[]') !== false) {
+        return $this->atPath(
+          $path,
+          /* translators: %s: field name */
+          sprintf(__('The field name "%s" cannot contain square brackets. Use letters, numbers or underscores.', 'yaml-custom-fields'), (string) $field['name'])
         );
       }
 

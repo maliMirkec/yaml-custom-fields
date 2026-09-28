@@ -268,9 +268,9 @@
 	</rule>
 
 	<!-- Direct SQL, the two documented exceptions to rule 5 of .claude-rules.md:
-	     uninstall.php deletes options by name prefix, and CollectionLock creates and
-	     releases a collection's lock row, which the options API cannot do atomically
-	     (add_option() checks first and writes second). -->
+	     uninstall.php deletes options by name prefix, and CollectionLock creates, keeps
+	     alive and takes over a collection's lock row, which the options API cannot do
+	     atomically (add_option() checks first and writes second). -->
 	<rule ref="WordPress.DB.DirectDatabaseQuery">
 		<exclude-pattern>uninstall.php</exclude-pattern>
 		<exclude-pattern>src/Data/CollectionLock.php</exclude-pattern>

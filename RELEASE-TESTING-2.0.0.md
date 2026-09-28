@@ -4,7 +4,7 @@ What to click through by hand before publishing, and why each thing is on the li
 
 `MANUAL-TESTING.md` covers the plugin as a whole. This file covers only what
 changed in 2.0.0, ordered by how much damage it would do if it were wrong.
-Everything here is already covered by automated tests (245 unit, 446
+Everything here is already covered by automated tests (259 unit, 566
 integration) — what those tests cannot do is start from a site that already has
 real data in it, or notice that a button stopped responding.
 
@@ -17,7 +17,7 @@ it points at.
 >
 > - `AdminScreenSmokeTest` — every admin screen and the post editor meta box,
 >   empty, filled in, as an administrator and as a writer.
-> - `AjaxSmokeTest` — all nineteen AJAX handlers, as an administrator and as a
+> - `AjaxSmokeTest` — all ten AJAX handlers, as an administrator and as a
 >   writer, and again with missing and with nonsense parameters.
 > - `PublicApiSmokeTest` — every theme-facing function for every field name, with
 >   values, without values, with deleted attachments and terms, inside repeating

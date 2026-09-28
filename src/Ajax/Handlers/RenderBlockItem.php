@@ -57,6 +57,13 @@ class RenderBlockItem extends AjaxHandler {
       $this->checkCapability();
     }
 
+    // Site parts keep their schemas beside the templates' in yaml_cf_schemas,
+    // so "template" with a site part's name would hand a writer that schema.
+    // A writer gets the schema of a post they can edit, and nothing else.
+    if ($source === 'template' && !current_user_can('manage_options') && !$this->writerMayUseTemplate($this->postText('key'))) {
+      $this->sendError(__('That schema could not be found.', 'yaml-custom-fields'));
+    }
+
     $schema = $this->getSchema($source, $this->postText('key'));
     if ($schema === null) {
       $this->sendError(__('That schema could not be found.', 'yaml-custom-fields'));
@@ -83,6 +90,25 @@ class RenderBlockItem extends AjaxHandler {
     }
 
     $this->sendSuccess(['html' => $html, 'index' => $index]);
+  }
+
+  /**
+   * Whether the post in the request uses this template and may be edited
+   *
+   * @param string $template Template the request asks for
+   * @return bool
+   */
+  private function writerMayUseTemplate($template) {
+    $post_id = absint($this->postText('post_id', '0'));
+    $post = $post_id ? get_post($post_id) : null;
+
+    if (!$post || !current_user_can('edit_post', $post_id)) {
+      return false;
+    }
+
+    $resolver = \YamlCF\Core\Plugin::getInstance()->get('template_resolver');
+
+    return $resolver->getTemplateForPost($post) === $template;
   }
 
   /**

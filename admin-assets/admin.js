@@ -261,6 +261,7 @@
         admin_nonce: yamlCF.adminNonce,
         source: source.source,
         key: source.key || '',
+        post_id: source.post_id || 0,
         field_name: fieldName,
         block_type: blockType,
         index: index,
@@ -678,10 +679,10 @@
           type: 'button',
           class: 'button button-small ' + spec[0],
           title: spec[2],
-          html:
-            '<span class="dashicons ' + spec[1] + '" aria-hidden="true"></span>' +
-            '<span class="screen-reader-text">' + spec[2] + '</span>',
-        }).appendTo($actions);
+        })
+          .append($('<span>', { class: 'dashicons ' + spec[1], 'aria-hidden': 'true' }))
+          .append($('<span>', { class: 'screen-reader-text', text: spec[2] }))
+          .appendTo($actions);
       });
 
       $actions.appendTo($item);
@@ -954,17 +955,12 @@
         value: id,
       }).appendTo($chip);
       $('<span>', { class: 'yaml-cf-picker-chip-label', text: label }).appendTo($chip);
-      $('<button>', {
-        type: 'button',
-        class: 'yaml-cf-picker-remove',
-        html:
-          '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>' +
-          '<span class="screen-reader-text">' +
-          __('Remove', 'yaml-custom-fields') +
-          ' ' +
-          label +
-          '</span>',
-      }).appendTo($chip);
+      // The label is text from a term or a collection item, so it goes in as
+      // text: built as markup, "R&D <team>" came out mangled or as tags.
+      $('<button>', { type: 'button', class: 'yaml-cf-picker-remove' })
+        .append($('<span>', { class: 'dashicons dashicons-no-alt', 'aria-hidden': 'true' }))
+        .append($('<span>', { class: 'screen-reader-text', text: __('Remove', 'yaml-custom-fields') + ' ' + label }))
+        .appendTo($chip);
 
       $selected.append($chip);
 
@@ -1150,6 +1146,39 @@
 
       // Remove all blocks
       $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-block-item').remove();
+
+      // Galleries, file lists and search pickers keep their values in hidden
+      // inputs inside each item or chip, which the loop above leaves alone. They
+      // stayed filled after "Empty all fields" and were saved again on Update.
+      // Each list keeps its empty placeholder, so the field saves as empty.
+      const $ownFields = $('#yaml-cf-meta-box > .inside > .yaml-cf-fields');
+      $ownFields
+        .find('.yaml-cf-image-list-item, .yaml-cf-file-list-item')
+        .filter(function () {
+          return $(this).closest('.yaml-cf-template-global-part').length === 0;
+        })
+        .remove();
+      $ownFields
+        .find('.yaml-cf-picker')
+        .filter(function () {
+          return $(this).closest('.yaml-cf-template-global-part').length === 0;
+        })
+        .each(function () {
+          const $picker = $(this);
+          const hadChips = $picker.find('.yaml-cf-picker-chip').length > 0;
+          $picker.find('.yaml-cf-picker-chip').remove();
+
+          // A single-value picker posts its value from the chip; with the chip
+          // gone it needs an empty input, as when its remove button is used
+          if (hadChips && String($picker.data('multiple')) !== '1' && !$picker.children('.yaml-cf-picker-value').length) {
+            $('<input>', {
+              type: 'hidden',
+              class: 'yaml-cf-picker-value',
+              name: 'yaml_cf[' + $picker.data('field-name') + ']',
+              value: '',
+            }).insertBefore($picker.find('.yaml-cf-picker-search-row'));
+          }
+        });
 
       YamlCF.showMessage(
         __('All fields on this page are now empty. Click Update to save this change.', 'yaml-custom-fields'),

@@ -56,6 +56,7 @@ class RemovedFieldRetentionTest extends WPTestCase {
 
 	private function submit($post_id, array $fields) {
 		$_POST = wp_slash([
+			'post_ID' => $post_id,
 			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
 			'yaml_cf' => $fields,
 		]);
@@ -248,9 +249,8 @@ class RemovedFieldRetentionTest extends WPTestCase {
 	}
 
 	/**
-	 * Keys the plugin owns are not content. _template_global_override outranks
-	 * everything when a value is read, so keeping it would freeze a pre-2.0.0
-	 * override permanently, with no screen able to clear it.
+	 * Keys the plugin owns are not content. _template_global_override is left
+	 * over from development builds before 1.2.0, and no screen can clear it.
 	 */
 	public function testThePluginsOwnKeysAreStillRemoved() {
 		$post_id = $this->createTestPost([], [

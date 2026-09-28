@@ -192,10 +192,7 @@ class PickerRenderer {
 
     $label_field = '';
     if (isset($types[$object_type]['schema'])) {
-      $schema = $this->parser->parse($types[$object_type]['schema']);
-      if (!empty($schema['fields'][0]['name'])) {
-        $label_field = $schema['fields'][0]['name'];
-      }
+      $label_field = \YamlCF\Data\EntryStore::labelFieldOf($this->parser->parse($types[$object_type]['schema']));
     }
 
     $labels = [];

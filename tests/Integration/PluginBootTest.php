@@ -15,7 +15,7 @@ class PluginBootTest extends WPTestCase {
 	}
 
 	public function testAjaxActionsAreRegisteredByHookManager() {
-		foreach (['yaml_cf_import_page_data', 'yaml_cf_get_posts_with_data', 'yaml_cf_save_template_settings', 'yaml_cf_refresh_templates'] as $action) {
+		foreach (['yaml_cf_import_bundle', 'yaml_cf_get_posts_with_data', 'yaml_cf_save_template_settings', 'yaml_cf_refresh_templates'] as $action) {
 			$this->assertNotFalse(has_action('wp_ajax_' . $action), $action);
 		}
 	}

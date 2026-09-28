@@ -43,7 +43,7 @@ class ExportRequestHandler {
     }
 
     if (!current_user_can('edit_post', $post_id)) {
-      wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
+      wp_die(esc_html__('You are not allowed to edit this page, so its fields cannot be exported or imported.', 'yaml-custom-fields'));
     }
 
     $post = get_post($post_id);
