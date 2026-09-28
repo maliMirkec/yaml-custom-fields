@@ -29,8 +29,9 @@ class BlockRenderer extends BaseFieldRenderer implements BlockFieldRendererInter
       // Folding every section at once is the difference between a wall of
       // fields and a list you can scan
       if (!$readonly && is_array($value) && count($value) > 1) {
-        echo '<button type="button" class="button-link yaml-cf-collapse-all" aria-pressed="false">';
-        echo esc_html__('Collapse all', 'yaml-custom-fields');
+        echo '<button type="button" class="button button-small yaml-cf-collapse-all" aria-pressed="false">';
+        \YamlCF\Helpers\Icons::render('collapse');
+        echo '<span class="yaml-cf-collapse-all-label">' . esc_html__('Collapse all', 'yaml-custom-fields') . '</span>';
         echo '</button>';
       }
       echo '</div>';
@@ -79,7 +80,7 @@ class BlockRenderer extends BaseFieldRenderer implements BlockFieldRendererInter
     $label = isset($field['label']) ? $field['label'] : ucfirst($field['name']);
 
     echo '<p class="yaml-cf-field-label">' . esc_html($label) . '</p>';
-    echo '<p class="yaml-cf-nested-blocks-notice notice notice-info inline">';
+    echo '<p class="yaml-cf-nested-blocks-notice notice notice-info inline yaml-cf-notice">';
     echo esc_html__('Sections inside a section cannot be edited here yet. What they hold is kept as it is when the page is saved.', 'yaml-custom-fields');
     echo '</p>';
 
@@ -130,7 +131,10 @@ class BlockRenderer extends BaseFieldRenderer implements BlockFieldRendererInter
       }
     }
     echo '</select>';
-    echo '<button type="button" class="button yaml-cf-add-block">' . esc_html__('Add section', 'yaml-custom-fields') . '</button>';
+    echo '<button type="button" class="button yaml-cf-add-block">';
+    \YamlCF\Helpers\Icons::render('add');
+    echo esc_html__('Add section', 'yaml-custom-fields') . '</button>';
+    echo '<span class="yaml-cf-status" data-slot="add-section"></span>';
     echo '</div>';
   }
 }

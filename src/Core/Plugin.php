@@ -411,6 +411,10 @@ class Plugin {
       return new \YamlCF\Admin\Controllers\DocsController();
     });
 
+    $this->container->register('settings_controller', function($c) {
+      return new \YamlCF\Admin\Controllers\SettingsController($c->get('notification_manager'));
+    });
+
     // Template API: what yaml_cf_get_field() and the other theme functions call
     $this->container->register('field_resolver', function($c) {
       return new \YamlCF\PublicAPI\FieldResolver(

@@ -13,8 +13,6 @@ if (!defined('ABSPATH')) {
 // - $type_name: The data object type name
 // - $schema_yaml: The YAML schema
 // - $is_editing: Whether we're editing an existing type
-// - $success_message: Success message to display (if any)
-// - $error_message: Error message to display (if any)
 
 $yaml_cf_type_slug = $type_id;
 // The slug doubles as a PHP variable name in the snippets below. A short name
@@ -44,12 +42,12 @@ $yaml_cf_schema_yaml = $schema_yaml;
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-data-objects')); ?>" class="button">
-          <span class="dashicons dashicons-arrow-left-alt2"></span>
+          <?php \YamlCF\Helpers\Icons::render('back'); ?>
           <?php esc_html_e('Back to Collections', 'yaml-custom-fields'); ?>
         </a>
         <?php if ($yaml_cf_is_editing) : ?>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug))); ?>" class="button button-secondary yaml-cf-button-gap">
-            <span class="dashicons dashicons-edit"></span>
+            <?php \YamlCF\Helpers\Icons::render('edit'); ?>
             <?php esc_html_e('Edit items', 'yaml-custom-fields'); ?>
           </a>
         <?php endif; ?>
@@ -64,7 +62,7 @@ $yaml_cf_schema_yaml = $schema_yaml;
       <?php wp_nonce_field('yaml_cf_save_data_object_type', 'yaml_cf_save_data_object_type_nonce'); ?>
 
       <div class="yaml-cf-surface yaml-cf-spaced-bottom">
-        <h2><?php esc_html_e('About this collection', 'yaml-custom-fields'); ?></h2>
+        <h2><?php \YamlCF\Helpers\Icons::render('collections'); ?><?php esc_html_e('About this collection', 'yaml-custom-fields'); ?></h2>
 
         <table class="form-table">
           <tr>
@@ -89,7 +87,7 @@ $yaml_cf_schema_yaml = $schema_yaml;
       </div>
 
       <div class="yaml-cf-surface">
-        <h2><?php esc_html_e('Schema', 'yaml-custom-fields'); ?></h2>
+        <h2><?php \YamlCF\Helpers\Icons::render('schema'); ?><?php esc_html_e('Schema', 'yaml-custom-fields'); ?></h2>
         <p><?php esc_html_e('Write the schema below:', 'yaml-custom-fields'); ?></p>
         <textarea name="schema" id="yaml-cf-schema-editor" rows="20" class="large-text code yaml-cf-code-editor"><?php echo esc_textarea($yaml_cf_schema_yaml); ?></textarea>
       </div>
@@ -135,11 +133,11 @@ YAML;
 
     <?php if ($yaml_cf_is_editing) : ?>
     <div class="yaml-cf-schema-examples yaml-cf-examples-spaced">
-      <h2><?php esc_html_e('Use it on a page', 'yaml-custom-fields'); ?></h2>
+      <h2><?php \YamlCF\Helpers\Icons::render('page_only'); ?><?php esc_html_e('Use it on a page', 'yaml-custom-fields'); ?></h2>
       <p><?php esc_html_e('To let a page pick an item from this collection, add this to the page\'s schema:', 'yaml-custom-fields'); ?></p>
       <div class="yaml-cf-relative">
         <button type="button" class="yaml-cf-copy-snippet button button-small yaml-cf-copy-corner" data-snippet="- name: <?php echo esc_attr($yaml_cf_type_slug); ?>&#10;  label: <?php echo esc_attr($yaml_cf_type_name); ?>&#10;  type: data_object&#10;  options:&#10;    object_type: <?php echo esc_attr($yaml_cf_type_slug); ?>">
-          <span class="dashicons dashicons-editor-code"></span>
+          <?php \YamlCF\Helpers\Icons::render('copy'); ?>
           <?php esc_html_e('Copy', 'yaml-custom-fields'); ?>
         </button>
         <pre>- name: <?php echo esc_html($yaml_cf_type_slug); ?>
@@ -151,13 +149,13 @@ YAML;
     </div>
 
     <div class="yaml-cf-schema-examples yaml-cf-examples-spaced">
-      <h2><?php esc_html_e('Show it on the website', 'yaml-custom-fields'); ?></h2>
+      <h2><?php \YamlCF\Helpers\Icons::render('copy'); ?><?php esc_html_e('Show it on the website', 'yaml-custom-fields'); ?></h2>
       <p><?php esc_html_e('To show items on the website, add this to the theme:', 'yaml-custom-fields'); ?></p>
 
       <h3 class="yaml-cf-spaced-top"><?php esc_html_e('Show the chosen item', 'yaml-custom-fields'); ?></h3>
       <div class="yaml-cf-relative">
         <button type="button" class="yaml-cf-copy-snippet button button-small yaml-cf-copy-corner" data-snippet="&lt;?php&#10;$<?php echo esc_attr($yaml_cf_snippet_var); ?> = ycf_get_data_object('<?php echo esc_attr($yaml_cf_type_slug); ?>');&#10;if ($<?php echo esc_attr($yaml_cf_snippet_var); ?>) {&#10;  echo '&lt;h2&gt;' . esc_html($<?php echo esc_attr($yaml_cf_snippet_var); ?>['name']) . '&lt;/h2&gt;';&#10;  // Access other fields: $<?php echo esc_attr($yaml_cf_snippet_var); ?>['field_name']&#10;}&#10;?&gt;">
-          <span class="dashicons dashicons-editor-code"></span>
+          <?php \YamlCF\Helpers\Icons::render('copy'); ?>
           <?php esc_html_e('Copy', 'yaml-custom-fields'); ?>
         </button>
         <pre>&lt;?php
@@ -172,7 +170,7 @@ if ($<?php echo esc_html($yaml_cf_snippet_var); ?>) {
       <h3 class="yaml-cf-spaced-top"><?php esc_html_e('Show every item', 'yaml-custom-fields'); ?></h3>
       <div class="yaml-cf-relative">
         <button type="button" class="yaml-cf-copy-snippet button button-small yaml-cf-copy-corner" data-snippet="&lt;?php&#10;$all_<?php echo esc_attr($yaml_cf_type_slug); ?> = ycf_get_data_objects('<?php echo esc_attr($yaml_cf_type_slug); ?>');&#10;foreach ($all_<?php echo esc_attr($yaml_cf_type_slug); ?> as $entry_id => $entry) {&#10;  echo '&lt;h3&gt;' . esc_html($entry['name']) . '&lt;/h3&gt;';&#10;}&#10;?&gt;">
-          <span class="dashicons dashicons-editor-code"></span>
+          <?php \YamlCF\Helpers\Icons::render('copy'); ?>
           <?php esc_html_e('Copy', 'yaml-custom-fields'); ?>
         </button>
         <pre>&lt;?php

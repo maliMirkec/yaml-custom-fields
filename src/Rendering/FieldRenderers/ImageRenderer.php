@@ -28,9 +28,13 @@ class ImageRenderer extends BaseFieldRenderer implements BlockFieldRendererInter
 
     echo '<input type="hidden" name="yaml_cf[' . esc_attr($state['field_name']) . ']" id="' . esc_attr($field_id) . '" value="' . esc_attr($value) . '" />';
     echo '<div class="yaml-cf-media-buttons">';
-    echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">' . esc_html__('Choose image', 'yaml-custom-fields') . '</button>';
+    echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">';
+    \YamlCF\Helpers\Icons::render('image');
+    echo esc_html__('Choose image', 'yaml-custom-fields') . '</button>';
     if ($value) {
-      echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+      echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">';
+      \YamlCF\Helpers\Icons::render('remove');
+      echo esc_html__('Remove', 'yaml-custom-fields') . '</button>';
     }
     echo '</div>';
     $this->printPreview($value);
@@ -48,9 +52,13 @@ class ImageRenderer extends BaseFieldRenderer implements BlockFieldRendererInter
     echo '<input type="hidden" name="' . esc_attr($this->blockInputName($state)) . '" id="' . esc_attr($field_id) . '" value="' . esc_attr($value) . '"' . disabled($readonly, true, false) . ' />';
     if (!$readonly) {
       echo '<div class="yaml-cf-media-buttons">';
-      echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">' . esc_html__('Choose image', 'yaml-custom-fields') . '</button>';
+      echo '<button type="button" class="button yaml-cf-upload-image" data-target="' . esc_attr($field_id) . '">';
+      \YamlCF\Helpers\Icons::render('image');
+      echo esc_html__('Choose image', 'yaml-custom-fields') . '</button>';
       if ($value) {
-        echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+        echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">';
+        \YamlCF\Helpers\Icons::render('remove');
+        echo esc_html__('Remove', 'yaml-custom-fields') . '</button>';
       }
       echo '</div>';
     }

@@ -66,7 +66,7 @@ class MetaBoxRenderTest extends WPTestCase {
 		$html = $this->render($this->createTestPost(['post_author' => $user_id]));
 
 		$this->assertStringContainsString('<p class="yaml-cf-field-help">Keep it short.</p>', $html);
-		$this->assertStringContainsString('Fill in the fields below. Click Update to save them.', $html);
+		$this->assertStringContainsString('Fill in the fields below, then save.', $html);
 		$this->assertStringContainsString('yaml-cf-import-trigger', $html);
 		$this->assertStringNotContainsString('yaml-cf-copy-snippet', $html);
 		$this->assertStringNotContainsString('Edit schema', $html);

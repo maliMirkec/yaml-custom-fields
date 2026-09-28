@@ -34,8 +34,7 @@ class SchemaEditorController extends AdminController {
     $schemas = get_option('yaml_cf_schemas', []);
     $schema_yaml = isset($schemas[$template]) ? $schemas[$template] : '';
 
-    // Check if there's a validation error and restore the invalid schema
-    $error_message = '';
+    // A schema refused on save comes back into the editor
     if (RequestHelper::getParam('error') === '1') {
       $invalid_schema = get_transient('yaml_cf_invalid_schema_' . get_current_user_id());
       if ($invalid_schema !== false) {
@@ -54,28 +53,13 @@ class SchemaEditorController extends AdminController {
       }
     }
 
-    // Save results are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-
-    // Pass messages to JavaScript (replaces inline scripts)
-    $page_data = [];
-    if (!empty($success_message)) {
-      $page_data['successMessage'] = $success_message;
-    }
-    if (!empty($error_message)) {
-      $page_data['errorMessage'] = $error_message;
-    }
-    if (!empty($page_data)) {
-      $this->localizePageInit($page_data);
-    }
+    // Save results are shown as queued notices (see NotificationManager)
 
     // Load template
     $this->loadTemplate('edit-schema-page.php', compact(
       'template',
       'template_name',
-      'schema_yaml',
-      'error_message',
-      'success_message'
+      'schema_yaml'
     ));
   }
 }

@@ -25,7 +25,7 @@ if (!defined('ABSPATH')) {
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-custom-fields')); ?>" class="button">
-          <span class="dashicons dashicons-arrow-left-alt2"></span>
+          <?php \YamlCF\Helpers\Icons::render('back'); ?>
           <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
         <?php
@@ -38,7 +38,7 @@ if (!defined('ABSPATH')) {
           $yaml_cf_manage_data_url = admin_url('admin.php?page=yaml-cf-edit-partial&template=' . rawurlencode($template));
         ?>
         <a href="<?php echo esc_url($yaml_cf_manage_data_url); ?>" class="button button-secondary yaml-cf-button-gap">
-          <span class="dashicons dashicons-edit"></span>
+          <?php \YamlCF\Helpers\Icons::render('edit'); ?>
           <?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
         </a>
         <?php endif; ?>

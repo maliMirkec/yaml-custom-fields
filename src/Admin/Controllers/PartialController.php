@@ -60,9 +60,6 @@ class PartialController extends AdminController {
       }
     }
 
-    // Save results are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-
     // Localize the schema and which one it is, so that adding a section can ask
     // the server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem)
     $this->localizeScript([
@@ -85,9 +82,6 @@ class PartialController extends AdminController {
         'captureDelay' => 500,
       ]
     ];
-    if (!empty($success_message)) {
-      $page_data['successMessage'] = $success_message;
-    }
     $this->localizePageInit($page_data);
 
     // Load template
@@ -95,8 +89,7 @@ class PartialController extends AdminController {
       'template',
       'template_name',
       'schema',
-      'template_data',
-      'success_message'
+      'template_data'
     ));
   }
 }

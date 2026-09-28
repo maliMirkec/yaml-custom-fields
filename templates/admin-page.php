@@ -14,8 +14,8 @@ if (!defined('ABSPATH')) {
 // - $global_field_count : int - Number of fields in the global schema
 // - $show_getting_started : bool - Show first-run guidance
 // - $theme_kind : array - name, is_block, is_child, parent of the active theme
-// - $keep_data_on_uninstall : bool - Whether deleting the plugin keeps the content
-// - $rest_public_read : bool - Whether site details and collections are public over the REST API
+// Page caches, REST access and what deleting the plugin does are on the Settings
+// screen (templates/settings-page.php).
 
 $yaml_cf_admin_url = function ($page, $template = null) {
   $args = ['page' => $page];
@@ -30,12 +30,15 @@ $yaml_cf_admin_url = function ($page, $template = null) {
  */
 $yaml_cf_schema_badge = function ($has_schema, $field_count) {
   if ($has_schema && $field_count > 0) {
-    echo '<span class="yaml-cf-badge is-ready"><span class="dashicons dashicons-yes" aria-hidden="true"></span>';
+    echo '<span class="yaml-cf-badge is-ready">';
+    \YamlCF\Helpers\Icons::render('status_success');
     /* translators: %d: number of fields */
     echo esc_html(sprintf(_n('%d field', '%d fields', $field_count, 'yaml-custom-fields'), $field_count));
     echo '</span>';
   } elseif ($has_schema) {
-    echo '<span class="yaml-cf-badge is-warning" title="' . esc_attr__('The schema has a mistake. Open it to fix it.', 'yaml-custom-fields') . '"><span class="dashicons dashicons-warning" aria-hidden="true"></span>' . esc_html__('Fix schema', 'yaml-custom-fields') . '</span>';
+    echo '<span class="yaml-cf-badge is-warning" title="' . esc_attr__('The schema has a mistake. Open it to fix it.', 'yaml-custom-fields') . '">';
+    \YamlCF\Helpers\Icons::render('status_warning');
+    echo esc_html__('Fix schema', 'yaml-custom-fields') . '</span>';
   } else {
     echo '<span class="yaml-cf-badge is-empty">' . esc_html__('No fields yet', 'yaml-custom-fields') . '</span>';
   }
@@ -65,6 +68,8 @@ $yaml_cf_toggle = function ($row) {
       ?>
     </span>
   </label>
+  <?php // Room kept for "Saved" after the switch is used, so nothing moves when it shows ?>
+  <span class="yaml-cf-status" data-slot="toggle"></span>
   <?php
 };
 
@@ -125,7 +130,7 @@ $yaml_cf_empty_reason = function ($kind, $what) {
 
     <?php if ($show_getting_started) : ?>
       <section class="yaml-cf-onboarding" aria-labelledby="yaml-cf-onboarding-title">
-        <h2 id="yaml-cf-onboarding-title"><?php esc_html_e('Get started in four steps', 'yaml-custom-fields'); ?></h2>
+        <h2 id="yaml-cf-onboarding-title"><?php \YamlCF\Helpers\Icons::render('getting_started'); ?><?php esc_html_e('Get started in four steps', 'yaml-custom-fields'); ?></h2>
         <ol class="yaml-cf-steps">
           <li>
             <strong><?php esc_html_e('Turn on a template', 'yaml-custom-fields'); ?></strong>
@@ -159,11 +164,11 @@ $yaml_cf_empty_reason = function ($kind, $what) {
     <section class="yaml-cf-card yaml-cf-global-card" aria-labelledby="yaml-cf-global-title">
       <div class="yaml-cf-card-title-row">
         <h2 id="yaml-cf-global-title">
-          <span class="dashicons dashicons-admin-site-alt3" aria-hidden="true"></span>
+          <?php \YamlCF\Helpers\Icons::render('site_details'); ?>
           <?php esc_html_e('Site details', 'yaml-custom-fields'); ?>
         </h2>
         <?php if ($global_field_count > 0) : ?>
-          <span class="yaml-cf-badge is-ready"><span class="dashicons dashicons-yes" aria-hidden="true"></span>
+          <span class="yaml-cf-badge is-ready"><?php \YamlCF\Helpers\Icons::render('status_success'); ?>
             <?php
             /* translators: %d: number of fields */
             echo esc_html(sprintf(_n('%d field', '%d fields', $global_field_count, 'yaml-custom-fields'), $global_field_count));
@@ -182,16 +187,16 @@ $yaml_cf_empty_reason = function ($kind, $what) {
       <div class="yaml-cf-card-actions">
         <?php if ($global_field_count > 0) : ?>
           <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-manage-global-data')); ?>" class="button button-primary">
-            <span class="dashicons dashicons-edit" aria-hidden="true"></span>
+            <?php \YamlCF\Helpers\Icons::render('edit'); ?>
             <?php esc_html_e('Edit site details', 'yaml-custom-fields'); ?>
           </a>
           <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-global-schema')); ?>" class="button">
-            <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
+            <?php \YamlCF\Helpers\Icons::render('schema'); ?>
             <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
           </a>
         <?php else : ?>
           <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-global-schema')); ?>" class="button button-primary">
-            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+            <?php \YamlCF\Helpers\Icons::render('add'); ?>
             <?php esc_html_e('Create site details', 'yaml-custom-fields'); ?>
           </a>
           <span class="yaml-cf-hint"><?php esc_html_e('Optional. Skip this if everything is different on each page.', 'yaml-custom-fields'); ?></span>
@@ -204,16 +209,17 @@ $yaml_cf_empty_reason = function ($kind, $what) {
       <div class="yaml-cf-section-header">
         <div>
           <h2 id="yaml-cf-templates-title">
+            <?php \YamlCF\Helpers\Icons::render('templates'); ?>
             <?php esc_html_e('Page & post templates', 'yaml-custom-fields'); ?>
           </h2>
           <p class="yaml-cf-section-text"><?php esc_html_e('These fields are filled in on each page or post, below the title.', 'yaml-custom-fields'); ?></p>
         </div>
         <div class="yaml-cf-section-tools">
           <button type="button" id="yaml-cf-refresh-templates" class="button" aria-describedby="yaml-cf-refresh-help">
-            <span class="dashicons dashicons-update" aria-hidden="true"></span>
+            <?php \YamlCF\Helpers\Icons::render('refresh'); ?>
             <?php esc_html_e('Refresh list', 'yaml-custom-fields'); ?>
           </button>
-          <span id="yaml-cf-refresh-help" class="yaml-cf-hint"><?php esc_html_e('Refresh to see newly added templates.', 'yaml-custom-fields'); ?></span>
+          <span id="yaml-cf-refresh-help" class="yaml-cf-hint yaml-cf-status"><?php esc_html_e('Refresh to see newly added templates.', 'yaml-custom-fields'); ?></span>
         </div>
       </div>
 
@@ -225,14 +231,14 @@ $yaml_cf_empty_reason = function ($kind, $what) {
         <table class="yaml-cf-table">
           <thead>
             <tr>
-              <th scope="col"><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
+              <th scope="col" class="yaml-cf-col-template"><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
               <th scope="col" class="yaml-cf-col-toggle"><?php esc_html_e('Custom fields', 'yaml-custom-fields'); ?></th>
               <th scope="col">
-                <?php esc_html_e('Page fields', 'yaml-custom-fields'); ?>
+                <?php \YamlCF\Helpers\Icons::render('page_only'); ?><?php esc_html_e('Page fields', 'yaml-custom-fields'); ?>
                 <span class="yaml-cf-th-help"><?php esc_html_e('Different on each page', 'yaml-custom-fields'); ?></span>
               </th>
               <th scope="col">
-                <?php esc_html_e('Shared fields', 'yaml-custom-fields'); ?>
+                <?php \YamlCF\Helpers\Icons::render('shared'); ?><?php esc_html_e('Shared fields', 'yaml-custom-fields'); ?>
                 <span class="yaml-cf-th-help"><?php esc_html_e('Same on every page with this template', 'yaml-custom-fields'); ?></span>
               </th>
             </tr>
@@ -248,11 +254,16 @@ $yaml_cf_empty_reason = function ($kind, $what) {
                   <?php $yaml_cf_toggle($yaml_cf_row); ?>
                 </td>
                 <td data-label="<?php esc_attr_e('Page fields', 'yaml-custom-fields'); ?>">
-                  <div class="yaml-cf-when-enabled yaml-cf-cell-status">
-                    <?php $yaml_cf_schema_badge($yaml_cf_row['has_schema'], $yaml_cf_row['field_count']); ?>
-                    <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-schema', $yaml_cf_row['file'])); ?>" class="button button-small">
-                      <?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
-                    </a>
+                  <?php // Both states share one spot, so switching never changes the row's size ?>
+                  <div class="yaml-cf-states">
+                  <div class="yaml-cf-when-enabled">
+                  <div class="yaml-cf-cell-status">
+                    <div class="yaml-cf-cell-label"><?php $yaml_cf_schema_badge($yaml_cf_row['has_schema'], $yaml_cf_row['field_count']); ?></div>
+                    <div class="yaml-cf-cell-actions">
+                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-schema', $yaml_cf_row['file'])); ?>" class="button button-small">
+                        <?php \YamlCF\Helpers\Icons::render('schema'); ?><?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
+                      </a>
+                    </div>
                   </div>
                   <?php if ($global_field_count > 0) : ?>
                     <?php
@@ -261,7 +272,7 @@ $yaml_cf_empty_reason = function ($kind, $what) {
                     // editor. Every released version read this switch, but none
                     // showed it.
                     ?>
-                    <div class="yaml-cf-when-enabled yaml-cf-spaced-top">
+                    <div class="yaml-cf-spaced-top">
                       <label>
                         <input type="checkbox"
                                class="yaml-cf-use-global"
@@ -269,31 +280,40 @@ $yaml_cf_empty_reason = function ($kind, $what) {
                                <?php checked($yaml_cf_row['uses_site_details']); ?> />
                         <?php esc_html_e('Use site details on these pages', 'yaml-custom-fields'); ?>
                       </label>
+                      <span class="yaml-cf-status" data-slot="site-details"></span>
                       <span class="yaml-cf-th-help"><?php esc_html_e('These pages can read site details as their own fields, and show them in the editor. A page\'s own field of the same name wins.', 'yaml-custom-fields'); ?></span>
                     </div>
                   <?php endif; ?>
-                  <span class="yaml-cf-when-disabled yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span>
+                  </div>
+                  <div class="yaml-cf-when-disabled"><span class="yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span></div>
+                  </div>
                 </td>
                 <td data-label="<?php esc_attr_e('Shared fields', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-states">
                   <div class="yaml-cf-when-enabled yaml-cf-cell-status">
                     <?php if ($yaml_cf_row['has_shared_schema']) : ?>
-                      <?php $yaml_cf_schema_badge(true, $yaml_cf_row['shared_field_count']); ?>
+                      <div class="yaml-cf-cell-label"><?php $yaml_cf_schema_badge(true, $yaml_cf_row['shared_field_count']); ?></div>
+                      <div class="yaml-cf-cell-actions">
                       <?php if ($yaml_cf_row['shared_field_count'] > 0) : ?>
                         <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-manage-template-global', $yaml_cf_row['file'])); ?>" class="button button-small">
-                          <?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
+                          <?php \YamlCF\Helpers\Icons::render('edit'); ?><?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
                         </a>
                       <?php endif; ?>
-                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-template-global', $yaml_cf_row['file'])); ?>" class="button button-small button-link yaml-cf-link-button">
-                        <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
-                      </a>
-                    <?php else : ?>
-                      <span class="yaml-cf-hint"><?php esc_html_e('Optional', 'yaml-custom-fields'); ?></span>
                       <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-template-global', $yaml_cf_row['file'])); ?>" class="button button-small">
-                        <?php esc_html_e('Add shared fields', 'yaml-custom-fields'); ?>
+                        <?php \YamlCF\Helpers\Icons::render('schema'); ?><?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
                       </a>
+                      </div>
+                    <?php else : ?>
+                      <div class="yaml-cf-cell-label"><span class="yaml-cf-hint"><?php esc_html_e('Optional', 'yaml-custom-fields'); ?></span></div>
+                      <div class="yaml-cf-cell-actions">
+                        <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-template-global', $yaml_cf_row['file'])); ?>" class="button button-small">
+                          <?php \YamlCF\Helpers\Icons::render('add'); ?><?php esc_html_e('Add shared fields', 'yaml-custom-fields'); ?>
+                        </a>
+                      </div>
                     <?php endif; ?>
                   </div>
-                  <span class="yaml-cf-when-disabled yaml-cf-hint">&mdash;</span>
+                  <div class="yaml-cf-when-disabled"><span class="yaml-cf-hint">&mdash;</span></div>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -307,6 +327,7 @@ $yaml_cf_empty_reason = function ($kind, $what) {
       <div class="yaml-cf-section-header">
         <div>
           <h2 id="yaml-cf-partials-title">
+            <?php \YamlCF\Helpers\Icons::render('site_parts'); ?>
             <?php esc_html_e('Site parts & archive pages', 'yaml-custom-fields'); ?>
           </h2>
           <p class="yaml-cf-section-text"><?php esc_html_e('Parts that repeat on many pages, like the header and footer, and pages that list posts. Their content is filled in once, here.', 'yaml-custom-fields'); ?></p>
@@ -324,7 +345,7 @@ $yaml_cf_empty_reason = function ($kind, $what) {
         <table class="yaml-cf-table">
           <thead>
             <tr>
-              <th scope="col"><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
+              <th scope="col" class="yaml-cf-col-template"><?php esc_html_e('Template', 'yaml-custom-fields'); ?></th>
               <th scope="col" class="yaml-cf-col-toggle"><?php esc_html_e('Custom fields', 'yaml-custom-fields'); ?></th>
               <th scope="col"><?php esc_html_e('Fields', 'yaml-custom-fields'); ?></th>
               <th scope="col"><?php esc_html_e('Content', 'yaml-custom-fields'); ?></th>
@@ -341,121 +362,39 @@ $yaml_cf_empty_reason = function ($kind, $what) {
                   <?php $yaml_cf_toggle($yaml_cf_row); ?>
                 </td>
                 <td data-label="<?php esc_attr_e('Fields', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-states">
                   <div class="yaml-cf-when-enabled yaml-cf-cell-status">
-                    <?php $yaml_cf_schema_badge($yaml_cf_row['has_schema'], $yaml_cf_row['field_count']); ?>
-                    <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-schema', $yaml_cf_row['file'])); ?>" class="button button-small">
-                      <?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
-                    </a>
+                    <div class="yaml-cf-cell-label"><?php $yaml_cf_schema_badge($yaml_cf_row['has_schema'], $yaml_cf_row['field_count']); ?></div>
+                    <div class="yaml-cf-cell-actions">
+                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-schema', $yaml_cf_row['file'])); ?>" class="button button-small">
+                        <?php \YamlCF\Helpers\Icons::render('schema'); ?><?php echo $yaml_cf_row['has_schema'] ? esc_html__('Edit schema', 'yaml-custom-fields') : esc_html__('Create schema', 'yaml-custom-fields'); ?>
+                      </a>
+                    </div>
                   </div>
-                  <span class="yaml-cf-when-disabled yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span>
+                  <div class="yaml-cf-when-disabled"><span class="yaml-cf-hint"><?php esc_html_e('Switch on to add fields', 'yaml-custom-fields'); ?></span></div>
+                  </div>
                 </td>
                 <td data-label="<?php esc_attr_e('Content', 'yaml-custom-fields'); ?>">
+                  <div class="yaml-cf-states">
                   <div class="yaml-cf-when-enabled yaml-cf-cell-status">
                     <?php if ($yaml_cf_row['field_count'] > 0) : ?>
-                      <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-partial', $yaml_cf_row['file'])); ?>" class="button button-small button-primary">
-                        <?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
-                      </a>
+                      <div class="yaml-cf-cell-actions">
+                        <a href="<?php echo esc_url($yaml_cf_admin_url('yaml-cf-edit-partial', $yaml_cf_row['file'])); ?>" class="button button-small button-primary">
+                          <?php \YamlCF\Helpers\Icons::render('edit'); ?><?php esc_html_e('Edit content', 'yaml-custom-fields'); ?>
+                        </a>
+                      </div>
                     <?php else : ?>
-                      <span class="yaml-cf-hint"><?php esc_html_e('Create the schema first.', 'yaml-custom-fields'); ?></span>
+                      <div class="yaml-cf-cell-label"><span class="yaml-cf-hint"><?php esc_html_e('Create the schema first.', 'yaml-custom-fields'); ?></span></div>
                     <?php endif; ?>
                   </div>
-                  <span class="yaml-cf-when-disabled yaml-cf-hint">&mdash;</span>
+                  <div class="yaml-cf-when-disabled"><span class="yaml-cf-hint">&mdash;</span></div>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
           </tbody>
         </table>
       <?php endif; ?>
-    </section>
-
-    <!-- Page caches after site-wide content is saved -->
-    <section class="yaml-cf-card yaml-cf-uninstall-card" aria-labelledby="yaml-cf-caches-title">
-      <div class="yaml-cf-card-title-row">
-        <h2 id="yaml-cf-caches-title">
-          <span class="dashicons dashicons-update" aria-hidden="true"></span>
-          <?php esc_html_e('Page caches', 'yaml-custom-fields'); ?>
-        </h2>
-      </div>
-      <div class="yaml-cf-card-body">
-        <p>
-          <?php esc_html_e('Site details, shared content and site parts show on many pages at once. When they are saved, the plugin can clear the cache of every page that has fields, so a caching plugin shows the new content straight away.', 'yaml-custom-fields'); ?>
-        </p>
-        <form method="post" action="">
-          <?php wp_nonce_field('yaml_cf_clear_caches', 'yaml_cf_clear_caches_nonce'); ?>
-          <p>
-            <label>
-              <input type="checkbox" name="yaml_cf_clear_caches" value="1" <?php checked($clear_post_caches); ?> />
-              <?php esc_html_e('Clear the cache of every page with fields when site-wide content is saved', 'yaml-custom-fields'); ?>
-            </label>
-          </p>
-          <p class="yaml-cf-hint">
-            <?php esc_html_e('On a site with thousands of pages this makes each save slower. Untick it if saving is slow and the caching plugin is purged some other way.', 'yaml-custom-fields'); ?>
-          </p>
-          <p>
-            <button type="submit" class="button"><?php esc_html_e('Save this choice', 'yaml-custom-fields'); ?></button>
-          </p>
-        </form>
-      </div>
-    </section>
-
-    <!-- Who can read site-wide content over the REST API -->
-    <section class="yaml-cf-card yaml-cf-rest-card" aria-labelledby="yaml-cf-rest-title">
-      <div class="yaml-cf-card-title-row">
-        <h2 id="yaml-cf-rest-title">
-          <span class="dashicons dashicons-rest-api" aria-hidden="true"></span>
-          <?php esc_html_e('REST API', 'yaml-custom-fields'); ?>
-        </h2>
-      </div>
-      <div class="yaml-cf-card-body">
-        <p>
-          <?php esc_html_e('Other software, such as a front end built in JavaScript or a mobile app, can read the site details and collections over the WordPress REST API. Each page\'s fields are readable wherever the page itself is.', 'yaml-custom-fields'); ?>
-        </p>
-        <form method="post" action="">
-          <?php wp_nonce_field('yaml_cf_rest_access', 'yaml_cf_rest_access_nonce'); ?>
-          <p>
-            <label>
-              <input type="checkbox" name="yaml_cf_rest_public_read" value="1" <?php checked($rest_public_read); ?> />
-              <?php esc_html_e('Let anyone read the site details and collections, without logging in', 'yaml-custom-fields'); ?>
-            </label>
-          </p>
-          <p class="yaml-cf-hint">
-            <?php esc_html_e('Every item of every collection becomes readable, including items no page shows, and every site detail, including ones no page shows. Leave it unticked if any of them should stay private. Unticked, reading them needs a logged-in user who can edit posts.', 'yaml-custom-fields'); ?>
-          </p>
-          <p>
-            <button type="submit" class="button"><?php esc_html_e('Save this choice', 'yaml-custom-fields'); ?></button>
-          </p>
-        </form>
-      </div>
-    </section>
-
-    <!-- What happens if the plugin is deleted -->
-    <section class="yaml-cf-card yaml-cf-uninstall-card" aria-labelledby="yaml-cf-uninstall-title">
-      <div class="yaml-cf-card-title-row">
-        <h2 id="yaml-cf-uninstall-title">
-          <span class="dashicons dashicons-trash" aria-hidden="true"></span>
-          <?php esc_html_e('If this plugin is deleted', 'yaml-custom-fields'); ?>
-        </h2>
-      </div>
-      <div class="yaml-cf-card-body">
-        <p>
-          <?php esc_html_e('Deleting the plugin removes the schemas, the site details, the collections, and the content filled into the fields on every page and post. Deactivating it changes nothing.', 'yaml-custom-fields'); ?>
-        </p>
-        <form method="post" action="">
-          <?php wp_nonce_field('yaml_cf_keep_data', 'yaml_cf_keep_data_nonce'); ?>
-          <p>
-            <label>
-              <input type="checkbox" name="yaml_cf_keep_data" value="1" <?php checked($keep_data_on_uninstall); ?> />
-              <?php esc_html_e('Keep the content if the plugin is deleted', 'yaml-custom-fields'); ?>
-            </label>
-          </p>
-          <p class="yaml-cf-hint">
-            <?php esc_html_e('With this ticked, the content stays in the database and comes back if the plugin is installed again. Untick it to have everything removed.', 'yaml-custom-fields'); ?>
-          </p>
-          <p>
-            <button type="submit" class="button"><?php esc_html_e('Save this choice', 'yaml-custom-fields'); ?></button>
-          </p>
-        </form>
-      </div>
     </section>
 
     <!-- Schema reference -->

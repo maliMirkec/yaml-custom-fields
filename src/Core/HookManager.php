@@ -56,8 +56,8 @@ class HookManager {
     // Content Check: remove values before any notice is printed
     add_action('admin_init', [$this, 'handleValidationSubmissions']);
 
-    // Choices on the main screen, saved before any notice is printed
-    add_action('admin_init', [$this, 'handleMainScreenSubmissions']);
+    // Choices on the Settings screen, saved before any notice is printed
+    add_action('admin_init', [$this, 'handleSettingsSubmissions']);
     add_action('admin_enqueue_scripts', [$this, 'enqueueAdminAssets']);
 
     // Menu customization
@@ -223,6 +223,7 @@ class HookManager {
       'data_object' => $this->plugin->get('data_object_controller'),
       'export_import' => $this->plugin->get('export_import_controller'),
       'docs' => $this->plugin->get('docs_controller'),
+      'settings' => $this->plugin->get('settings_controller'),
     ]);
 
     $menuManager->registerMenu();
@@ -237,14 +238,15 @@ class HookManager {
   }
 
   /**
-   * Handle the forms on the plugin's main screen
+   * Handle the forms on the Settings screen
    */
-  public function handleMainScreenSubmissions() {
-    if (\YamlCF\Helpers\RequestHelper::getParam('page') !== 'yaml-custom-fields') {
+  public function handleSettingsSubmissions() {
+    // Checked here so other admin screens never build the controller
+    if (\YamlCF\Helpers\RequestHelper::getParam('page') !== \YamlCF\Admin\Controllers\SettingsController::PAGE) {
       return;
     }
 
-    $this->plugin->get('template_schema_controller')->handleFormSubmissions();
+    $this->plugin->get('settings_controller')->handleFormSubmissions();
   }
 
   /**

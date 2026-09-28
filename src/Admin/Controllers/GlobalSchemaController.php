@@ -18,8 +18,7 @@ class GlobalSchemaController extends AdminController {
 
     $global_schema = get_option('yaml_cf_global_schema', '');
 
-    // Check if there's a validation error
-    $error_message = '';
+    // A schema refused on save comes back into the editor
     if (RequestHelper::getParam('error') === '1') {
       $invalid_schema = get_transient('yaml_cf_invalid_global_schema_' . get_current_user_id());
       if ($invalid_schema !== false) {
@@ -28,21 +27,7 @@ class GlobalSchemaController extends AdminController {
       }
     }
 
-    // Save results are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-
-    // Pass messages to JavaScript via localization
-    $page_config = [];
-    if ($success_message) {
-      $page_config['successMessage'] = $success_message;
-    }
-    if ($error_message) {
-      $page_config['errorMessage'] = $error_message;
-    }
-
-    if (!empty($page_config)) {
-      $this->localizePageInit($page_config);
-    }
+    // Save results are shown as queued notices (see NotificationManager)
 
     // Load template
     $this->loadTemplate('edit-global-schema-page.php', compact('global_schema'));

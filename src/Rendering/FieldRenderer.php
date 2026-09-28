@@ -207,8 +207,12 @@ class FieldRenderer {
     // The shared value: read-only here, edited on its own screen
     echo '<div class="yaml-cf-template-global-part">';
     echo '<div class="yaml-cf-part-header">';
-    echo '<strong class="yaml-cf-part-title is-global">' . esc_html__('Shared value (all pages with this template)', 'yaml-custom-fields') . '</strong>';
-    echo '<a href="' . esc_url($manage_template_global_url) . '" target="_blank" class="button button-small">' . esc_html__('Edit', 'yaml-custom-fields') . '</a>';
+    echo '<strong class="yaml-cf-part-title is-global">';
+    \YamlCF\Helpers\Icons::render('shared');
+    echo esc_html__('Shared value (all pages with this template)', 'yaml-custom-fields') . '</strong>';
+    echo '<a href="' . esc_url($manage_template_global_url) . '" target="_blank" class="button button-small">';
+    \YamlCF\Helpers\Icons::render('edit');
+    echo esc_html__('Edit', 'yaml-custom-fields') . '</a>';
     echo '</div>';
     $this->renderFields([$field], [$field_name => $template_global_value], '', ['type' => 'template_global', 'readonly' => true, 'id_suffix' => '_global']);
     echo '</div>';
@@ -217,7 +221,9 @@ class FieldRenderer {
     // styles block it visually while the tick box below is ticked.
     echo '<div class="yaml-cf-local-part">';
     echo '<div class="yaml-cf-part-header">';
-    echo '<strong class="yaml-cf-part-title is-local">' . esc_html__('This page only', 'yaml-custom-fields') . '</strong>';
+    echo '<strong class="yaml-cf-part-title is-local">';
+    \YamlCF\Helpers\Icons::render('page_only');
+    echo esc_html__('This page only', 'yaml-custom-fields') . '</strong>';
     echo '</div>';
     $this->renderFields([$field], [$field_name => $local_value], '', ['type' => 'page']);
     echo '</div>';
@@ -399,7 +405,8 @@ class FieldRenderer {
    * @return void
    */
   private function renderUnknownType($field, $field_name) {
-    echo '<p class="yaml-cf-unknown-type notice notice-warning inline">';
+    echo '<p class="yaml-cf-unknown-type notice notice-warning inline yaml-cf-notice">';
+    echo '<span class="screen-reader-text">' . esc_html(\YamlCF\Core\NotificationManager::typeLabel('warning')) . ' </span>';
     echo esc_html(sprintf(
       /* translators: 1: field name, 2: type as written in the schema */
       __('The field "%1$s" has a type this plugin does not know: "%2$s". Nothing is shown for it, and whatever it already holds is left alone. An administrator can fix the type in the schema.', 'yaml-custom-fields'),

@@ -45,8 +45,14 @@ class AssetManager {
     }
 
     $schemas = get_option('yaml_cf_schemas', []);
+    if (!empty($schemas[$template])) {
+      return true;
+    }
 
-    return !empty($schemas[$template]);
+    // Shared fields alone still put the box on the screen (MetaBox::schemaForPost())
+    $shared = get_option('yaml_cf_template_global_schemas', []);
+
+    return is_array($shared) && !empty($shared[$template]);
   }
 
   /**
@@ -154,7 +160,8 @@ class AssetManager {
 
     wp_enqueue_style('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.css', [], YAML_CF_VERSION);
     // jquery-ui-sortable: reordering a gallery (image field with list: true) by dragging
-    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery', 'jquery-ui-sortable', 'wp-i18n'], YAML_CF_VERSION, true);
+    // wp-a11y: every notice is also announced to screen readers (YamlCF.notify)
+    wp_enqueue_script('yaml-cf-admin', YAML_CF_PLUGIN_URL . 'admin-assets/admin.js', ['jquery', 'jquery-ui-sortable', 'wp-i18n', 'wp-a11y'], YAML_CF_VERSION, true);
     $this->setScriptTranslations('yaml-cf-admin');
 
     // Enqueue page initialization script (replaces inline scripts in templates)
@@ -178,6 +185,8 @@ class AssetManager {
       // Only an administrator is handed the token for administrator-only actions
       'adminNonce' => current_user_can('manage_options') ? wp_create_nonce('yaml_cf_admin_nonce') : '',
       'schemaSource' => $schema_source,
+      // The one list of icons, so buttons the script draws match the server's
+      'icons' => \YamlCF\Helpers\Icons::MAP,
     ]);
 
     // Page-specific conditional enqueuing

@@ -312,19 +312,14 @@ class DataObjectController extends AdminController {
       }
     }
 
-    // Get messages
-    // Messages are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-    $error_message = '';
+    // Save results are shown as queued notices (see NotificationManager)
 
     // Load template
     $this->loadTemplate('edit-data-object-type-page.php', compact(
       'type_id',
       'type_name',
       'schema_yaml',
-      'is_editing',
-      'success_message',
-      'error_message'
+      'is_editing'
     ));
   }
 

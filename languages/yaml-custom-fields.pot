@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-28T06:44:45+00:00\n"
+"POT-Creation-Date: 2026-09-28T10:07:22+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: yaml-custom-fields\n"
@@ -17,12 +17,12 @@ msgstr ""
 #. Plugin Name of the plugin
 #: yaml-custom-fields.php
 #: src/Admin/MenuManager.php:37
-#: src/Core/HookManager.php:310
-#: templates/admin-page.php:117
+#: src/Core/HookManager.php:312
+#: templates/admin-page.php:122
 #: templates/data-objects-page.php:19
 #: templates/data-validation-page.php:39
 #: templates/docs-page.php:16
-#: templates/edit-data-object-type-page.php:35
+#: templates/edit-data-object-type-page.php:33
 #: templates/edit-global-schema-page.php:16
 #: templates/edit-partial-page.php:16
 #: templates/edit-schema-page.php:16
@@ -31,6 +31,7 @@ msgstr ""
 #: templates/manage-data-object-entries-page.php:73
 #: templates/manage-global-data-page.php:16
 #: templates/manage-template-global-data-page.php:16
+#: templates/settings-page.php:21
 msgid "YAML Custom Fields"
 msgstr ""
 
@@ -66,9 +67,6 @@ msgstr ""
 #: src/Admin/Controllers/DataObjectController.php:100
 #: src/Admin/Controllers/DataObjectController.php:195
 #: src/Admin/Controllers/DataObjectController.php:261
-#: src/Admin/Controllers/TemplateSchemaController.php:127
-#: src/Admin/Controllers/TemplateSchemaController.php:157
-#: src/Admin/Controllers/TemplateSchemaController.php:192
 #: src/Admin/Controllers/ValidationController.php:189
 #: src/Admin/Controllers/ValidationController.php:230
 #: src/Form/ExportRequestHandler.php:42
@@ -82,9 +80,9 @@ msgstr ""
 #: src/Admin/Controllers/DataObjectController.php:104
 #: src/Admin/Controllers/DataObjectController.php:199
 #: src/Admin/Controllers/DataObjectController.php:265
-#: src/Admin/Controllers/TemplateSchemaController.php:131
-#: src/Admin/Controllers/TemplateSchemaController.php:161
-#: src/Admin/Controllers/TemplateSchemaController.php:196
+#: src/Admin/Controllers/SettingsController.php:96
+#: src/Admin/Controllers/SettingsController.php:126
+#: src/Admin/Controllers/SettingsController.php:160
 #: src/Admin/Controllers/ValidationController.php:234
 #: src/Ajax/AjaxHandler.php:56
 #: src/Form/ContentFormHandler.php:56
@@ -146,23 +144,22 @@ msgstr ""
 msgid "Item deleted."
 msgstr ""
 
-#: src/Admin/Controllers/GlobalDataController.php:58
-#: src/Admin/Controllers/PartialController.php:79
-#: src/Admin/Controllers/TemplateGlobalController.php:134
-#: admin-assets/admin.js:1324
+#: src/Admin/Controllers/GlobalDataController.php:52
+#: src/Admin/Controllers/PartialController.php:76
+#: src/Admin/Controllers/TemplateGlobalController.php:113
 msgid "There are changes that are not saved yet."
 msgstr ""
 
-#: src/Admin/Controllers/GlobalDataController.php:62
-#: src/Admin/Controllers/PartialController.php:83
-#: src/Admin/Controllers/TemplateGlobalController.php:138
+#: src/Admin/Controllers/GlobalDataController.php:56
+#: src/Admin/Controllers/PartialController.php:80
+#: src/Admin/Controllers/TemplateGlobalController.php:117
 msgid "There are changes that are not saved yet. Leave anyway?"
 msgstr ""
 
 #: src/Admin/Controllers/PartialController.php:33
 #: src/Admin/Controllers/SchemaEditorController.php:31
 #: src/Admin/Controllers/TemplateGlobalController.php:32
-#: src/Admin/Controllers/TemplateGlobalController.php:90
+#: src/Admin/Controllers/TemplateGlobalController.php:75
 msgid "No template was chosen. Go back to the YAML Custom Fields page and pick one."
 msgstr ""
 
@@ -174,27 +171,27 @@ msgstr ""
 msgid "The schema for this template has a mistake. Fix the schema first."
 msgstr ""
 
-#: src/Admin/Controllers/TemplateSchemaController.php:139
+#: src/Admin/Controllers/SettingsController.php:104
 msgid "Site details and collections can now be read over the REST API without logging in."
 msgstr ""
 
-#: src/Admin/Controllers/TemplateSchemaController.php:140
+#: src/Admin/Controllers/SettingsController.php:105
 msgid "Reading site details and collections over the REST API now needs a logged-in user who can edit posts."
 msgstr ""
 
-#: src/Admin/Controllers/TemplateSchemaController.php:170
+#: src/Admin/Controllers/SettingsController.php:135
 msgid "Saving site-wide content will now clear the cache of every page with fields."
 msgstr ""
 
-#: src/Admin/Controllers/TemplateSchemaController.php:171
+#: src/Admin/Controllers/SettingsController.php:136
 msgid "Saving site-wide content will no longer clear the cache of every page with fields."
 msgstr ""
 
-#: src/Admin/Controllers/TemplateSchemaController.php:204
+#: src/Admin/Controllers/SettingsController.php:168
 msgid "Deleting the plugin will now leave the field content in place."
 msgstr ""
 
-#: src/Admin/Controllers/TemplateSchemaController.php:205
+#: src/Admin/Controllers/SettingsController.php:169
 msgid "Deleting the plugin will now remove the field content as well."
 msgstr ""
 
@@ -216,11 +213,11 @@ msgstr ""
 
 #: src/Admin/MenuManager.php:49
 #: src/Admin/MenuManager.php:50
-#: src/PostEditor/MetaBox.php:165
-#: templates/admin-page.php:190
-#: templates/admin-page.php:254
-#: templates/admin-page.php:287
-#: templates/admin-page.php:347
+#: src/PostEditor/MetaBox.php:169
+#: templates/admin-page.php:195
+#: templates/admin-page.php:264
+#: templates/admin-page.php:303
+#: templates/admin-page.php:370
 #: templates/data-objects-page.php:74
 #: templates/edit-partial-page.php:36
 #: templates/manage-data-object-entries-page.php:91
@@ -241,8 +238,8 @@ msgstr ""
 #: src/Admin/MenuManager.php:77
 #: src/Admin/MenuManager.php:78
 #: src/ImportExport/BundleCatalog.php:333
-#: src/PostEditor/MetaBox.php:310
-#: templates/admin-page.php:163
+#: src/PostEditor/MetaBox.php:321
+#: templates/admin-page.php:168
 #: templates/edit-global-schema-page.php:34
 #: templates/manage-global-data-page.php:18
 msgid "Site details"
@@ -265,8 +262,8 @@ msgstr ""
 #: src/Admin/MenuManager.php:106
 #: src/Admin/MenuManager.php:107
 #: templates/data-objects-page.php:21
-#: templates/export-data-page.php:139
-#: admin-assets/admin-export-import.js:390
+#: templates/export-data-page.php:140
+#: admin-assets/admin-export-import.js:396
 msgid "Collections"
 msgstr ""
 
@@ -294,42 +291,48 @@ msgstr ""
 
 #: src/Admin/MenuManager.php:156
 #: src/Admin/MenuManager.php:157
+#: templates/settings-page.php:23
+msgid "Settings"
+msgstr ""
+
+#: src/Admin/MenuManager.php:166
+#: src/Admin/MenuManager.php:167
 #: templates/docs-page.php:18
 msgid "Documentation"
 msgstr ""
 
 #. translators: %s: Template name
-#: src/Admin/MenuManager.php:244
+#: src/Admin/MenuManager.php:254
 #, php-format
 msgid "Edit schema: %s"
 msgstr ""
 
 #. translators: %s: Template name
-#: src/Admin/MenuManager.php:250
+#: src/Admin/MenuManager.php:260
 #, php-format
 msgid "Edit site part: %s"
 msgstr ""
 
 #. translators: %s: Template name
-#: src/Admin/MenuManager.php:256
+#: src/Admin/MenuManager.php:266
 #, php-format
 msgid "Shared fields schema: %s"
 msgstr ""
 
 #. translators: %s: Template name
-#: src/Admin/MenuManager.php:262
+#: src/Admin/MenuManager.php:272
 #, php-format
 msgid "Shared content: %s"
 msgstr ""
 
 #. translators: %s: Data object type name
-#: src/Admin/MenuManager.php:276
+#: src/Admin/MenuManager.php:286
 #, php-format
 msgid "Edit collection: %s"
 msgstr ""
 
 #. translators: %s: Data object type name
-#: src/Admin/MenuManager.php:281
+#: src/Admin/MenuManager.php:291
 #, php-format
 msgid "Items in %s"
 msgstr ""
@@ -339,7 +342,7 @@ msgid "That template could not be found. Reload the page and try again."
 msgstr ""
 
 #: src/Ajax/Handlers/ExportBundle.php:39
-#: admin-assets/admin-export-import.js:153
+#: admin-assets/admin-export-import.js:157
 msgid "Choose at least one thing to export."
 msgstr ""
 
@@ -379,9 +382,29 @@ msgid "You do not have permission to browse that taxonomy."
 msgstr ""
 
 #. translators: 1: plugin name, 2: link to the author's website
-#: src/Core/HookManager.php:309
+#: src/Core/HookManager.php:311
 #, php-format
 msgid "%1$s by %2$s"
+msgstr ""
+
+#: src/Core/NotificationManager.php:163
+#: admin-assets/admin.js:1552
+msgid "Done:"
+msgstr ""
+
+#: src/Core/NotificationManager.php:164
+#: admin-assets/admin.js:1553
+msgid "Error:"
+msgstr ""
+
+#: src/Core/NotificationManager.php:165
+#: admin-assets/admin.js:1554
+msgid "Warning:"
+msgstr ""
+
+#: src/Core/NotificationManager.php:166
+#: admin-assets/admin.js:1555
+msgid "Note:"
 msgstr ""
 
 #. translators: %s: template file name
@@ -528,15 +551,15 @@ msgid "Not saved"
 msgstr ""
 
 #: src/ImportExport/BundleCatalog.php:142
-#: templates/data-validation-page.php:233
-#: admin-assets/admin-export-import.js:320
+#: templates/data-validation-page.php:238
+#: admin-assets/admin-export-import.js:326
 msgid "(no title)"
 msgstr ""
 
 #: src/ImportExport/BundleCatalog.php:268
 #: src/ImportExport/BundleCatalog.php:317
 #: templates/data-objects-page.php:48
-#: templates/edit-data-object-type-page.php:92
+#: templates/edit-data-object-type-page.php:90
 #: templates/edit-global-schema-page.php:18
 msgid "Schema"
 msgstr ""
@@ -548,9 +571,9 @@ msgid "schema"
 msgstr ""
 
 #: src/ImportExport/BundleCatalog.php:269
-#: src/PostEditor/MetaBox.php:274
-#: templates/admin-page.php:235
-#: templates/admin-page.php:277
+#: src/PostEditor/MetaBox.php:283
+#: templates/admin-page.php:241
+#: templates/admin-page.php:291
 msgid "Shared fields"
 msgstr ""
 
@@ -564,8 +587,8 @@ msgstr ""
 
 #: src/ImportExport/BundleCatalog.php:271
 #: src/ImportExport/BundleCatalog.php:326
-#: templates/admin-page.php:330
-#: templates/admin-page.php:352
+#: templates/admin-page.php:351
+#: templates/admin-page.php:377
 #: templates/manage-data-object-entries-page.php:117
 msgid "Content"
 msgstr ""
@@ -594,7 +617,7 @@ msgstr[1] ""
 #. translators: %d: number of items in the list
 #. translators: %d: number of posts
 #: src/ImportExport/BundleCatalog.php:406
-#: admin-assets/admin-export-import.js:331
+#: admin-assets/admin-export-import.js:337
 #, php-format,js-format
 msgid "%d item"
 msgid_plural "%d items"
@@ -603,8 +626,8 @@ msgstr[1] ""
 
 #. translators: %d: number of fields
 #: src/ImportExport/BundleCatalog.php:520
-#: templates/admin-page.php:35
-#: templates/admin-page.php:169
+#: templates/admin-page.php:36
+#: templates/admin-page.php:174
 #, php-format
 msgid "%d field"
 msgid_plural "%d fields"
@@ -754,56 +777,60 @@ msgid "The schema for %1$s was imported, but %2$s"
 msgstr ""
 
 #: src/PostEditor/MetaBox.php:112
-#: src/PostEditor/MetaBox.php:353
-#: templates/admin-page.php:229
-#: templates/admin-page.php:247
-#: templates/admin-page.php:328
-#: templates/admin-page.php:340
+#: src/PostEditor/MetaBox.php:372
+#: templates/admin-page.php:235
+#: templates/admin-page.php:253
+#: templates/admin-page.php:349
+#: templates/admin-page.php:361
 msgid "Custom fields"
 msgstr ""
 
 #. translators: %s: template file name
-#: src/PostEditor/MetaBox.php:157
+#: src/PostEditor/MetaBox.php:158
 #: templates/manage-template-global-data-page.php:22
 #, php-format
 msgid "Template: %s"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:159
-msgid "Fill in the fields below. Click Update to save them."
+#: src/PostEditor/MetaBox.php:162
+msgid "Fill in the fields below, then save."
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:166
+#: src/PostEditor/MetaBox.php:170
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:171
+#: src/PostEditor/MetaBox.php:176
 msgid "Export fields"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:177
+#: src/PostEditor/MetaBox.php:183
 msgid "Import fields"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:181
+#: src/PostEditor/MetaBox.php:188
 msgid "Empty all fields"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:276
+#: src/PostEditor/MetaBox.php:285
 msgid "These fields are the same on every page with this template. Edit them in one place."
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:277
+#: src/PostEditor/MetaBox.php:286
 msgid "Edit shared content"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:312
+#: src/PostEditor/MetaBox.php:323
 msgid "These details are the same on the whole website. Edit them in one place."
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:313
-#: templates/admin-page.php:186
+#: src/PostEditor/MetaBox.php:324
+#: templates/admin-page.php:191
 msgid "Edit site details"
+msgstr ""
+
+#: src/PostEditor/MetaBox.php:379
+msgid "Show or hide panel"
 msgstr ""
 
 #. translators: %s: block type name
@@ -812,53 +839,55 @@ msgstr ""
 msgid "Hide or show %s"
 msgstr ""
 
-#: src/Rendering/BlockItemRenderer.php:202
+#: src/Rendering/BlockItemRenderer.php:203
+#: src/Rendering/BlockItemRenderer.php:205
 msgid "Move up"
 msgstr ""
 
-#: src/Rendering/BlockItemRenderer.php:203
+#: src/Rendering/BlockItemRenderer.php:206
+#: src/Rendering/BlockItemRenderer.php:208
 msgid "Move down"
 msgstr ""
 
-#: src/Rendering/BlockItemRenderer.php:204
-#: src/Rendering/FieldRenderers/FileRenderer.php:81
-#: src/Rendering/FieldRenderers/ImageRenderer.php:33
-#: src/Rendering/FieldRenderers/ImageRenderer.php:53
-#: src/Rendering/MediaListRenderer.php:95
-#: src/Rendering/MediaListRenderer.php:117
-#: admin-assets/admin.js:497
-#: admin-assets/admin.js:554
-#: admin-assets/admin.js:599
-#: admin-assets/admin.js:962
+#: src/Rendering/BlockItemRenderer.php:211
+#: src/Rendering/FieldRenderers/FileRenderer.php:87
+#: src/Rendering/FieldRenderers/ImageRenderer.php:37
+#: src/Rendering/FieldRenderers/ImageRenderer.php:61
+#: src/Rendering/MediaListRenderer.php:96
+#: src/Rendering/MediaListRenderer.php:120
+#: admin-assets/admin.js:535
+#: admin-assets/admin.js:593
+#: admin-assets/admin.js:639
+#: admin-assets/admin.js:1014
 msgid "Remove"
 msgstr ""
 
-#: src/Rendering/FieldRenderer.php:210
+#: src/Rendering/FieldRenderer.php:212
 msgid "Shared value (all pages with this template)"
 msgstr ""
 
-#: src/Rendering/FieldRenderer.php:211
-#: templates/data-validation-page.php:300
+#: src/Rendering/FieldRenderer.php:215
+#: templates/data-validation-page.php:305
 #: templates/manage-data-object-entries-page.php:141
 msgid "Edit"
 msgstr ""
 
-#: src/Rendering/FieldRenderer.php:220
+#: src/Rendering/FieldRenderer.php:226
 msgid "This page only"
 msgstr ""
 
-#: src/Rendering/FieldRenderer.php:228
+#: src/Rendering/FieldRenderer.php:234
 msgid "Use the shared value on this page"
 msgstr ""
 
 #. translators: 1: field name, 2: type as written in the schema
-#: src/Rendering/FieldRenderer.php:405
+#: src/Rendering/FieldRenderer.php:412
 #, php-format
 msgid "The field \"%1$s\" has a type this plugin does not know: \"%2$s\". Nothing is shown for it, and whatever it already holds is left alone. An administrator can fix the type in the schema."
 msgstr ""
 
 #: src/Rendering/FieldRenderers/BlockRenderer.php:33
-#: admin-assets/admin.js:752
+#: admin-assets/admin.js:792
 msgid "Collapse all"
 msgstr ""
 
@@ -874,19 +903,19 @@ msgstr ""
 msgid "Choose a section type"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/BlockRenderer.php:133
+#: src/Rendering/FieldRenderers/BlockRenderer.php:135
 msgid "Add section"
 msgstr ""
 
 #: src/Rendering/FieldRenderers/DataObjectRenderer.php:28
 #: src/Rendering/FieldRenderers/DataObjectRenderer.php:126
-msgid "This field needs a list to choose from. Add object_type to the schema."
+msgid "This field needs a collection to choose from. Add object_type to the schema."
 msgstr ""
 
-#. translators: %s: data object type name
+#. translators: %s: collection short name
 #: src/Rendering/FieldRenderers/DataObjectRenderer.php:36
 #, php-format
-msgid "The list \"%s\" does not exist. Check the name in the schema."
+msgid "There is no collection with the short name \"%s\". Check the name in the schema."
 msgstr ""
 
 #. translators: %1$s is the data object type name, %2$s is the URL to manage entries
@@ -911,17 +940,17 @@ msgstr ""
 msgid "The list %s is empty"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/FileRenderer.php:67
-#: admin-assets/admin.js:574
+#: src/Rendering/FieldRenderers/FileRenderer.php:69
+#: admin-assets/admin.js:612
 msgid "Add files"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/FileRenderer.php:79
+#: src/Rendering/FieldRenderers/FileRenderer.php:83
 msgid "Choose file"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/ImageRenderer.php:31
-#: src/Rendering/FieldRenderers/ImageRenderer.php:51
+#: src/Rendering/FieldRenderers/ImageRenderer.php:33
+#: src/Rendering/FieldRenderers/ImageRenderer.php:57
 msgid "Choose image"
 msgstr ""
 
@@ -933,35 +962,35 @@ msgstr ""
 msgid "There are no categories or tags yet."
 msgstr ""
 
-#: src/Rendering/MediaListRenderer.php:51
-#: admin-assets/admin.js:619
+#: src/Rendering/MediaListRenderer.php:52
+#: admin-assets/admin.js:659
 msgid "Add images"
 msgstr ""
 
-#: src/Rendering/MediaListRenderer.php:53
+#: src/Rendering/MediaListRenderer.php:54
 msgid "Drag the images to change their order."
 msgstr ""
 
 #. translators: %s: attachment ID
-#: src/Rendering/MediaListRenderer.php:81
+#: src/Rendering/MediaListRenderer.php:82
 #, php-format
 msgid "Image %s is missing"
 msgstr ""
 
-#: src/Rendering/MediaListRenderer.php:87
-#: src/Rendering/MediaListRenderer.php:89
-#: admin-assets/admin.js:672
+#: src/Rendering/MediaListRenderer.php:88
+#: src/Rendering/MediaListRenderer.php:90
+#: admin-assets/admin.js:712
 msgid "Move earlier"
 msgstr ""
 
-#: src/Rendering/MediaListRenderer.php:91
-#: src/Rendering/MediaListRenderer.php:93
-#: admin-assets/admin.js:673
+#: src/Rendering/MediaListRenderer.php:92
+#: src/Rendering/MediaListRenderer.php:94
+#: admin-assets/admin.js:713
 msgid "Move later"
 msgstr ""
 
-#: src/Rendering/MediaListRenderer.php:97
-#: admin-assets/admin.js:674
+#: src/Rendering/MediaListRenderer.php:98
+#: admin-assets/admin.js:714
 msgid "Remove this image"
 msgstr ""
 
@@ -1139,272 +1168,218 @@ msgstr ""
 msgid "Inside \"%1$s\": %2$s"
 msgstr ""
 
-#: templates/admin-page.php:38
+#: templates/admin-page.php:39
 msgid "The schema has a mistake. Open it to fix it."
 msgstr ""
 
-#: templates/admin-page.php:38
+#: templates/admin-page.php:41
 msgid "Fix schema"
 msgstr ""
 
-#: templates/admin-page.php:40
+#: templates/admin-page.php:43
 msgid "No fields yet"
 msgstr ""
 
-#: templates/admin-page.php:58
+#: templates/admin-page.php:61
 msgid "On"
 msgstr ""
 
-#: templates/admin-page.php:59
+#: templates/admin-page.php:62
 msgid "Off"
 msgstr ""
 
 #. translators: %s: template name
-#: templates/admin-page.php:64
+#: templates/admin-page.php:67
 #, php-format
 msgid "Custom fields for %s"
 msgstr ""
 
 #. translators: 1: theme name, 2: what is missing, e.g. "page or post templates"
-#: templates/admin-page.php:79
+#: templates/admin-page.php:84
 #, php-format
 msgid "%1$s builds its pages out of blocks, and this plugin found no %2$s in it."
 msgstr ""
 
-#: templates/admin-page.php:84
+#: templates/admin-page.php:89
 msgid "Templates made in the Site Editor show up here once they are saved. Use Refresh templates after adding one."
 msgstr ""
 
 #. translators: 1: child theme name, 2: parent theme name, 3: what is missing
-#: templates/admin-page.php:92
+#: templates/admin-page.php:97
 #, php-format
 msgid "%1$s and the theme it builds on, %2$s, have no %3$s between them."
 msgstr ""
 
 #. translators: 1: theme name, 2: what is missing
-#: templates/admin-page.php:104
+#: templates/admin-page.php:109
 #, php-format
 msgid "%1$s has no %2$s."
 msgstr ""
 
-#: templates/admin-page.php:120
+#: templates/admin-page.php:125
 msgid "Custom fields for pages, posts and every part of the site."
 msgstr ""
 
-#: templates/admin-page.php:128
+#: templates/admin-page.php:133
 msgid "Get started in four steps"
 msgstr ""
 
-#: templates/admin-page.php:131
+#: templates/admin-page.php:136
 msgid "Turn on a template"
 msgstr ""
 
-#: templates/admin-page.php:132
+#: templates/admin-page.php:137
 msgid "Find a template in the tables below and switch it on."
 msgstr ""
 
-#: templates/admin-page.php:135
+#: templates/admin-page.php:140
 msgid "Create its schema"
 msgstr ""
 
-#: templates/admin-page.php:136
+#: templates/admin-page.php:141
 msgid "A schema is a short list of the fields a page gets, like a title or a photo. It is written in a simple text format. See the example at the bottom of this page."
 msgstr ""
 
-#: templates/admin-page.php:139
+#: templates/admin-page.php:144
 msgid "Fill in the content"
 msgstr ""
 
-#: templates/admin-page.php:140
+#: templates/admin-page.php:145
 msgid "The fields appear below the title on every page or post that uses the template. Writers only ever see this step."
 msgstr ""
 
-#: templates/admin-page.php:143
+#: templates/admin-page.php:148
 msgid "Show it in the theme"
 msgstr ""
 
-#: templates/admin-page.php:145
+#: templates/admin-page.php:150
 msgid "A field shows up on the website once the theme asks for it. That is one line per field, and the Copy code button next to each field copies the exact line."
 msgstr ""
 
-#: templates/admin-page.php:147
+#: templates/admin-page.php:152
 msgid "A block theme has no template file to edit, so put this in a Shortcode block instead:"
 msgstr ""
 
-#: templates/admin-page.php:153
+#: templates/admin-page.php:158
 msgid "Read the documentation"
 msgstr ""
 
-#: templates/admin-page.php:173
+#: templates/admin-page.php:178
 msgid "Not set up"
 msgstr ""
 
-#: templates/admin-page.php:178
+#: templates/admin-page.php:183
 msgid "Details used across the whole website, like a phone number or social links."
 msgstr ""
 
-#: templates/admin-page.php:179
+#: templates/admin-page.php:184
 msgid "Fill them in once and show them on any page."
 msgstr ""
 
-#: templates/admin-page.php:195
+#: templates/admin-page.php:200
 msgid "Create site details"
 msgstr ""
 
-#: templates/admin-page.php:197
+#: templates/admin-page.php:202
 msgid "Optional. Skip this if everything is different on each page."
 msgstr ""
 
-#: templates/admin-page.php:207
+#: templates/admin-page.php:213
 msgid "Page & post templates"
 msgstr ""
 
-#: templates/admin-page.php:209
+#: templates/admin-page.php:215
 msgid "These fields are filled in on each page or post, below the title."
 msgstr ""
 
-#: templates/admin-page.php:214
+#: templates/admin-page.php:220
 msgid "Refresh list"
 msgstr ""
 
-#: templates/admin-page.php:216
+#: templates/admin-page.php:222
 msgid "Refresh to see newly added templates."
 msgstr ""
 
-#: templates/admin-page.php:222
+#: templates/admin-page.php:228
 msgid "page or post templates"
 msgstr ""
 
-#: templates/admin-page.php:228
-#: templates/admin-page.php:243
-#: templates/admin-page.php:327
-#: templates/admin-page.php:336
-#: templates/export-data-page.php:197
+#: templates/admin-page.php:234
+#: templates/admin-page.php:249
+#: templates/admin-page.php:348
+#: templates/admin-page.php:357
+#: templates/export-data-page.php:200
 msgid "Template"
 msgstr ""
 
-#: templates/admin-page.php:231
-#: templates/admin-page.php:250
+#: templates/admin-page.php:237
+#: templates/admin-page.php:256
 msgid "Page fields"
 msgstr ""
 
-#: templates/admin-page.php:232
+#: templates/admin-page.php:238
 msgid "Different on each page"
 msgstr ""
 
-#: templates/admin-page.php:236
+#: templates/admin-page.php:242
 msgid "Same on every page with this template"
 msgstr ""
 
-#: templates/admin-page.php:254
-#: templates/admin-page.php:347
+#: templates/admin-page.php:264
+#: templates/admin-page.php:370
 msgid "Create schema"
 msgstr ""
 
-#: templates/admin-page.php:270
+#: templates/admin-page.php:281
 msgid "Use site details on these pages"
 msgstr ""
 
-#: templates/admin-page.php:272
+#: templates/admin-page.php:284
 msgid "These pages can read site details as their own fields, and show them in the editor. A page's own field of the same name wins."
 msgstr ""
 
-#: templates/admin-page.php:275
-#: templates/admin-page.php:350
+#: templates/admin-page.php:288
+#: templates/admin-page.php:374
 msgid "Switch on to add fields"
 msgstr ""
 
-#: templates/admin-page.php:283
-#: templates/admin-page.php:356
+#: templates/admin-page.php:299
+#: templates/admin-page.php:383
 #: templates/edit-schema-page.php:42
 msgid "Edit content"
 msgstr ""
 
-#: templates/admin-page.php:290
+#: templates/admin-page.php:307
 msgid "Optional"
 msgstr ""
 
-#: templates/admin-page.php:292
+#: templates/admin-page.php:310
 msgid "Add shared fields"
 msgstr ""
 
-#: templates/admin-page.php:310
+#: templates/admin-page.php:331
 msgid "Site parts & archive pages"
 msgstr ""
 
-#: templates/admin-page.php:312
+#: templates/admin-page.php:333
 msgid "Parts that repeat on many pages, like the header and footer, and pages that list posts. Their content is filled in once, here."
 msgstr ""
 
-#: templates/admin-page.php:318
+#: templates/admin-page.php:339
 msgid "site parts"
 msgstr ""
 
-#: templates/admin-page.php:320
+#: templates/admin-page.php:341
 msgid "To add one, put @ycf in a comment at the top of the template file, then refresh."
 msgstr ""
 
-#: templates/admin-page.php:329
-#: templates/admin-page.php:343
+#: templates/admin-page.php:350
+#: templates/admin-page.php:364
 msgid "Fields"
 msgstr ""
 
-#: templates/admin-page.php:359
+#: templates/admin-page.php:387
 msgid "Create the schema first."
-msgstr ""
-
-#: templates/admin-page.php:376
-msgid "Page caches"
-msgstr ""
-
-#: templates/admin-page.php:381
-msgid "Site details, shared content and site parts show on many pages at once. When they are saved, the plugin can clear the cache of every page that has fields, so a caching plugin shows the new content straight away."
-msgstr ""
-
-#: templates/admin-page.php:388
-msgid "Clear the cache of every page with fields when site-wide content is saved"
-msgstr ""
-
-#: templates/admin-page.php:392
-msgid "On a site with thousands of pages this makes each save slower. Untick it if saving is slow and the caching plugin is purged some other way."
-msgstr ""
-
-#: templates/admin-page.php:395
-#: templates/admin-page.php:425
-#: templates/admin-page.php:455
-msgid "Save this choice"
-msgstr ""
-
-#: templates/admin-page.php:406
-msgid "REST API"
-msgstr ""
-
-#: templates/admin-page.php:411
-msgid "Other software, such as a front end built in JavaScript or a mobile app, can read the site details and collections over the WordPress REST API. Each page's fields are readable wherever the page itself is."
-msgstr ""
-
-#: templates/admin-page.php:418
-msgid "Let anyone read the site details and collections, without logging in"
-msgstr ""
-
-#: templates/admin-page.php:422
-msgid "Every item of every collection becomes readable, including items no page shows, and every site detail, including ones no page shows. Leave it unticked if any of them should stay private. Unticked, reading them needs a logged-in user who can edit posts."
-msgstr ""
-
-#: templates/admin-page.php:436
-msgid "If this plugin is deleted"
-msgstr ""
-
-#: templates/admin-page.php:441
-msgid "Deleting the plugin removes the schemas, the site details, the collections, and the content filled into the fields on every page and post. Deactivating it changes nothing."
-msgstr ""
-
-#: templates/admin-page.php:448
-msgid "Keep the content if the plugin is deleted"
-msgstr ""
-
-#: templates/admin-page.php:452
-msgid "With this ticked, the content stays in the database and comes back if the plugin is installed again. Untick it to have everything removed."
 msgstr ""
 
 #: templates/data-objects-page.php:22
@@ -1424,13 +1399,13 @@ msgid "No collections yet. Click \"Add a collection\" to make the first one."
 msgstr ""
 
 #: templates/data-objects-page.php:45
-#: templates/edit-data-object-type-page.php:72
+#: templates/edit-data-object-type-page.php:70
 msgid "Collection name"
 msgstr ""
 
 #: templates/data-objects-page.php:46
-#: templates/edit-data-object-type-page.php:81
-#: templates/export-data-page.php:195
+#: templates/edit-data-object-type-page.php:79
+#: templates/export-data-page.php:198
 msgid "Short name"
 msgstr ""
 
@@ -1453,7 +1428,7 @@ msgid "Missing"
 msgstr ""
 
 #: templates/data-objects-page.php:77
-#: templates/edit-data-object-type-page.php:53
+#: templates/edit-data-object-type-page.php:51
 msgid "Edit items"
 msgstr ""
 
@@ -1590,7 +1565,7 @@ msgid "Issues"
 msgstr ""
 
 #: templates/data-validation-page.php:198
-#: templates/data-validation-page.php:263
+#: templates/data-validation-page.php:268
 msgid "OK"
 msgstr ""
 
@@ -1599,40 +1574,40 @@ msgid "No imported posts to check yet."
 msgstr ""
 
 #: templates/data-validation-page.php:211
-#: templates/export-data-page.php:196
+#: templates/export-data-page.php:199
 msgid "Type"
 msgstr ""
 
 #: templates/data-validation-page.php:212
-#: templates/export-data-page.php:194
+#: templates/export-data-page.php:197
 msgid "Title"
 msgstr ""
 
 #: templates/data-validation-page.php:213
-#: templates/export-data-page.php:198
+#: templates/export-data-page.php:201
 msgid "Status"
 msgstr ""
 
 #. translators: %d: post ID
-#: templates/data-validation-page.php:239
+#: templates/data-validation-page.php:244
 #, php-format
 msgid "ID: %d"
 msgstr ""
 
-#: templates/data-validation-page.php:246
+#: templates/data-validation-page.php:251
 msgid "No field for:"
 msgstr ""
 
-#: templates/data-validation-page.php:255
+#: templates/data-validation-page.php:260
 msgid "No schema for this template — not checked"
 msgstr ""
 
-#: templates/data-validation-page.php:260
+#: templates/data-validation-page.php:265
 msgid "Needs attention"
 msgstr ""
 
 #. translators: %d: number of missing attachments
-#: templates/data-validation-page.php:274
+#: templates/data-validation-page.php:279
 #, php-format
 msgid "%d missing"
 msgid_plural "%d missing"
@@ -1640,20 +1615,20 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: attachment ID
-#: templates/data-validation-page.php:286
+#: templates/data-validation-page.php:291
 #, php-format
 msgid "ID %d"
 msgstr ""
 
 #. translators: %d: number of stored values
-#: templates/data-validation-page.php:314
+#: templates/data-validation-page.php:320
 #, php-format
 msgid "Remove %d value with no field"
 msgid_plural "Remove %d values with no field"
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/data-validation-page.php:324
+#: templates/data-validation-page.php:330
 msgid "Only the pages listed on this page of results are touched."
 msgstr ""
 
@@ -1661,51 +1636,51 @@ msgstr ""
 msgid "The whole plugin explained in plain words"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:37
+#: templates/edit-data-object-type-page.php:35
 msgid "New collection"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:38
+#: templates/edit-data-object-type-page.php:36
 msgid "Choose the fields for this collection"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:48
+#: templates/edit-data-object-type-page.php:46
 #: templates/manage-data-object-entries-page.php:87
 msgid "Back to Collections"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:58
+#: templates/edit-data-object-type-page.php:56
 msgid "Short name:"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:60
+#: templates/edit-data-object-type-page.php:58
 msgid "The schema says which fields every item in this collection has. For example: a name, a logo and a website."
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:67
+#: templates/edit-data-object-type-page.php:65
 msgid "About this collection"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:76
+#: templates/edit-data-object-type-page.php:74
 msgid "For example: Team members, Partners, Locations."
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:85
+#: templates/edit-data-object-type-page.php:83
 msgid "Used in the schema and the theme. Lowercase letters and dashes only, like team-members. It cannot be changed later."
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:93
+#: templates/edit-data-object-type-page.php:91
 #: templates/edit-global-schema-page.php:46
 #: templates/edit-schema-page.php:55
 #: templates/edit-template-global-schema-page.php:48
 msgid "Write the schema below:"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:99
+#: templates/edit-data-object-type-page.php:97
 msgid "Save collection"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:102
+#: templates/edit-data-object-type-page.php:100
 #: templates/edit-global-schema-page.php:55
 #: templates/edit-partial-page.php:64
 #: templates/edit-schema-page.php:64
@@ -1716,33 +1691,33 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:138
+#: templates/edit-data-object-type-page.php:136
 msgid "Use it on a page"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:139
+#: templates/edit-data-object-type-page.php:137
 msgid "To let a page pick an item from this collection, add this to the page's schema:"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:143
-#: templates/edit-data-object-type-page.php:161
-#: templates/edit-data-object-type-page.php:176
+#: templates/edit-data-object-type-page.php:141
+#: templates/edit-data-object-type-page.php:159
+#: templates/edit-data-object-type-page.php:174
 msgid "Copy"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:154
+#: templates/edit-data-object-type-page.php:152
 msgid "Show it on the website"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:155
+#: templates/edit-data-object-type-page.php:153
 msgid "To show items on the website, add this to the theme:"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:157
+#: templates/edit-data-object-type-page.php:155
 msgid "Show the chosen item"
 msgstr ""
 
-#: templates/edit-data-object-type-page.php:172
+#: templates/edit-data-object-type-page.php:170
 msgid "Show every item"
 msgstr ""
 
@@ -1829,133 +1804,133 @@ msgstr ""
 msgid "Back up the setup and content, or move it to another website"
 msgstr ""
 
-#: templates/export-data-page.php:86
+#: templates/export-data-page.php:87
 msgid "Good to know:"
 msgstr ""
 
-#: templates/export-data-page.php:87
+#: templates/export-data-page.php:88
 msgid "Images and files are not inside the export file, only links to them. Copy the media library to the other website too. Images and files that are missing there are left empty."
 msgstr ""
 
-#: templates/export-data-page.php:95
+#: templates/export-data-page.php:96
 msgid "Export"
 msgstr ""
 
-#: templates/export-data-page.php:99
+#: templates/export-data-page.php:100
 msgid "What to export"
 msgstr ""
 
-#: templates/export-data-page.php:100
+#: templates/export-data-page.php:101
 msgid "Choose pages and posts"
 msgstr ""
 
-#: templates/export-data-page.php:101
+#: templates/export-data-page.php:102
 msgid "Review"
 msgstr ""
 
-#: templates/export-data-page.php:108
+#: templates/export-data-page.php:109
 msgid "There is nothing to export yet. Create a schema first."
 msgstr ""
 
-#: templates/export-data-page.php:116
-#: admin-assets/admin-export-import.js:388
+#: templates/export-data-page.php:117
+#: admin-assets/admin-export-import.js:394
 msgid "Setup"
 msgstr ""
 
-#: templates/export-data-page.php:117
+#: templates/export-data-page.php:118
 msgid "Schemas, shared content and site details"
 msgstr ""
 
-#: templates/export-data-page.php:130
-#: admin-assets/admin-export-import.js:389
+#: templates/export-data-page.php:131
+#: admin-assets/admin-export-import.js:395
 msgid "Pages and posts"
 msgstr ""
 
-#: templates/export-data-page.php:131
+#: templates/export-data-page.php:132
 msgid "The fields filled in on each one, chosen in the next step"
 msgstr ""
 
-#: templates/export-data-page.php:140
+#: templates/export-data-page.php:141
 msgid "Collections and their items"
 msgstr ""
 
-#: templates/export-data-page.php:153
-#: templates/export-data-page.php:223
+#: templates/export-data-page.php:154
+#: templates/export-data-page.php:226
 msgid "Next"
 msgstr ""
 
-#: templates/export-data-page.php:161
+#: templates/export-data-page.php:164
 msgid "How should the other website find each page?"
 msgstr ""
 
-#: templates/export-data-page.php:164
+#: templates/export-data-page.php:167
 msgid "By web address"
 msgstr ""
 
-#: templates/export-data-page.php:165
+#: templates/export-data-page.php:168
 msgid "Best choice, works on any website"
 msgstr ""
 
-#: templates/export-data-page.php:169
+#: templates/export-data-page.php:172
 msgid "By post ID"
 msgstr ""
 
-#: templates/export-data-page.php:170
+#: templates/export-data-page.php:173
 msgid "Only for the same website"
 msgstr ""
 
-#: templates/export-data-page.php:176
+#: templates/export-data-page.php:179
 msgid "Loading pages and posts…"
 msgstr ""
 
-#: templates/export-data-page.php:182
-#: templates/export-data-page.php:193
+#: templates/export-data-page.php:185
+#: templates/export-data-page.php:196
 msgid "Select all on this page"
 msgstr ""
 
-#: templates/export-data-page.php:183
+#: templates/export-data-page.php:186
 msgid "Clear selection"
 msgstr ""
 
-#: templates/export-data-page.php:186
+#: templates/export-data-page.php:189
 msgid "selected"
 msgstr ""
 
-#: templates/export-data-page.php:199
+#: templates/export-data-page.php:202
 msgid "ID"
 msgstr ""
 
-#: templates/export-data-page.php:209
+#: templates/export-data-page.php:212
 msgid "Previous page"
 msgstr ""
 
-#: templates/export-data-page.php:211
+#: templates/export-data-page.php:214
 msgid "Next page"
 msgstr ""
 
-#: templates/export-data-page.php:218
+#: templates/export-data-page.php:221
 msgid "No pages or posts have field content yet."
 msgstr ""
 
-#: templates/export-data-page.php:222
-#: templates/export-data-page.php:232
+#: templates/export-data-page.php:225
+#: templates/export-data-page.php:235
 msgid "Back"
 msgstr ""
 
-#: templates/export-data-page.php:235
+#: templates/export-data-page.php:238
 msgid "Export file"
 msgstr ""
 
-#: templates/export-data-page.php:246
-#: admin-assets/admin-export-import.js:564
+#: templates/export-data-page.php:249
+#: admin-assets/admin-export-import.js:570
 msgid "Import"
 msgstr ""
 
-#: templates/export-data-page.php:248
+#: templates/export-data-page.php:251
 msgid "Choose an export file. Nothing is changed until the list below is confirmed."
 msgstr ""
 
-#: templates/export-data-page.php:268
+#: templates/export-data-page.php:271
 msgid "Result"
 msgstr ""
 
@@ -2127,20 +2102,78 @@ msgstr ""
 msgid "A note for whoever fills in the form. It holds no content."
 msgstr ""
 
-#: admin-assets/admin-export-import.js:30
-msgid "Problem:"
+#: templates/settings-page.php:24
+msgid "How the plugin behaves across the whole site"
 msgstr ""
 
-#: admin-assets/admin-export-import.js:55
-msgid "This file is not valid JSON."
+#: templates/settings-page.php:35
+msgid "Page caches"
+msgstr ""
+
+#: templates/settings-page.php:40
+msgid "Site details, shared content and site parts show on many pages at once. When they are saved, the plugin can clear the cache of every page that has fields, so a caching plugin shows the new content straight away."
+msgstr ""
+
+#: templates/settings-page.php:47
+msgid "Clear the cache of every page with fields when site-wide content is saved"
+msgstr ""
+
+#: templates/settings-page.php:51
+msgid "On a site with thousands of pages this makes each save slower. Untick it if saving is slow and the caching plugin is purged some other way."
+msgstr ""
+
+#: templates/settings-page.php:54
+#: templates/settings-page.php:84
+#: templates/settings-page.php:114
+msgid "Save this choice"
+msgstr ""
+
+#: templates/settings-page.php:65
+msgid "REST API"
+msgstr ""
+
+#: templates/settings-page.php:70
+msgid "Other software, such as a front end built in JavaScript or a mobile app, can read the site details and collections over the WordPress REST API. Each page's fields are readable wherever the page itself is."
+msgstr ""
+
+#: templates/settings-page.php:77
+msgid "Let anyone read the site details and collections, without logging in"
+msgstr ""
+
+#: templates/settings-page.php:81
+msgid "Every item of every collection becomes readable, including items no page shows, and every site detail, including ones no page shows. Leave it unticked if any of them should stay private. Unticked, reading them needs a logged-in user who can edit posts."
+msgstr ""
+
+#: templates/settings-page.php:95
+msgid "If this plugin is deleted"
+msgstr ""
+
+#: templates/settings-page.php:100
+msgid "Deleting the plugin removes the schemas, the site details, the collections, and the content filled into the fields on every page and post. Deactivating it changes nothing."
+msgstr ""
+
+#: templates/settings-page.php:107
+msgid "Keep the content if the plugin is deleted"
+msgstr ""
+
+#: templates/settings-page.php:111
+msgid "With this ticked, the content stays in the database and comes back if the plugin is installed again. Untick it to have everything removed."
+msgstr ""
+
+#: admin-assets/admin-export-import.js:30
+msgid "Working…"
 msgstr ""
 
 #: admin-assets/admin-export-import.js:59
+msgid "This file is not valid JSON."
+msgstr ""
+
+#: admin-assets/admin-export-import.js:63
 msgid "This file could not be read."
 msgstr ""
 
 #. translators: %d: number of setup pieces
-#: admin-assets/admin-export-import.js:193
+#: admin-assets/admin-export-import.js:198
 #, js-format
 msgid "%d setup item"
 msgid_plural "%d setup items"
@@ -2148,7 +2181,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of pages and posts
-#: admin-assets/admin-export-import.js:200
+#: admin-assets/admin-export-import.js:205
 #, js-format
 msgid "%d page or post"
 msgid_plural "%d pages and posts"
@@ -2156,93 +2189,93 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of collections
-#: admin-assets/admin-export-import.js:207
+#: admin-assets/admin-export-import.js:212
 #, js-format
 msgid "%d collection"
 msgid_plural "%d collections"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin-assets/admin-export-import.js:212
+#: admin-assets/admin-export-import.js:217
 msgid "This file will hold:"
 msgstr ""
 
-#: admin-assets/admin-export-import.js:214
+#: admin-assets/admin-export-import.js:219
 msgid "Nothing is selected."
 msgstr ""
 
-#: admin-assets/admin-export-import.js:247
+#: admin-assets/admin-export-import.js:252
 msgid "File saved."
 msgstr ""
 
-#: admin-assets/admin-export-import.js:253
+#: admin-assets/admin-export-import.js:258
 msgid "The export could not be built. Try again."
 msgstr ""
 
-#: admin-assets/admin-export-import.js:292
+#: admin-assets/admin-export-import.js:298
 msgid "The list could not be loaded. Reload the page to try again."
 msgstr ""
 
 #. translators: 1: current page, 2: total pages
-#: admin-assets/admin-export-import.js:336
+#: admin-assets/admin-export-import.js:342
 #, js-format
 msgid "Page %1$d of %2$d"
 msgstr ""
 
-#: admin-assets/admin-export-import.js:428
+#: admin-assets/admin-export-import.js:434
 msgid "The file could not be checked. Try again."
 msgstr ""
 
-#: admin-assets/admin-export-import.js:438
+#: admin-assets/admin-export-import.js:444
 msgid "not on this website"
 msgstr ""
 
-#: admin-assets/admin-export-import.js:441
+#: admin-assets/admin-export-import.js:447
 msgid "exists here - will overwrite"
 msgstr ""
 
-#: admin-assets/admin-export-import.js:443
+#: admin-assets/admin-export-import.js:449
 msgid "new"
 msgstr ""
 
 #. translators: %d: number of pieces that already exist here
-#: admin-assets/admin-export-import.js:476
+#: admin-assets/admin-export-import.js:482
 #, js-format
 msgid "%d already here"
 msgid_plural "%d already here"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin-assets/admin-export-import.js:482
+#: admin-assets/admin-export-import.js:488
 msgid "Show what is inside"
 msgstr ""
 
 #. translators: %d: number of things in the file
-#: admin-assets/admin-export-import.js:499
+#: admin-assets/admin-export-import.js:505
 #, js-format
 msgid "%d item in the file"
 msgid_plural "%d items in the file"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin-assets/admin-export-import.js:526
+#: admin-assets/admin-export-import.js:532
 msgid "This file holds nothing that can be imported."
 msgstr ""
 
 #. translators: %s: website the file came from
-#: admin-assets/admin-export-import.js:534
+#: admin-assets/admin-export-import.js:540
 #, js-format
 msgid "From %s"
 msgstr ""
 
 #. translators: %s: date the file was exported
-#: admin-assets/admin-export-import.js:538
+#: admin-assets/admin-export-import.js:544
 #, js-format
 msgid "exported %s"
 msgstr ""
 
 #. translators: %d: number of ticked things
-#: admin-assets/admin-export-import.js:567
+#: admin-assets/admin-export-import.js:573
 #, js-format
 msgid "Import %d selected"
 msgid_plural "Import %d selected"
@@ -2250,175 +2283,224 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of things that will be overwritten
-#: admin-assets/admin-export-import.js:573
+#: admin-assets/admin-export-import.js:579
 #, js-format
 msgid "%d will be overwritten"
 msgid_plural "%d will be overwritten"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin-assets/admin-export-import.js:592
+#: admin-assets/admin-export-import.js:598
 msgid "Some of these already exist on this website and will be replaced. Continue?"
 msgstr ""
 
-#: admin-assets/admin-export-import.js:622
+#: admin-assets/admin-export-import.js:628
 msgid "The import did not finish. Try again."
 msgstr ""
 
-#: admin-assets/admin-export-import.js:634
-msgid "Problems:"
-msgstr ""
+#. translators: %d: number of problems
+#: admin-assets/admin-export-import.js:645
+#, js-format
+msgid "%d thing needs a look:"
+msgid_plural "%d things need a look:"
+msgstr[0] ""
+msgstr[1] ""
 
-#: admin-assets/admin-export-import.js:643
+#: admin-assets/admin-export-import.js:663
 msgid "Check images and files"
 msgstr ""
 
-#: admin-assets/admin-page-init.js:55
+#: admin-assets/admin-page-init.js:44
 msgid "The list could not be refreshed. Please try again."
 msgstr ""
 
-#: admin-assets/admin-page-init.js:60
+#: admin-assets/admin-page-init.js:49
 msgid "Refreshing…"
 msgstr ""
 
+#: admin-assets/admin.js:121
+#: admin-assets/admin.js:173
+msgid "Not saved. Try again."
+msgstr ""
+
 #. translators: %s: template name
-#: admin-assets/admin.js:137
+#: admin-assets/admin.js:140
 #, js-format
 msgid "Could not change custom fields for %s. Please try again."
 msgstr ""
 
 #. translators: %s: template name
-#: admin-assets/admin.js:144
+#: admin-assets/admin.js:147
 #, js-format
 msgid "Custom fields turned off for %s. Existing content is kept."
 msgstr ""
 
 #. translators: %s: template name
-#: admin-assets/admin.js:147
+#: admin-assets/admin.js:150
 #, js-format
 msgid "Custom fields turned on for %s."
 msgstr ""
 
 #. translators: %s: template name
-#: admin-assets/admin.js:150
+#: admin-assets/admin.js:153
 #, js-format
 msgid "Custom fields turned on for %s. Next, create its schema."
 msgstr ""
 
 #: admin-assets/admin.js:155
+#: admin-assets/admin.js:195
+msgid "Saved"
+msgstr ""
+
+#: admin-assets/admin.js:158
 msgid "Could not reach the server. Check the connection and try again."
 msgstr ""
 
-#: admin-assets/admin.js:180
-msgid "Site details setting saved."
-msgstr ""
-
-#: admin-assets/admin.js:183
-#: admin-assets/admin.js:188
+#: admin-assets/admin.js:173
 msgid "This setting could not be saved. Please try again."
 msgstr ""
 
-#: admin-assets/admin.js:242
+#: admin-assets/admin.js:198
+msgid "Saved. These pages now use site details."
+msgstr ""
+
+#: admin-assets/admin.js:199
+msgid "Saved. These pages no longer use site details."
+msgstr ""
+
+#: admin-assets/admin.js:259
 msgid "Choose a section type first."
 msgstr ""
 
-#: admin-assets/admin.js:248
+#: admin-assets/admin.js:266
+msgid "Reload the page and try again."
+msgstr ""
+
+#: admin-assets/admin.js:266
 msgid "The schema for this screen could not be found. Reload the page and try again."
 msgstr ""
 
-#: admin-assets/admin.js:273
+#: admin-assets/admin.js:291
+#: admin-assets/admin.js:320
+msgid "Not added. Try again."
+msgstr ""
+
+#: admin-assets/admin.js:294
 msgid "The section could not be added."
 msgstr ""
 
-#: admin-assets/admin.js:290
+#. translators: %s: section type name
+#: admin-assets/admin.js:308
+#, js-format
+msgid "%s section added."
+msgstr ""
+
+#: admin-assets/admin.js:320
 msgid "The section could not be added. Try again."
 msgstr ""
 
-#: admin-assets/admin.js:337
-msgid "Section removed. Click Update to save the change."
+#: admin-assets/admin.js:375
+msgid "Section removed. Save to keep the change."
 msgstr ""
 
-#: admin-assets/admin.js:435
+#: admin-assets/admin.js:471
 msgid "Choose an image"
 msgstr ""
 
-#: admin-assets/admin.js:437
+#: admin-assets/admin.js:473
 msgid "Use this image"
 msgstr ""
 
-#: admin-assets/admin.js:515
+#: admin-assets/admin.js:552
 msgid "Choose a file"
 msgstr ""
 
-#: admin-assets/admin.js:517
+#: admin-assets/admin.js:554
 msgid "Use this file"
 msgstr ""
 
-#: admin-assets/admin.js:572
+#: admin-assets/admin.js:610
 msgid "Choose files"
 msgstr ""
 
-#: admin-assets/admin.js:617
+#: admin-assets/admin.js:657
 msgid "Choose images"
 msgstr ""
 
-#: admin-assets/admin.js:752
+#: admin-assets/admin.js:792
 msgid "Expand all"
 msgstr ""
 
-#: admin-assets/admin.js:823
+#: admin-assets/admin.js:863
 msgid "The search could not be finished. Try again."
 msgstr ""
 
-#: admin-assets/admin.js:841
+#: admin-assets/admin.js:881
+#: admin-assets/admin.js:886
 msgid "Nothing matched."
 msgstr ""
 
-#: admin-assets/admin.js:870
+#: admin-assets/admin.js:911
 msgid "More matches exist. Keep typing to narrow them down."
 msgstr ""
 
-#: admin-assets/admin.js:1063
-msgid "Click Update to save the change."
+#: admin-assets/admin.js:924
+#, js-format
+msgid "%d results shown. Keep typing to narrow them down."
 msgstr ""
 
-#: admin-assets/admin.js:1075
+#: admin-assets/admin.js:926
+#, js-format
+msgid "%d result."
+msgid_plural "%d results."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin-assets/admin.js:1116
+msgid "Removed. Save to keep the change."
+msgstr ""
+
+#: admin-assets/admin.js:1127
 msgid ""
 "This empties every field on this page. Shared fields and site details stay as they are.\n"
 "\n"
-"Click Update afterwards to save the change.\n"
+"Save afterwards to keep the change.\n"
 "\n"
 "Continue?"
 msgstr ""
 
-#: admin-assets/admin.js:1184
-msgid "All fields on this page are now empty. Click Update to save this change."
+#: admin-assets/admin.js:1235
+msgid "All fields on this page are now empty. Save to keep this change."
 msgstr ""
 
-#: admin-assets/admin.js:1358
-msgid "Notifications"
+#: admin-assets/admin.js:1388
+msgid "Changes not saved yet. Save to keep them."
 msgstr ""
 
-#: admin-assets/admin.js:1386
-msgid "Dismiss notification"
+#: admin-assets/admin.js:1585
+msgid "Dismiss this notice."
 msgstr ""
 
-#: admin-assets/admin.js:1513
+#: admin-assets/admin.js:1796
+msgid "Not copied"
+msgstr ""
+
+#: admin-assets/admin.js:1797
 msgid "Could not copy. Select the code and copy it by hand."
 msgstr ""
 
-#: admin-assets/admin.js:1531
+#: admin-assets/admin.js:1811
 msgid "Copied"
 msgstr ""
 
-#: admin-assets/admin.js:1558
+#: admin-assets/admin.js:1812
 msgid "Code copied. Paste it into the theme file."
 msgstr ""
 
-#: admin-assets/admin.js:1567
-msgid "This replaces all fields on this page with the file's content, and reloads the page: changes you have not saved yet are lost. Continue?"
+#: admin-assets/admin.js:1827
+msgid "This fills in this page's fields from the file. Fields the file does not mention keep their content. The page then reloads, so changes you have not saved yet are lost. Continue?"
 msgstr ""
 
-#: admin-assets/admin.js:1590
+#: admin-assets/admin.js:1852
 msgid "The import did not work. Please try again."
 msgstr ""

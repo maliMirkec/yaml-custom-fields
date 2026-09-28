@@ -150,17 +150,43 @@ class NotificationManager {
   }
 
   /**
+   * The word a screen reader says before a notice, naming its kind
+   *
+   * Colour and the icon show the kind to sighted users; these words are the
+   * same information for everyone else, so neither is the only signal.
+   *
+   * @param string $type success|error|warning|info
+   * @return string
+   */
+  public static function typeLabel($type) {
+    $labels = [
+      'success' => __('Done:', 'yaml-custom-fields'),
+      'error' => __('Error:', 'yaml-custom-fields'),
+      'warning' => __('Warning:', 'yaml-custom-fields'),
+      'info' => __('Note:', 'yaml-custom-fields'),
+    ];
+
+    return isset($labels[$type]) ? $labels[$type] : $labels['info'];
+  }
+
+  /**
    * Print one notice
+   *
+   * The one notice the plugin has, printed the same way from here and built
+   * the same way by YamlCF.notify() in admin.js: WordPress's own notice markup,
+   * an icon drawn by the stylesheet, and the kind spelled out for screen
+   * readers. No live-region role: markup that is on the page when it loads is
+   * not announced by one anyway. An error is focused on load by admin.js, so
+   * it is the first thing read.
    *
    * @param array $notice Notice from the queue
    */
   public function renderNotice($notice) {
     $type = in_array($notice['type'], self::TYPES, true) ? $notice['type'] : 'info';
-    // Errors interrupt screen readers; everything else is announced politely
-    $role = $type === 'error' ? 'alert' : 'status';
 
-    echo '<div class="notice notice-' . esc_attr($type) . ' is-dismissible yaml-cf-notice" role="' . esc_attr($role) . '">';
+    echo '<div class="notice notice-' . esc_attr($type) . ' is-dismissible yaml-cf-notice" data-notice-type="' . esc_attr($type) . '" tabindex="-1">';
     echo '<p>';
+    echo '<span class="screen-reader-text">' . esc_html(self::typeLabel($type)) . ' </span>';
     if ($notice['title'] !== '') {
       echo '<strong>' . esc_html($notice['title']) . '</strong> ';
     }

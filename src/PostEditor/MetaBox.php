@@ -66,19 +66,41 @@ class MetaBox {
     }
 
     $schemas = get_option('yaml_cf_schemas', []);
-    if (!isset($schemas[$template]) || empty($schemas[$template])) {
-      return null;
-    }
+    $schema = !empty($schemas[$template]) ? $this->parser->parse($schemas[$template]) : null;
+    $has_page_fields = is_array($schema) && isset($schema['fields']) && is_array($schema['fields']);
 
-    $schema = $this->parser->parse($schemas[$template]);
-    if (!$schema || !isset($schema['fields'])) {
-      return null;
+    // A template can have shared fields and no page fields of its own. The
+    // theme reads the shared values all the same, so the box is still shown:
+    // without it the writer never saw them, and there was nowhere to tick
+    // "Use the shared value on this page".
+    if (!$has_page_fields) {
+      if (!$this->templateHasSharedFields($template)) {
+        return null;
+      }
+      $schema = ['fields' => []];
     }
 
     // Normalize shorthand syntax (info boxes, section breaks)
     $schema['fields'] = $this->normalizer->normalizeAll($schema['fields']);
 
     return ['template' => $template, 'schema' => $schema];
+  }
+
+  /**
+   * Whether a template has a shared (template global) schema with fields
+   *
+   * @param string $template Template file name
+   * @return bool
+   */
+  private function templateHasSharedFields($template) {
+    $shared = get_option('yaml_cf_template_global_schemas', []);
+    if (!is_array($shared) || empty($shared[$template]) || !is_string($shared[$template])) {
+      return false;
+    }
+
+    $parsed = $this->parser->parse($shared[$template]);
+
+    return is_array($parsed) && !empty($parsed['fields']) && is_array($parsed['fields']);
   }
 
   /**
@@ -152,33 +174,40 @@ class MetaBox {
 
     echo '<div class="yaml-cf-meta-box-header">';
     echo '<div class="yaml-cf-meta-box-intro">';
-    echo '<span class="yaml-cf-template-chip"><span class="dashicons dashicons-layout" aria-hidden="true"></span>';
+    echo '<span class="yaml-cf-template-chip">';
+    \YamlCF\Helpers\Icons::render('templates');
     /* translators: %s: template file name */
     echo esc_html(sprintf(__('Template: %s', 'yaml-custom-fields'), $template));
     echo '</span>';
-    echo '<span class="yaml-cf-hint">' . esc_html__('Fill in the fields below. Click Update to save them.', 'yaml-custom-fields') . '</span>';
+    // Also where the box says it has changes that are not saved yet: the same
+    // line, so the page does not move when that appears
+    echo '<span class="yaml-cf-hint yaml-cf-status" data-slot="unsaved">' . esc_html__('Fill in the fields below, then save.', 'yaml-custom-fields') . '</span>';
     echo '</div>';
 
     echo '<div class="yaml-cf-meta-box-actions">';
     if (current_user_can('manage_options')) {
       echo '<a href="' . esc_url($edit_schema_url) . '" target="_blank" class="button button-small">';
-      echo '<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>' . esc_html__('Edit schema', 'yaml-custom-fields');
+      \YamlCF\Helpers\Icons::render('schema');
+      echo esc_html__('Edit schema', 'yaml-custom-fields');
       echo '<span class="screen-reader-text"> ' . esc_html__('(opens in a new tab)', 'yaml-custom-fields') . '</span>';
       echo '</a>';
     }
 
     echo '<a href="' . esc_url($export_url) . '" class="button button-small">';
-    echo '<span class="dashicons dashicons-download" aria-hidden="true"></span>' . esc_html__('Export fields', 'yaml-custom-fields');
+    \YamlCF\Helpers\Icons::render('export');
+    echo esc_html__('Export fields', 'yaml-custom-fields');
     echo '</a>';
 
     // Import: the button opens the hidden file input (handled by admin.js); a button also works with the keyboard
     echo '<input type="file" name="yaml_cf_import_file_hidden" accept=".json" id="yaml-cf-import-file-' . esc_attr($post->ID) . '" class="yaml-cf-hidden" data-post-id="' . esc_attr($post->ID) . '" data-nonce="' . esc_attr(wp_create_nonce('yaml_cf_import_post')) . '" tabindex="-1">';
     echo '<button type="button" class="button button-small yaml-cf-import-trigger" data-target="yaml-cf-import-file-' . esc_attr($post->ID) . '">';
-    echo '<span class="dashicons dashicons-upload" aria-hidden="true"></span>' . esc_html__('Import fields', 'yaml-custom-fields');
+    \YamlCF\Helpers\Icons::render('import');
+    echo esc_html__('Import fields', 'yaml-custom-fields');
     echo '</button>';
 
     echo '<a href="#" class="button button-small yaml-cf-reset-data" data-post-id="' . esc_attr($post->ID) . '">';
-    echo '<span class="dashicons dashicons-trash" aria-hidden="true"></span>' . esc_html__('Empty all fields', 'yaml-custom-fields');
+    \YamlCF\Helpers\Icons::render('empty');
+    echo esc_html__('Empty all fields', 'yaml-custom-fields');
     echo '</a>';
     echo '</div>';
     echo '</div>';
@@ -271,7 +300,9 @@ class MetaBox {
             $has_global_only_fields = true;
             echo '<div class="yaml-cf-template-global-only-fields">';
             echo '<div class="yaml-cf-section-intro">';
-            echo '<h3>' . esc_html__('Shared fields', 'yaml-custom-fields') . '</h3>';
+            echo '<h3>';
+            \YamlCF\Helpers\Icons::render('shared');
+            echo esc_html__('Shared fields', 'yaml-custom-fields') . '</h3>';
             echo '<p>';
             echo esc_html__('These fields are the same on every page with this template. Edit them in one place.', 'yaml-custom-fields');
             echo ' <a href="' . esc_url($manage_template_global_url) . '" target="_blank">' . esc_html__('Edit shared content', 'yaml-custom-fields') . '</a>';
@@ -307,7 +338,9 @@ class MetaBox {
 
           echo '<div class="yaml-cf-global-fields">';
           echo '<div class="yaml-cf-section-intro">';
-          echo '<h3>' . esc_html__('Site details', 'yaml-custom-fields') . '</h3>';
+          echo '<h3>';
+          \YamlCF\Helpers\Icons::render('site_details');
+          echo esc_html__('Site details', 'yaml-custom-fields') . '</h3>';
           echo '<p>';
           echo esc_html__('These details are the same on the whole website. Edit them in one place.', 'yaml-custom-fields');
           echo ' <a href="' . esc_url($manage_global_url) . '" target="_blank">' . esc_html__('Edit site details', 'yaml-custom-fields') . '</a>';
@@ -349,8 +382,27 @@ class MetaBox {
     // "#yaml-cf-meta-box > .inside > .yaml-cf-fields", so anything printed here
     // under a different name would look wrong and half of it would not work.
     // Only one of the two paths ever runs, so the id stays unique.
-    echo '<div id="yaml-cf-meta-box" class="yaml-cf-after-title postbox">';
-    echo '<h2 class="hndle"><span>' . esc_html__('Custom fields', 'yaml-custom-fields') . '</span></h2>';
+    //
+    // The header is the one core prints for its own boxes (do_meta_boxes()),
+    // show/hide button included. Without it the box could not be folded away
+    // in the classic editor at all. Core's postboxes.js already toggles every
+    // .postbox on the screen and saves which ones are closed for the user;
+    // postbox_classes() reads that back, so the box opens as it was left.
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    $screen_id = $screen ? $screen->id : $post->post_type;
+    $closed = function_exists('postbox_classes') && strpos(postbox_classes('yaml-cf-meta-box', $screen_id), 'closed') !== false;
+    $title = __('Custom fields', 'yaml-custom-fields');
+
+    echo '<div id="yaml-cf-meta-box" class="yaml-cf-after-title postbox' . ($closed ? ' closed' : '') . '" role="region" aria-label="' . esc_attr($title) . '">';
+    echo '<div class="postbox-header">';
+    echo '<h2 class="hndle" id="yaml-cf-meta-box-title">' . esc_html($title) . '</h2>';
+    echo '<div class="handle-actions hide-if-no-js">';
+    echo '<button type="button" class="handlediv" aria-expanded="' . ($closed ? 'false' : 'true') . '" aria-describedby="yaml-cf-meta-box-title">';
+    echo '<span class="screen-reader-text">' . esc_html__('Show or hide panel', 'yaml-custom-fields') . '</span>';
+    echo '<span class="toggle-indicator" aria-hidden="true"></span>';
+    echo '</button>';
+    echo '</div>';
+    echo '</div>';
     echo '<div class="inside">';
     $this->render($post);
     echo '</div>';

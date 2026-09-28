@@ -196,6 +196,7 @@ class AdminScreenSmokeTest extends WPTestCase {
 			'Collection editor' => ['data_object_controller', 'renderEdit', ['type_id' => self::COLLECTION]],
 			'Collection entries' => ['data_object_controller', 'renderEntries', ['type_id' => self::COLLECTION]],
 			'Export and import' => ['export_import_controller', 'render', []],
+			'Settings' => ['settings_controller', 'render', []],
 			'Documentation' => ['docs_controller', 'render', []],
 		];
 

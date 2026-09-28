@@ -67,14 +67,14 @@ class SiteSaveCacheClearingTest extends WPTestCase {
 	}
 
 	/**
-	 * Unticking the box on the main screen, on a site that never saved the
+	 * Unticking the box on the Settings screen, on a site that never saved the
 	 * choice. A plain false would not have been stored at all.
 	 */
 	public function testTheMainScreenCanSwitchItOff() {
 		$this->actingAs($this->createTestUser('administrator'));
 		$_POST = ['yaml_cf_clear_caches_nonce' => wp_create_nonce('yaml_cf_clear_caches')];
 
-		$saved = \YamlCF\Core\Plugin::getInstance()->get('template_schema_controller')->saveSubmittedChoices();
+		$saved = \YamlCF\Core\Plugin::getInstance()->get('settings_controller')->saveSubmittedChoices();
 		$_POST = [];
 		\YamlCF\Core\Plugin::getInstance()->get('notification_manager')->clear();
 

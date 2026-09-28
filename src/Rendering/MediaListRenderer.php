@@ -48,6 +48,7 @@ class MediaListRenderer {
 
     if (!$readonly) {
       echo '<button type="button" class="button yaml-cf-add-image-list-item" data-target-name="' . esc_attr($field_name) . '">';
+      \YamlCF\Helpers\Icons::render('gallery');
       echo esc_html__('Add images', 'yaml-custom-fields');
       echo '</button>';
       echo '<p class="yaml-cf-field-help">' . esc_html__('Drag the images to change their order.', 'yaml-custom-fields') . '</p>';
@@ -85,15 +86,15 @@ class MediaListRenderer {
     if (!$readonly) {
       echo '<span class="yaml-cf-image-list-actions">';
       echo '<button type="button" class="button button-small yaml-cf-move-image-earlier" title="' . esc_attr__('Move earlier', 'yaml-custom-fields') . '">';
-      echo '<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>';
+      \YamlCF\Helpers\Icons::render('back');
       echo '<span class="screen-reader-text">' . esc_html__('Move earlier', 'yaml-custom-fields') . '</span>';
       echo '</button>';
       echo '<button type="button" class="button button-small yaml-cf-move-image-later" title="' . esc_attr__('Move later', 'yaml-custom-fields') . '">';
-      echo '<span class="dashicons dashicons-arrow-right-alt2" aria-hidden="true"></span>';
+      \YamlCF\Helpers\Icons::render('next');
       echo '<span class="screen-reader-text">' . esc_html__('Move later', 'yaml-custom-fields') . '</span>';
       echo '</button>';
       echo '<button type="button" class="button button-small yaml-cf-remove-image-list-item" title="' . esc_attr__('Remove', 'yaml-custom-fields') . '">';
-      echo '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';
+      \YamlCF\Helpers\Icons::render('remove');
       echo '<span class="screen-reader-text">' . esc_html__('Remove this image', 'yaml-custom-fields') . '</span>';
       echo '</button>';
       echo '</span>';
@@ -114,7 +115,9 @@ class MediaListRenderer {
     echo '<input type="hidden" name="yaml_cf[' . esc_attr($field_name) . '][]" value="' . esc_attr($file_id) . '" />';
     $file_path = $file_id ? get_attached_file($file_id) : false;
     echo '<div class="yaml-cf-file-name">' . ($file_path ? esc_html(basename($file_path)) : '') . '</div>';
-    echo '<button type="button" class="button button-small yaml-cf-remove-file-list-item">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+    echo '<button type="button" class="button button-small yaml-cf-remove-file-list-item">';
+    \YamlCF\Helpers\Icons::render('remove');
+    echo esc_html__('Remove', 'yaml-custom-fields') . '</button>';
     echo '</div>';
   }
 }

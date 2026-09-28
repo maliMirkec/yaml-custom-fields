@@ -6,13 +6,14 @@
 (function ($) {
   'use strict';
 
-  const { __, sprintf } = wp.i18n;
+  const { __, _n, sprintf } = wp.i18n;
 
   const YamlCF = {
     hasMetaBoxChanges: false,
     originalMetaBoxData: {},
 
     init: function () {
+      this.initNotices();
       this.initBlockCounters();
       this.bindEvents();
       this.initMediaUploader();
@@ -112,10 +113,12 @@
         $row.toggleClass('is-enabled', isEnabled).toggleClass('is-disabled', !isEnabled);
       };
 
+      const $status = $checkbox.closest('td').find('.yaml-cf-status[data-slot="toggle"]');
+
       const revert = function (message) {
         $checkbox.prop('checked', !enabled);
         applyState(!enabled);
-        YamlCF.showMessage(message, 'error');
+        YamlCF.status($status, __('Not saved. Try again.', 'yaml-custom-fields'), 'error', message);
       };
 
       applyState(enabled);
@@ -149,7 +152,7 @@
             /* translators: %s: template name */
             message = sprintf(__('Custom fields turned on for %s. Next, create its schema.', 'yaml-custom-fields'), templateName);
           }
-          YamlCF.showMessage(message, 'success');
+          YamlCF.status($status, __('Saved', 'yaml-custom-fields'), 'success', message);
         },
         error: function () {
           revert(__('Could not reach the server. Check the connection and try again.', 'yaml-custom-fields'));
@@ -164,6 +167,13 @@
       const $checkbox = $(this);
       const template = $checkbox.data('template');
       const useGlobal = $checkbox.is(':checked');
+      const $status = $checkbox.closest('div').find('.yaml-cf-status[data-slot="site-details"]');
+      const notSaved = function () {
+        $checkbox.prop('checked', !useGlobal);
+        YamlCF.status($status, __('Not saved. Try again.', 'yaml-custom-fields'), 'error', __('This setting could not be saved. Please try again.', 'yaml-custom-fields'));
+      };
+
+      $checkbox.prop('disabled', true);
 
       $.ajax({
         url: yamlCF.ajax_url,
@@ -176,16 +186,22 @@
           use_global: useGlobal,
         },
         success: function (response) {
-          if (response.success) {
-            YamlCF.showMessage(__('Site details setting saved.', 'yaml-custom-fields'), 'success');
-          } else {
-            $checkbox.prop('checked', !useGlobal);
-            YamlCF.showMessage(__('This setting could not be saved. Please try again.', 'yaml-custom-fields'), 'error');
+          if (!response.success) {
+            notSaved();
+            return;
           }
+          YamlCF.status(
+            $status,
+            __('Saved', 'yaml-custom-fields'),
+            'success',
+            useGlobal
+              ? __('Saved. These pages now use site details.', 'yaml-custom-fields')
+              : __('Saved. These pages no longer use site details.', 'yaml-custom-fields')
+          );
         },
-        error: function () {
-          $checkbox.prop('checked', !useGlobal);
-          YamlCF.showMessage(__('This setting could not be saved. Please try again.', 'yaml-custom-fields'), 'error');
+        error: notSaved,
+        complete: function () {
+          $checkbox.prop('disabled', false);
         },
       });
     },
@@ -237,15 +253,17 @@
       const $container = $button.closest('.yaml-cf-block-container');
       const $select = $container.find('.yaml-cf-block-type-select');
       const blockType = $select.val();
+      const $status = $container.find('.yaml-cf-status[data-slot="add-section"]').last();
 
       if (!blockType) {
-        YamlCF.showMessage(__('Choose a section type first.', 'yaml-custom-fields'), 'warning');
+        YamlCF.status($status, __('Choose a section type first.', 'yaml-custom-fields'), 'warning');
+        $select.trigger('focus');
         return;
       }
 
       const source = yamlCF.schemaSource;
       if (!source || !source.source) {
-        YamlCF.showMessage(__('The schema for this screen could not be found. Reload the page and try again.', 'yaml-custom-fields'), 'error');
+        YamlCF.status($status, __('Reload the page and try again.', 'yaml-custom-fields'), 'error', __('The schema for this screen could not be found. Reload the page and try again.', 'yaml-custom-fields'));
         return;
       }
 
@@ -268,16 +286,28 @@
       })
         .done(function (response) {
           if (!response || !response.success) {
-            YamlCF.showMessage(
+            YamlCF.status(
+              $status,
+              __('Not added. Try again.', 'yaml-custom-fields'),
+              'error',
               (response && typeof response.data === 'string' && response.data) ||
-                __('The section could not be added.', 'yaml-custom-fields'),
-              'error'
+                __('The section could not be added.', 'yaml-custom-fields')
             );
             return;
           }
 
           const $item = $(response.data.html);
           $blockList.append($item);
+          YamlCF.clearStatus($status);
+
+          // The new section is where the writer continues: focus its header,
+          // and say what was added
+          $item.find('.yaml-cf-block-toggle').first().trigger('focus');
+          YamlCF.announce(
+            /* translators: %s: section type name */
+            sprintf(__('%s section added.', 'yaml-custom-fields'), $select.find('option:selected').text()),
+            ''
+          );
 
           // The index above only has to be unique on this page; the names are
           // numbered in order again so the saved list has no gaps
@@ -287,7 +317,7 @@
           YamlCF.initAddedBlock($item);
         })
         .fail(function () {
-          YamlCF.showMessage(__('The section could not be added. Try again.', 'yaml-custom-fields'), 'error');
+          YamlCF.status($status, __('Not added. Try again.', 'yaml-custom-fields'), 'error', __('The section could not be added. Try again.', 'yaml-custom-fields'));
         })
         .always(function () {
           $button.prop('disabled', false);
@@ -324,19 +354,25 @@
       e.preventDefault();
       e.stopPropagation();
 
-      $(this)
-        .closest('.yaml-cf-block-item')
-        .fadeOut(300, function () {
-          $(this).remove();
-          // Re-index remaining blocks
-          YamlCF.reindexBlocks();
-        });
+      const $item = $(this).closest('.yaml-cf-block-item');
+      const $container = $item.closest('.yaml-cf-block-container');
 
-      // Show notification to remind user to save
-      YamlCF.showMessage(
-        __("Section removed. Click Update to save the change.", 'yaml-custom-fields'),
-        'warning'
-      );
+      // Where focus goes once the section is gone: the next section, the one
+      // before, or the section type picker
+      const $next = $item.nextAll('.yaml-cf-block-item').first();
+      const $previous = $item.prevAll('.yaml-cf-block-item').first();
+      const $focusTarget = ($next.length ? $next : $previous).find('.yaml-cf-block-toggle').first();
+
+      $item.fadeOut(300, function () {
+        $item.remove();
+        YamlCF.reindexBlocks();
+        ($focusTarget.length ? $focusTarget : $container.find('.yaml-cf-block-type-select').first()).trigger('focus');
+        // Nothing is inserted into the page: the box itself says there are
+        // changes to save (see initFormChangeTracking)
+        $(document).trigger('yamlcf:changed');
+      });
+
+      YamlCF.announce(__('Section removed. Save to keep the change.', 'yaml-custom-fields'), '');
     },
 
     /**
@@ -494,8 +530,9 @@
                 type: 'button',
                 class: 'button yaml-cf-clear-media',
                 'data-target': targetId,
-                text: __('Remove', 'yaml-custom-fields'),
               })
+                .append(YamlCF.icon('remove'))
+                .append(document.createTextNode(__('Remove', 'yaml-custom-fields')))
             );
           }
         });
@@ -551,8 +588,9 @@
                 type: 'button',
                 class: 'button yaml-cf-clear-media',
                 'data-target': targetId,
-                text: __('Remove', 'yaml-custom-fields'),
               })
+                .append(YamlCF.icon('remove'))
+                .append(document.createTextNode(__('Remove', 'yaml-custom-fields')))
             );
           }
         });
@@ -596,8 +634,10 @@
             $('<button>', {
               type: 'button',
               class: 'button button-small yaml-cf-remove-file-list-item',
-              text: __('Remove', 'yaml-custom-fields'),
-            }).appendTo($item);
+            })
+              .append(YamlCF.icon('remove'))
+              .append(document.createTextNode(__('Remove', 'yaml-custom-fields')))
+              .appendTo($item);
             $list.append($item);
           });
         });
@@ -669,9 +709,9 @@
 
       const $actions = $('<span>', { class: 'yaml-cf-image-list-actions' });
       const buttons = [
-        ['yaml-cf-move-image-earlier', 'dashicons-arrow-left-alt2', __('Move earlier', 'yaml-custom-fields')],
-        ['yaml-cf-move-image-later', 'dashicons-arrow-right-alt2', __('Move later', 'yaml-custom-fields')],
-        ['yaml-cf-remove-image-list-item', 'dashicons-no-alt', __('Remove this image', 'yaml-custom-fields')],
+        ['yaml-cf-move-image-earlier', 'back', __('Move earlier', 'yaml-custom-fields')],
+        ['yaml-cf-move-image-later', 'next', __('Move later', 'yaml-custom-fields')],
+        ['yaml-cf-remove-image-list-item', 'remove', __('Remove this image', 'yaml-custom-fields')],
       ];
 
       buttons.forEach(function (spec) {
@@ -680,7 +720,7 @@
           class: 'button button-small ' + spec[0],
           title: spec[2],
         })
-          .append($('<span>', { class: 'dashicons ' + spec[1], 'aria-hidden': 'true' }))
+          .append(YamlCF.icon(spec[1]))
           .append($('<span>', { class: 'screen-reader-text', text: spec[2] }))
           .appendTo($actions);
       });
@@ -747,8 +787,11 @@
         .children('.yaml-cf-block-toggle')
         .attr('aria-expanded', collapse ? 'false' : 'true');
 
+      // Only the label and the icon change; the button keeps its shape
+      $button.attr('aria-pressed', collapse ? 'true' : 'false');
+      $button.children('.yaml-cf-icon').replaceWith(YamlCF.icon(collapse ? 'expand' : 'collapse'));
       $button
-        .attr('aria-pressed', collapse ? 'true' : 'false')
+        .children('.yaml-cf-collapse-all-label')
         .text(collapse ? __('Expand all', 'yaml-custom-fields') : __('Collapse all', 'yaml-custom-fields'));
     },
 
@@ -843,6 +886,7 @@
         );
         $results.removeAttr('hidden');
         $search.attr('aria-expanded', 'true');
+        YamlCF.announce(__('Nothing matched.', 'yaml-custom-fields'), '');
         return;
       }
 
@@ -874,6 +918,17 @@
 
       $results.removeAttr('hidden');
       $search.attr('aria-expanded', 'true');
+
+      // A list appearing under the box is only seen, so its size is also said
+      const count = response.data.results.length;
+      YamlCF.announce(
+        response.data.truncated
+          /* translators: %d: number of results shown */
+          ? sprintf(__('%d results shown. Keep typing to narrow them down.', 'yaml-custom-fields'), count)
+          /* translators: %d: number of results */
+          : sprintf(_n('%d result.', '%d results.', count, 'yaml-custom-fields'), count),
+        ''
+      );
     },
 
     /**
@@ -958,7 +1013,7 @@
       // The label is text from a term or a collection item, so it goes in as
       // text: built as markup, "R&D <team>" came out mangled or as tags.
       $('<button>', { type: 'button', class: 'yaml-cf-picker-remove' })
-        .append($('<span>', { class: 'dashicons dashicons-no-alt', 'aria-hidden': 'true' }))
+        .append(YamlCF.icon('remove'))
         .append($('<span>', { class: 'screen-reader-text', text: __('Remove', 'yaml-custom-fields') + ' ' + label }))
         .appendTo($chip);
 
@@ -1055,14 +1110,14 @@
         .find('.yaml-cf-file-name')
         .remove();
 
-      // Remove the clear button itself
+      // The button goes with the value it cleared, so focus moves to the
+      // field's choose button
+      const $wrapper = $button.closest('.yaml-cf-field');
       $button.remove();
+      $wrapper.find('.yaml-cf-upload-image, .yaml-cf-upload-file').first().trigger('focus');
 
-      // Show notification to remind user to save
-      YamlCF.showMessage(
-        __("Click Update to save the change.", 'yaml-custom-fields'),
-        'warning'
-      );
+      YamlCF.announce(__('Removed. Save to keep the change.', 'yaml-custom-fields'), '');
+      $(document).trigger('yamlcf:changed');
     },
 
     resetAllData: function (e) {
@@ -1072,7 +1127,7 @@
 
       if (
         !confirm(
-          '⚠️ ' + __('This empties every field on this page. Shared fields and site details stay as they are.\n\nClick Update afterwards to save the change.\n\nContinue?', 'yaml-custom-fields')
+          '⚠️ ' + __('This empties every field on this page. Shared fields and site details stay as they are.\n\nSave afterwards to keep the change.\n\nContinue?', 'yaml-custom-fields')
         )
       ) {
         return;
@@ -1180,10 +1235,8 @@
           }
         });
 
-      YamlCF.showMessage(
-        __('All fields on this page are now empty. Click Update to save this change.', 'yaml-custom-fields'),
-        'warning'
-      );
+      YamlCF.announce(__('All fields on this page are now empty. Save to keep this change.', 'yaml-custom-fields'), '');
+      $(document).trigger('yamlcf:changed');
     },
 
     initFormChangeTracking: function (config) {
@@ -1249,12 +1302,18 @@
         }
       }
 
-      // Show/hide indicator
+      // Unsaved changes are said in the form's own status line (next to its
+      // Save button, or in the Custom fields box's header), so the page does
+      // not move. Only called when the state flips, so it is said once. In the
+      // block editor too: its Save button lights up for any change to the
+      // post, and this line says the change was in the custom fields.
+      const $unsaved = $container.find('.yaml-cf-status[data-slot="unsaved"]').first();
+
       function toggleIndicator(show) {
         if (show) {
-          YamlCF.showMessage(config.message, 'warning', true);
+          YamlCF.status($unsaved, config.message, 'warning');
         } else {
-          YamlCF.hideMessage('warning');
+          YamlCF.clearStatus($unsaved);
         }
       }
 
@@ -1263,10 +1322,12 @@
         self[storageKey] = captureFormState();
       }, config.captureDelay || 1000);
 
-      // Watch for changes
+      // Watch for changes: typing, and things the script itself changes
+      // (a section removed, an image cleared, every field emptied)
       $container.on('input change', 'input, textarea, select', function () {
         checkFormChanges();
       });
+      $(document).off('yamlcf:changed.tracking').on('yamlcf:changed.tracking', checkFormChanges);
 
       // Clear changes flag on form submit and sync TinyMCE editors
       $(config.submitSelector).on('submit', function () {
@@ -1293,7 +1354,13 @@
         if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
           let wasSaving = false;
           wp.data.subscribe(function () {
-            const isSaving = wp.data.select('core/editor').isSavingPost();
+            // wp.data can be on a screen with no block editor (the classic
+            // editor, when another plugin loads it); there is no save to follow
+            const editorStore = wp.data.select('core/editor');
+            if (!editorStore || typeof editorStore.isSavingPost !== 'function') {
+              return;
+            }
+            const isSaving = editorStore.isSavingPost();
             if (!wasSaving && isSaving) {
               // Save is starting - sync TinyMCE editors
               if (typeof tinymce !== 'undefined') {
@@ -1321,7 +1388,7 @@
       this.initFormChangeTracking({
         container: '#yaml-cf-meta-box',
         fieldsSelector: '.yaml-cf-fields',
-        message: __('There are changes that are not saved yet.', 'yaml-custom-fields'),
+        message: __('Changes not saved yet. Save to keep them.', 'yaml-custom-fields'),
         submitSelector: 'form#post',
         storageKey: 'originalMetaBoxData',
         hasChangesKey: 'hasMetaBoxChanges',
@@ -1331,77 +1398,295 @@
     },
 
     /**
-     * Show instant feedback for an action on the current page (toast)
+     * Say how an action on the page went, right next to the control used
      *
-     * Page-load feedback (after a save or import) is shown as admin notices by
-     * YamlCF\Core\NotificationManager; toasts use the same colours and icons.
+     * For anything done without leaving the page: a switch saved, a section
+     * that could not be added, changes waiting to be saved. The text appears in
+     * a slot the page already keeps room for (.yaml-cf-status), so nothing
+     * moves, and it is announced to screen readers. A notice at the top of the
+     * page would push the whole screen down under the pointer.
+     *
+     * A slot that holds text of its own (a hint) gets that text back when the
+     * status is cleared.
+     *
+     * @param {jQuery} $slot The .yaml-cf-status element
+     * @param {string} text Short text to show, e.g. "Saved"
+     * @param {string} type success | error | warning | info
+     * @param {string} [spoken] Fuller text for screen readers (default: text)
+     */
+    status: function ($slot, text, type, spoken) {
+      type = YamlCF.noticeTypes.indexOf(type) !== -1 ? type : 'info';
+
+      if ($slot && $slot.length) {
+        if ($slot.data('default') === undefined) {
+          $slot.data('default', $slot.text());
+        }
+
+        // One "Saved" at a time: an older one elsewhere has done its job
+        if (type === 'success') {
+          $('.yaml-cf-status.is-success').not($slot).each(function () {
+            YamlCF.clearStatus($(this));
+          });
+        }
+
+        $slot
+          .removeClass('is-success is-error is-warning is-info')
+          .addClass('is-' + type)
+          .empty()
+          .append($('<span>', { 'class': 'screen-reader-text', text: YamlCF.noticeLabel(type) + ' ' }))
+          .append(document.createTextNode(text));
+      }
+
+      YamlCF.announce(spoken || text, type);
+    },
+
+    /**
+     * Empty a status slot again, or give it back its own text
+     *
+     * @param {jQuery} $slot The .yaml-cf-status element
+     */
+    clearStatus: function ($slot) {
+      if (!$slot || !$slot.length) {
+        return;
+      }
+      $slot.removeClass('is-success is-error is-warning is-info').text($slot.data('default') || '');
+    },
+
+    /**
+     * Tell the user something. The one way the plugin does it.
+     *
+     * Every message is the same notice WordPress uses, built the same way as
+     * the ones YamlCF\Core\NotificationManager prints after a save:
+     *
+     * - It sits in the page, under the heading (or inline, where asked), not
+     *   floating in a corner away from what it is about.
+     * - It stays until it is dismissed. Nothing disappears while it is read.
+     * - wp.a11y.speak() announces it, errors assertively and the rest politely,
+     *   with its kind ("Error:", "Warning:") spelled out, so colour and the
+     *   icon are never the only signal. The notice itself has no live-region
+     *   role, so nothing is read twice.
+     * - In the block editor it goes to the editor's own notice area.
      *
      * @param {string} message Text to show
      * @param {string} type success | error | warning | info
-     * @param {boolean} [persistent] Keep until dismissed (errors and warnings always are)
+     * @param {Object} [options]
+     * @param {string} [options.key] Replaces an earlier notice with this key (default: the message)
+     * @param {boolean} [options.once] Leave a notice with this key and text alone rather than repeat it
+     * @param {jQuery} [options.target] Show the notice here, inline, instead of under the page heading
+     * @return {jQuery|null} The notice, or null in the block editor
      */
-    showMessage: function (message, type, persistent) {
-      const icons = {
-        success: 'dashicons-yes-alt',
-        error: 'dashicons-dismiss',
-        warning: 'dashicons-warning',
-        info: 'dashicons-info',
-      };
-      type = icons[type] ? type : 'info';
-      const sticky = persistent || type === 'error' || type === 'warning';
+    notify: function (message, type, options) {
+      type = YamlCF.noticeTypes.indexOf(type) !== -1 ? type : 'info';
+      options = options || {};
+      const key = options.key || message;
 
-      let $container = $('#yaml-cf-notifications');
-      if (!$container.length) {
-        $container = $('<div>', {
-          id: 'yaml-cf-notifications',
-          role: 'region',
-          'aria-label': __('Notifications', 'yaml-custom-fields'),
+      if (YamlCF.inBlockEditor()) {
+        const id = 'yaml-cf-' + key;
+        const shown = wp.data.select('core/notices').getNotices().some(function (notice) {
+          return notice.id === id && notice.content === message;
         });
-        $('body').append($container);
+        if (!(options.once && shown)) {
+          wp.data.dispatch('core/notices').createNotice(type, message, { id: id, isDismissible: true });
+        }
+        return null;
       }
 
-      // One toast per message: replace an identical one instead of stacking duplicates
-      $container.find('.yaml-cf-toast').filter(function () {
-        return $(this).data('message') === message;
+      const inline = !!(options.target && options.target.length);
+      const $region = inline ? options.target : YamlCF.noticeRegion();
+      const $existing = $region.children('.yaml-cf-notice').filter(function () {
+        return $(this).attr('data-key') === key;
+      });
+
+      if (options.once && $existing.length && $existing.find('.yaml-cf-notice-text').text() === message) {
+        return $existing.first();
+      }
+      $existing.remove();
+
+      const $notice = YamlCF.buildNotice(message, type, !inline).attr('data-key', key);
+      $region.append($notice);
+      YamlCF.announce(message, type);
+
+      return $notice;
+    },
+
+    /**
+     * Take a notice away again, by the key it was shown with
+     *
+     * @param {string} key The notice's key
+     */
+    dismissNotice: function (key) {
+      if (YamlCF.inBlockEditor()) {
+        wp.data.dispatch('core/notices').removeNotice('yaml-cf-' + key);
+        return;
+      }
+
+      $('.yaml-cf-notice').filter(function () {
+        return $(this).attr('data-key') === key;
       }).remove();
+    },
 
-      const $toast = $('<div>', {
-        'class': 'yaml-cf-toast is-' + type,
-        role: type === 'error' ? 'alert' : 'status',
-      }).data('message', message);
+    noticeTypes: ['success', 'error', 'warning', 'info'],
 
-      const dismiss = function () {
-        $toast.addClass('is-leaving');
-        setTimeout(function () {
-          $toast.remove();
-        }, 200);
+    /**
+     * An icon, the way YamlCF\Helpers\Icons prints it on the server
+     *
+     * The names come from the same list (localised as yamlCF.icons), so a
+     * button drawn by the script has the icon the server gives the same button.
+     *
+     * @param {string} key What the icon stands for, e.g. 'remove'
+     * @return {jQuery}
+     */
+    icon: function (key) {
+      const icons = (window.yamlCF && yamlCF.icons) || {};
+      return $('<span>', {
+        'class': 'dashicons dashicons-' + (icons[key] || 'marker') + ' yaml-cf-icon',
+        'aria-hidden': 'true',
+      });
+    },
+
+    /**
+     * The words a screen reader says for a kind of notice (as NotificationManager::typeLabel())
+     *
+     * @param {string} type Notice type
+     * @return {string}
+     */
+    noticeLabel: function (type) {
+      const labels = {
+        success: __('Done:', 'yaml-custom-fields'),
+        error: __('Error:', 'yaml-custom-fields'),
+        warning: __('Warning:', 'yaml-custom-fields'),
+        info: __('Note:', 'yaml-custom-fields'),
       };
+      return labels[type] || labels.info;
+    },
 
-      $toast.append(
-        $('<span>', { 'class': 'dashicons ' + icons[type], 'aria-hidden': 'true' }),
-        $('<span>', { 'class': 'yaml-cf-toast-text', text: message }),
-        $('<button>', {
-          type: 'button',
-          'class': 'yaml-cf-toast-close',
-          'aria-label': __('Dismiss notification', 'yaml-custom-fields'),
-        }).append($('<span>', { 'class': 'dashicons dashicons-no-alt', 'aria-hidden': 'true' })).on('click', dismiss)
-      );
+    /**
+     * The same markup NotificationManager::renderNotice() prints
+     *
+     * The icon is drawn by the stylesheet from the notice type, for every notice
+     * alike, and hidden from screen readers; the label says the type instead.
+     *
+     * @param {string} message Text
+     * @param {string} type Notice type
+     * @param {boolean} dismissible Whether it gets a dismiss button
+     * @return {jQuery}
+     */
+    buildNotice: function (message, type, dismissible) {
+      const $notice = $('<div>', {
+        'class': 'notice notice-' + type + ' yaml-cf-notice' + (dismissible ? ' is-dismissible' : ' inline'),
+        'data-notice-type': type,
+        tabindex: '-1',
+      });
 
-      $container.append($toast);
+      $('<p>')
+        .append($('<span>', { 'class': 'screen-reader-text', text: YamlCF.noticeLabel(type) + ' ' }))
+        .append($('<span>', { 'class': 'yaml-cf-notice-text', text: message }))
+        .appendTo($notice);
 
-      if (!sticky) {
-        let timer = setTimeout(dismiss, 5000);
-        // Pause while the pointer or keyboard focus is on the toast
-        $toast.on('mouseenter focusin', function () {
-          clearTimeout(timer);
-        }).on('mouseleave focusout', function () {
-          timer = setTimeout(dismiss, 3000);
-        });
+      if (dismissible) {
+        $('<button>', { type: 'button', 'class': 'notice-dismiss' })
+          .append($('<span>', { 'class': 'screen-reader-text', text: __('Dismiss this notice.', 'yaml-custom-fields') }))
+          .appendTo($notice);
+      }
+
+      return $notice;
+    },
+
+    /**
+     * Where notices go: under the page heading, where WordPress puts its own
+     *
+     * @return {jQuery}
+     */
+    noticeRegion: function () {
+      let $region = $('#yaml-cf-notices');
+      if ($region.length) {
+        return $region;
+      }
+
+      $region = $('<div>', { id: 'yaml-cf-notices', 'class': 'yaml-cf-notices' });
+      const $headerEnd = $('#wpbody-content .wp-header-end').first();
+      if ($headerEnd.length) {
+        $region.insertAfter($headerEnd);
+      } else {
+        $region.prependTo($('#wpbody-content .wrap').first().length ? $('#wpbody-content .wrap').first() : $('#wpbody-content'));
+      }
+
+      return $region;
+    },
+
+    /**
+     * Say a message to screen reader users, as the notice shows it to everyone else
+     *
+     * @param {string} message Text
+     * @param {string} type Notice type, or '' to say the text alone
+     */
+    announce: function (message, type) {
+      if (!window.wp || !wp.a11y || !wp.a11y.speak) {
+        return;
+      }
+      const text = type ? YamlCF.noticeLabel(type) + ' ' + message : message;
+      wp.a11y.speak(text, type === 'error' ? 'assertive' : 'polite');
+    },
+
+    /**
+     * Whether this is the block editor, whose notices live in core/notices
+     *
+     * @return {boolean}
+     */
+    inBlockEditor: function () {
+      return document.body.classList.contains('block-editor-page') &&
+        !!(window.wp && wp.data && wp.data.select && wp.data.select('core/notices'));
+    },
+
+    /**
+     * Put keyboard focus somewhere sensible when a notice goes away
+     *
+     * Dismissing removes the button that had focus, which would drop the
+     * keyboard back at the top of the document.
+     *
+     * @param {jQuery} $notice The notice being dismissed
+     */
+    focusAfterNotice: function ($notice) {
+      if (!$notice.has(document.activeElement).length && !$notice.is(document.activeElement)) {
+        return;
+      }
+
+      const $next = $notice.nextAll('.yaml-cf-notice').first();
+      const $previous = $notice.prevAll('.yaml-cf-notice').first();
+      if ($next.length || $previous.length) {
+        ($next.length ? $next : $previous).find('.notice-dismiss').first().trigger('focus');
+        return;
+      }
+
+      const $heading = $('#wpbody-content .wrap h1').first();
+      if ($heading.length) {
+        $heading.attr('tabindex', '-1').trigger('focus');
       }
     },
 
-    hideMessage: function (type) {
-      $('#yaml-cf-notifications .yaml-cf-toast.is-' + type).remove();
+    /**
+     * Dismissing, and the notices a page arrives with
+     *
+     * An error the server reports after a save is focused, so it is the first
+     * thing read; the others sit right under the heading, where reading starts.
+     */
+    initNotices: function () {
+      $(document).off('click.yamlcf-notice').on('click.yamlcf-notice', '.yaml-cf-notice .notice-dismiss', function () {
+        const $notice = $(this).closest('.yaml-cf-notice');
+        YamlCF.focusAfterNotice($notice);
+        // WordPress removes the notices it printed itself; these are ours
+        if ($notice.is('[data-key]')) {
+          $notice.remove();
+        }
+      });
+
+      // After WordPress has moved its notices under the heading
+      setTimeout(function () {
+        if (document.activeElement && document.activeElement !== document.body) {
+          return;
+        }
+        $('.yaml-cf-notice.notice-error.is-dismissible').filter(':visible').first().trigger('focus');
+      }, 0);
     },
 
     showSnippetPopover: function (e) {
@@ -1510,52 +1795,30 @@
         document.execCommand('copy');
         YamlCF.showCopyFeedback($button);
       } catch (err) {
-        YamlCF.showMessage(__('Could not copy. Select the code and copy it by hand.', 'yaml-custom-fields'), 'error');
+        // Said on the button, like "Copied"; the code is in the popover to copy by hand
+        $button.find('.snippet-text').text(__('Not copied', 'yaml-custom-fields'));
+        YamlCF.announce(__('Could not copy. Select the code and copy it by hand.', 'yaml-custom-fields'), 'error');
       }
       $temp.remove();
     },
 
     showCopyFeedback: function ($button) {
-      // Remove existing tooltips
-      $('.yaml-cf-snippet-tooltip').remove();
+      // Feedback where the click was: the button says so for a moment, and a
+      // screen reader hears it. No notice for something this small.
+      const $label = $button.find('.snippet-text');
+      if (!$button.data('label')) {
+        $button.data('label', $label.text());
+      }
 
-      // Add visual feedback to button
       $button.addClass('copied');
-      setTimeout(function () {
+      $label.text(__('Copied', 'yaml-custom-fields'));
+      YamlCF.announce(__('Code copied. Paste it into the theme file.', 'yaml-custom-fields'), '');
+
+      clearTimeout($button.data('copyTimer'));
+      $button.data('copyTimer', setTimeout(function () {
         $button.removeClass('copied');
-      }, 2000);
-
-      // Create success tooltip
-      const $tooltip = $('<div>', {
-        class: 'yaml-cf-snippet-tooltip',
-        text: __('Copied', 'yaml-custom-fields'),
-      });
-
-      // Position tooltip
-      const buttonOffset = $button.offset();
-      const buttonHeight = $button.outerHeight();
-      const buttonWidth = $button.outerWidth();
-
-      $('body').append($tooltip);
-
-      const tooltipWidth = $tooltip.outerWidth();
-      const tooltipLeft = buttonOffset.left - tooltipWidth / 2 + buttonWidth / 2;
-      const tooltipTop = buttonOffset.top + buttonHeight + 8;
-
-      $tooltip.css({
-        left: tooltipLeft + 'px',
-        top: tooltipTop + 'px',
-      });
-
-      // Auto-hide tooltip
-      setTimeout(function () {
-        $tooltip.fadeOut(300, function () {
-          $(this).remove();
-        });
-      }, 2000);
-
-      // Show success message
-      YamlCF.showMessage(__('Code copied. Paste it into the theme file.', 'yaml-custom-fields'), 'success');
+        $label.text($button.data('label'));
+      }, 2000));
     },
 
     importPostData: function (e) {
@@ -1564,7 +1827,7 @@
 
       if (!file) return;
 
-      if (!confirm('⚠️ ' + __('This replaces all fields on this page with the file\'s content, and reloads the page: changes you have not saved yet are lost. Continue?', 'yaml-custom-fields'))) {
+      if (!confirm('⚠️ ' + __('This fills in this page\'s fields from the file. Fields the file does not mention keep their content. The page then reloads, so changes you have not saved yet are lost. Continue?', 'yaml-custom-fields'))) {
         $input.val('');
         return;
       }
@@ -1587,7 +1850,11 @@
           window.location.href = window.location.href.split('?')[0] + '?post=' + postId + '&action=edit&yaml_cf_imported=1';
         },
         error: function () {
-          YamlCF.showMessage(__('The import did not work. Please try again.', 'yaml-custom-fields'), 'error');
+          YamlCF.status(
+            $('#yaml-cf-meta-box .yaml-cf-status[data-slot="unsaved"]').first(),
+            __('The import did not work. Please try again.', 'yaml-custom-fields'),
+            'error'
+          );
           $input.val('');
         }
       });

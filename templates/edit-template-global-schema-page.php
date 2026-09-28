@@ -25,12 +25,12 @@ if (!defined('ABSPATH')) {
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-custom-fields')); ?>" class="button">
-          <span class="dashicons dashicons-arrow-left-alt2"></span>
+          <?php \YamlCF\Helpers\Icons::render('back'); ?>
           <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
         <?php if (!empty($template_global_schema)) : ?>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-template-global&template=' . rawurlencode($template))); ?>" class="button button-secondary yaml-cf-button-gap">
-          <span class="dashicons dashicons-edit"></span>
+          <?php \YamlCF\Helpers\Icons::render('edit'); ?>
           <?php esc_html_e('Shared content', 'yaml-custom-fields'); ?>
         </a>
         <?php endif; ?>

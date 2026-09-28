@@ -199,9 +199,16 @@ class BlockItemRenderer {
     echo '<span class="yaml-cf-block-summary">' . esc_html($summary) . '</span>';
     if (!$readonly) {
       echo '<span class="yaml-cf-block-actions">';
-      echo '<button type="button" class="button button-small yaml-cf-move-up" title="' . esc_attr__('Move up', 'yaml-custom-fields') . '"><span class="dashicons dashicons-arrow-up-alt"></span></button>';
-      echo '<button type="button" class="button button-small yaml-cf-move-down" title="' . esc_attr__('Move down', 'yaml-custom-fields') . '"><span class="dashicons dashicons-arrow-down-alt"></span></button>';
-      echo '<button type="button" class="button button-small yaml-cf-remove-block">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+      // Icon-only buttons: the words are there for screen readers, not only in a tooltip
+      echo '<button type="button" class="button button-small yaml-cf-move-up" title="' . esc_attr__('Move up', 'yaml-custom-fields') . '">';
+      \YamlCF\Helpers\Icons::render('move_up');
+      echo '<span class="screen-reader-text">' . esc_html__('Move up', 'yaml-custom-fields') . '</span></button>';
+      echo '<button type="button" class="button button-small yaml-cf-move-down" title="' . esc_attr__('Move down', 'yaml-custom-fields') . '">';
+      \YamlCF\Helpers\Icons::render('move_down');
+      echo '<span class="screen-reader-text">' . esc_html__('Move down', 'yaml-custom-fields') . '</span></button>';
+      echo '<button type="button" class="button button-small yaml-cf-remove-block">';
+      \YamlCF\Helpers\Icons::render('remove');
+      echo esc_html__('Remove', 'yaml-custom-fields') . '</button>';
       echo '</span>';
     }
     echo '</div>';

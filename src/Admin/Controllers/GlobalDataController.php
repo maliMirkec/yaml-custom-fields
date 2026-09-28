@@ -32,9 +32,6 @@ class GlobalDataController extends AdminController {
 
     $global_data = get_option('yaml_cf_global_data', []);
 
-    // Save results are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-
     // Localize the schema and which one it is, so that adding a section can ask
     // the server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem).
     //
@@ -46,11 +43,8 @@ class GlobalDataController extends AdminController {
       'schemaSource' => ['source' => 'global', 'key' => ''],
     ]);
 
-    // Pass messages and form tracking config to JavaScript
+    // Form tracking config for JavaScript; save results are queued notices
     $page_config = [];
-    if ($success_message) {
-      $page_config['successMessage'] = $success_message;
-    }
     $page_config['formTracking'] = [
       'enabled' => true,
       'container' => '#yaml-cf-global-data-form',

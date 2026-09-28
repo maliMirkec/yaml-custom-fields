@@ -54,6 +54,9 @@ abstract class AdminController {
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
       // Only an administrator is handed the token for administrator-only actions
       'adminNonce' => current_user_can('manage_options') ? wp_create_nonce('yaml_cf_admin_nonce') : '',
+      // This replaces the yamlCF object AssetManager printed, so it carries the
+      // icon list as well, or buttons drawn by the script would lose theirs
+      'icons' => \YamlCF\Helpers\Icons::MAP,
     ];
 
     $localized_data = array_merge($defaults, $data);

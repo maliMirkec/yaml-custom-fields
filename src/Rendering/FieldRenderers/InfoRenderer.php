@@ -24,7 +24,7 @@ class InfoRenderer extends BaseFieldRenderer implements BlockFieldRendererInterf
     }
 
     echo '<div class="yaml-cf-info-box">';
-    echo '<span class="dashicons dashicons-info"></span>';
+    \YamlCF\Helpers\Icons::render('status_info');
     echo '<div class="yaml-cf-info-content">';
     echo wp_kses_post(MarkdownParser::parse($info_text));
     echo '</div>';

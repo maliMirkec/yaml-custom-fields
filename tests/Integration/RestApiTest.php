@@ -379,11 +379,11 @@ class RestApiTest extends WPTestCase {
 	}
 
 	/**
-	 * The box on the main screen saves the choice, both ways
+	 * The box on the Settings screen saves the choice, both ways
 	 */
-	public function testTheMainScreenFormSavesTheChoice() {
+	public function testTheSettingsFormSavesTheChoice() {
 		$this->actingAs($this->createTestUser('administrator'));
-		$controller = \YamlCF\Core\Plugin::getInstance()->get('template_schema_controller');
+		$controller = \YamlCF\Core\Plugin::getInstance()->get('settings_controller');
 		delete_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION);
 
 		$_POST = ['yaml_cf_rest_access_nonce' => wp_create_nonce('yaml_cf_rest_access'), 'yaml_cf_rest_public_read' => '1'];

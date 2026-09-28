@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
  *   - GET /yaml-cf/v1/collections/<slug>, a page of a collection's items.
  *
  * **Reading the last two needs a logged-in user who can edit posts, unless an
- * administrator makes them public** on the plugin's main screen. That is how
+ * administrator makes them public** on the plugin's Settings screen. That is how
  * WordPress treats data it did not create itself: custom post types and
  * registered meta stay out of the API until somebody chooses to publish them.
  * Not everything in site details or a collection is shown on the website (an
@@ -55,7 +55,7 @@ class RestApi {
   const PUBLIC_READ_OPTION = 'yaml_cf_rest_public_read';
 
   /**
-   * The choice made on the plugin's main screen
+   * The choice made on the plugin's Settings screen
    *
    * @return bool
    */
@@ -334,7 +334,7 @@ class RestApi {
     /**
      * Whether site details and collections can be read without logging in.
      *
-     * Defaults to the choice on the plugin's main screen, which is off. When
+     * Defaults to the choice on the plugin's Settings screen, which is off. When
      * reading is not public, it needs a logged-in user who can edit posts.
      *
      * @param bool $public Whether reading is public.

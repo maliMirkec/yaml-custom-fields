@@ -81,8 +81,9 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
     </div>
     <hr class="wp-header-end">
 
-    <div class="yaml-cf-callout is-warning yaml-cf-spaced-bottom">
+    <div class="notice notice-warning inline yaml-cf-notice">
       <p>
+        <span class="screen-reader-text"><?php echo esc_html(\YamlCF\Core\NotificationManager::typeLabel('warning')); ?> </span>
         <strong><?php esc_html_e('Good to know:', 'yaml-custom-fields'); ?></strong>
         <?php esc_html_e('Images and files are not inside the export file, only links to them. Copy the media library to the other website too. Images and files that are missing there are left empty.', 'yaml-custom-fields'); ?>
       </p>
@@ -91,7 +92,7 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
     <!-- ================= Export ================= -->
     <section class="yaml-cf-card yaml-cf-card-wide" aria-labelledby="yaml-cf-export-title">
       <h2 id="yaml-cf-export-title">
-        <span class="dashicons dashicons-download" aria-hidden="true"></span>
+        <?php \YamlCF\Helpers\Icons::render('export'); ?>
         <?php esc_html_e('Export', 'yaml-custom-fields'); ?>
       </h2>
 
@@ -151,7 +152,9 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
         <div class="yaml-cf-wizard-actions">
           <button type="button" class="button button-primary" id="yaml-cf-step1-next">
             <?php esc_html_e('Next', 'yaml-custom-fields'); ?>
+            <?php \YamlCF\Helpers\Icons::render('next', 'is-after'); ?>
           </button>
+          <div id="yaml-cf-step1-message" class="yaml-cf-inline-message"></div>
         </div>
       </div>
 
@@ -219,8 +222,8 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
         </div>
 
         <div class="yaml-cf-wizard-actions">
-          <button type="button" class="button" data-wizard-back="1"><?php esc_html_e('Back', 'yaml-custom-fields'); ?></button>
-          <button type="button" class="button button-primary" id="yaml-cf-step2-next"><?php esc_html_e('Next', 'yaml-custom-fields'); ?></button>
+          <button type="button" class="button" data-wizard-back="1"><?php \YamlCF\Helpers\Icons::render('back'); ?><?php esc_html_e('Back', 'yaml-custom-fields'); ?></button>
+          <button type="button" class="button button-primary" id="yaml-cf-step2-next"><?php esc_html_e('Next', 'yaml-custom-fields'); ?><?php \YamlCF\Helpers\Icons::render('next', 'is-after'); ?></button>
         </div>
       </div>
 
@@ -229,12 +232,12 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
         <div class="yaml-cf-panel" id="yaml-cf-export-summary"></div>
 
         <div class="yaml-cf-wizard-actions">
-          <button type="button" class="button" id="yaml-cf-step3-back"><?php esc_html_e('Back', 'yaml-custom-fields'); ?></button>
+          <button type="button" class="button" id="yaml-cf-step3-back"><?php \YamlCF\Helpers\Icons::render('back'); ?><?php esc_html_e('Back', 'yaml-custom-fields'); ?></button>
           <button type="button" class="button button-primary" id="yaml-cf-do-export">
-            <span class="dashicons dashicons-download" aria-hidden="true"></span>
+            <?php \YamlCF\Helpers\Icons::render('export'); ?>
             <?php esc_html_e('Export file', 'yaml-custom-fields'); ?>
           </button>
-          <span id="yaml-cf-export-message" class="yaml-cf-inline-message"></span>
+          <div id="yaml-cf-export-message" class="yaml-cf-inline-message"></div>
         </div>
       </div>
     </section>
@@ -242,14 +245,14 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
     <!-- ================= Import ================= -->
     <section class="yaml-cf-card yaml-cf-card-wide" aria-labelledby="yaml-cf-import-title">
       <h2 id="yaml-cf-import-title">
-        <span class="dashicons dashicons-upload" aria-hidden="true"></span>
+        <?php \YamlCF\Helpers\Icons::render('import'); ?>
         <?php esc_html_e('Import', 'yaml-custom-fields'); ?>
       </h2>
       <p><?php esc_html_e('Choose an export file. Nothing is changed until the list below is confirmed.', 'yaml-custom-fields'); ?></p>
 
       <div class="yaml-cf-button-row">
         <input type="file" id="yaml-cf-bundle-file" accept=".json" class="yaml-cf-file-input">
-        <span id="yaml-cf-inspect-message" class="yaml-cf-inline-message"></span>
+        <div id="yaml-cf-inspect-message" class="yaml-cf-inline-message"></div>
       </div>
 
       <div id="yaml-cf-import-preview" class="yaml-cf-hidden yaml-cf-spaced-top">
@@ -260,7 +263,7 @@ $yaml_cf_export_branch = function ($group) use ($yaml_cf_export_row) {
         <div class="yaml-cf-wizard-actions">
           <button type="button" class="button button-primary" id="yaml-cf-do-import"></button>
           <span id="yaml-cf-overwrite-count" class="yaml-cf-overwrite-count"></span>
-          <span id="yaml-cf-import-message" class="yaml-cf-inline-message"></span>
+          <div id="yaml-cf-import-message" class="yaml-cf-inline-message"></div>
         </div>
       </div>
 

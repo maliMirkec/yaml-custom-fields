@@ -150,6 +150,16 @@ class MenuManager {
       [$this, 'renderDataValidationPage']
     );
 
+    // How the plugin behaves site-wide, with the other upkeep pages
+    add_submenu_page(
+      'yaml-custom-fields',
+      __('Settings', 'yaml-custom-fields'),
+      __('Settings', 'yaml-custom-fields'),
+      'manage_options',
+      'yaml-cf-settings',
+      [$this, 'renderSettingsPage']
+    );
+
     // Documentation (added last to appear at the bottom)
     add_submenu_page(
       'yaml-custom-fields',
@@ -355,6 +365,12 @@ class MenuManager {
   public function renderExportImportPage() {
     if (isset($this->controllers['export_import'])) {
       $this->controllers['export_import']->render();
+    }
+  }
+
+  public function renderSettingsPage() {
+    if (isset($this->controllers['settings'])) {
+      $this->controllers['settings']->render();
     }
   }
 

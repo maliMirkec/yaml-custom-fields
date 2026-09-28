@@ -9,9 +9,10 @@
 
   const { __ } = wp.i18n;
 
-  function showMessage(message, type, persistent) {
-    if (typeof YamlCF !== 'undefined' && YamlCF.showMessage) {
-      YamlCF.showMessage(message, type, persistent);
+  // Said beside the Refresh button, in place of its hint, so nothing moves
+  function refreshStatus(message) {
+    if (typeof YamlCF !== 'undefined' && YamlCF.status) {
+      YamlCF.status($('#yaml-cf-refresh-help'), message, 'error');
     }
   }
 
@@ -24,20 +25,8 @@
 
     var pageData = yamlCFPageInit;
 
-    // Display success message if provided
-    if (pageData.successMessage) {
-      showMessage(pageData.successMessage, 'success');
-    }
-
-    // Display error message if provided
-    if (pageData.errorMessage) {
-      showMessage(pageData.errorMessage, 'error', true);
-    }
-
-    // Display notification if provided (for admin page)
-    if (pageData.notification) {
-      showMessage(pageData.notification.message, pageData.notification.type);
-    }
+    // Save results arrive as notices printed by the server (NotificationManager),
+    // not through this data.
 
     // Initialize form change tracking if configured
     if (pageData.formTracking && pageData.formTracking.enabled) {
@@ -56,7 +45,7 @@
 
         // Disable button and show loading state
         $btn.prop('disabled', true).empty().append(
-          $('<span>').addClass('dashicons dashicons-update spin'),
+          YamlCF.icon('refresh').addClass('spin'),
           document.createTextNode(' ' + __('Refreshing…', 'yaml-custom-fields'))
         );
 
@@ -74,12 +63,12 @@
               window.location.reload();
             } else {
               $btn.prop('disabled', false).html(originalHtml);
-              showMessage(response.data || refreshFailed, 'error');
+              refreshStatus(response.data || refreshFailed);
             }
           },
           error: function() {
             $btn.prop('disabled', false).html(originalHtml);
-            showMessage(refreshFailed, 'error');
+            refreshStatus(refreshFailed);
           }
         });
       });

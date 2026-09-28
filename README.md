@@ -418,11 +418,11 @@ add_filter('yaml_cf_picker_threshold', function ($threshold, $type, $key) {
 
 **`yaml_cf_clear_post_caches_on_site_save`** — whether saving site details, shared
 content or a site part clears the cache of every page with fields (so a page-cache
-plugin purges them). Defaults to the choice on the plugin's main screen, which is on.
+plugin purges them). Defaults to the choice on the plugin's Settings screen, which is on.
 
 **`yaml_cf_rest_public_read`** — whether `GET /yaml-cf/v1/site-details` and
 `GET /yaml-cf/v1/collections/<slug>` can be read without logging in. Defaults to
-the REST API choice on the plugin's main screen, which is off; when it is off,
+the REST API choice on the plugin's Settings screen, which is off; when it is off,
 reading needs a user who can edit posts.
 
 **Actions** — `yaml_cf_template_cache_cleared` fires when the list of theme templates
@@ -452,7 +452,7 @@ Before 2.0.0 the box was printed on `edit_form_after_title`, which the block edi
 
 ### What happens to my data if I deactivate the plugin?
 
-Your data remains in the database. Only when you **delete** the plugin (not just deactivate) will it clean up all settings, schemas, and custom field data. To keep the field content even then, tick the option to keep it on the plugin's main screen before deleting.
+Your data remains in the database. Only when you **delete** the plugin (not just deactivate) will it clean up all settings, schemas, and custom field data. To keep the field content even then, tick the option to keep it on the plugin's Settings screen before deleting.
 
 ## Contributing
 

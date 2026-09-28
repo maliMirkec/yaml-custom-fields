@@ -159,7 +159,7 @@ class SnippetBuilder {
 
     echo '<span class="yaml-cf-snippet-wrapper">';
     echo '<button type="button" class="yaml-cf-copy-snippet" data-snippet="' . esc_attr($snippet) . '" data-popover="' . esc_attr($popover_id) . '">';
-    echo '<span class="dashicons dashicons-editor-code"></span>';
+    \YamlCF\Helpers\Icons::render('copy');
     echo '<span class="snippet-text">' . esc_html__('Copy code', 'yaml-custom-fields') . '</span>';
     echo '</button>';
     echo '<span class="yaml-cf-snippet-popover" id="' . esc_attr($popover_id) . '" role="tooltip">';

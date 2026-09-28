@@ -64,7 +64,9 @@ class FileRenderer extends BaseFieldRenderer implements BlockFieldRendererInterf
     }
     echo '</div>';
     if ($can_add) {
-      echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($field_name) . '">' . esc_html__('Add files', 'yaml-custom-fields') . '</button>';
+      echo '<button type="button" class="button yaml-cf-add-file-list-item" data-target-name="' . esc_attr($field_name) . '">';
+      \YamlCF\Helpers\Icons::render('file');
+      echo esc_html__('Add files', 'yaml-custom-fields') . '</button>';
     }
     echo '</div>';
   }
@@ -76,9 +78,13 @@ class FileRenderer extends BaseFieldRenderer implements BlockFieldRendererInterf
    */
   private function printButtons($field_id, $value) {
     echo '<div class="yaml-cf-media-buttons">';
-    echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">' . esc_html__('Choose file', 'yaml-custom-fields') . '</button>';
+    echo '<button type="button" class="button yaml-cf-upload-file" data-target="' . esc_attr($field_id) . '">';
+    \YamlCF\Helpers\Icons::render('file');
+    echo esc_html__('Choose file', 'yaml-custom-fields') . '</button>';
     if ($value) {
-      echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">' . esc_html__('Remove', 'yaml-custom-fields') . '</button>';
+      echo '<button type="button" class="button yaml-cf-clear-media" data-target="' . esc_attr($field_id) . '">';
+      \YamlCF\Helpers\Icons::render('remove');
+      echo esc_html__('Remove', 'yaml-custom-fields') . '</button>';
     }
     echo '</div>';
   }

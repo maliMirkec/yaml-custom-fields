@@ -28,14 +28,14 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type')); ?>" class="button button-primary">
-          <?php esc_html_e('Add a collection', 'yaml-custom-fields'); ?>
+          <?php \YamlCF\Helpers\Icons::render('add'); ?><?php esc_html_e('Add a collection', 'yaml-custom-fields'); ?>
         </a>
       </p>
       <p><?php esc_html_e('A collection holds items that are filled in once, like team members or partner companies. Pages can pick items from a collection.', 'yaml-custom-fields'); ?></p>
     </div>
 
   <?php if (empty($yaml_cf_data_object_types)) : ?>
-    <div class="notice notice-info inline">
+    <div class="notice notice-info inline yaml-cf-notice">
       <p><?php esc_html_e('No collections yet. Click "Add a collection" to make the first one.', 'yaml-custom-fields'); ?></p>
     </div>
   <?php else : ?>
@@ -63,7 +63,7 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
             <td><?php echo esc_html($yaml_cf_entry_count); ?></td>
             <td>
               <?php if ($yaml_cf_has_schema) : ?>
-                <span class="dashicons dashicons-yes-alt yaml-cf-checkmark"></span>
+                <?php \YamlCF\Helpers\Icons::render('status_success', 'yaml-cf-checkmark'); ?>
                 <?php esc_html_e('Ready', 'yaml-custom-fields'); ?>
               <?php else : ?>
                 <span class="yaml-cf-status-warn"><?php esc_html_e('Missing', 'yaml-custom-fields'); ?></span>
@@ -71,10 +71,10 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
             </td>
             <td>
               <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-edit-data-object-type&type_id=' . rawurlencode($yaml_cf_slug))); ?>" class="button">
-                <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
+                <?php \YamlCF\Helpers\Icons::render('schema'); ?><?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
               </a>
               <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_slug))); ?>" class="button">
-                <?php esc_html_e('Edit items', 'yaml-custom-fields'); ?>
+                <?php \YamlCF\Helpers\Icons::render('edit'); ?><?php esc_html_e('Edit items', 'yaml-custom-fields'); ?>
               </a>
               <form method="post" class="yaml-cf-inline-form" data-confirm="<?php
                 echo esc_attr(sprintf(
@@ -92,7 +92,7 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
                 <?php // One form per row: printed without wp_nonce_field()'s id, which would repeat on every row ?>
                 <input type="hidden" name="yaml_cf_delete_type_nonce" value="<?php echo esc_attr(wp_create_nonce('yaml_cf_delete_type')); ?>" />
                 <input type="hidden" name="type_slug" value="<?php echo esc_attr($yaml_cf_slug); ?>" />
-                <button type="submit" class="button button-link-delete"><?php esc_html_e('Delete', 'yaml-custom-fields'); ?></button>
+                <button type="submit" class="button button-link-delete"><?php \YamlCF\Helpers\Icons::render('delete'); ?><?php esc_html_e('Delete', 'yaml-custom-fields'); ?></button>
               </form>
             </td>
           </tr>

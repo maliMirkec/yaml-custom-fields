@@ -48,7 +48,7 @@ $yaml_cf_pagination = paginate_links([
     <div class="yaml-cf-validation-container">
     <!-- Summary Card -->
     <div class="card yaml-cf-card-wide">
-      <h2><?php esc_html_e('Summary', 'yaml-custom-fields'); ?></h2>
+      <h2><?php \YamlCF\Helpers\Icons::render('summary'); ?><?php esc_html_e('Summary', 'yaml-custom-fields'); ?></h2>
 
       <?php if ($total_pages > 1) : ?>
         <p class="description">
@@ -102,7 +102,7 @@ $yaml_cf_pagination = paginate_links([
       </div>
 
       <?php if ($total_orphaned_fields > 0) : ?>
-        <div class="notice notice-info inline">
+        <div class="notice notice-info inline yaml-cf-notice">
           <p>
             <?php
             echo esc_html(sprintf(
@@ -124,7 +124,7 @@ $yaml_cf_pagination = paginate_links([
       <?php endif; ?>
 
       <?php if ($posts_without_schema > 0) : ?>
-        <div class="notice notice-info inline">
+        <div class="notice notice-info inline yaml-cf-notice">
           <p>
             <?php
             echo esc_html(sprintf(
@@ -143,12 +143,12 @@ $yaml_cf_pagination = paginate_links([
       <?php endif; ?>
 
       <?php if ($posts_with_issues === 0) : ?>
-        <div class="notice notice-success inline">
+        <div class="notice notice-success inline yaml-cf-notice">
           <p><strong><?php esc_html_e('All good.', 'yaml-custom-fields'); ?></strong> <?php esc_html_e('Every image and file is in place.', 'yaml-custom-fields'); ?></p>
         </div>
       <?php else : ?>
-        <div class="notice notice-warning inline">
-          <p><strong><?php esc_html_e('Some images or files are missing.', 'yaml-custom-fields'); ?></strong> <?php
+        <div class="notice notice-warning inline yaml-cf-notice">
+          <p><span class="screen-reader-text"><?php echo esc_html(\YamlCF\Core\NotificationManager::typeLabel('warning')); ?> </span><strong><?php esc_html_e('Some images or files are missing.', 'yaml-custom-fields'); ?></strong> <?php
             echo esc_html(
               sprintf(
                 /* translators: %1$d: number of posts with issues, %2$d: total missing attachments */
@@ -170,7 +170,7 @@ $yaml_cf_pagination = paginate_links([
     <!-- Help Section -->
     <?php if ($posts_with_issues > 0) : ?>
       <div class="card yaml-cf-card-wide">
-        <h2><?php esc_html_e('How to fix missing images and files', 'yaml-custom-fields'); ?></h2>
+        <h2><?php \YamlCF\Helpers\Icons::render('status_info'); ?><?php esc_html_e('How to fix missing images and files', 'yaml-custom-fields'); ?></h2>
         <p><?php esc_html_e('This happens when content is imported from another website, but its images and files are not.', 'yaml-custom-fields'); ?></p>
         <ul class="yaml-cf-help-list">
           <li><?php esc_html_e('Open each post below and choose the image or file again.', 'yaml-custom-fields'); ?></li>
@@ -186,7 +186,7 @@ $yaml_cf_pagination = paginate_links([
       <?php wp_nonce_field('yaml_cf_remove_orphans', 'yaml_cf_remove_orphans_nonce'); ?>
     <div class="card yaml-cf-card-wide">
       <div class="yaml-cf-card-header">
-        <h2><?php esc_html_e('Posts', 'yaml-custom-fields'); ?></h2>
+        <h2><?php \YamlCF\Helpers\Icons::render('post'); ?><?php esc_html_e('Posts', 'yaml-custom-fields'); ?></h2>
         <div>
           <button type="button" class="button yaml-cf-filter-btn active" data-filter="all" aria-pressed="true">
             <?php esc_html_e('All', 'yaml-custom-fields'); ?> (<?php echo esc_html($page_posts); ?>)
@@ -201,7 +201,7 @@ $yaml_cf_pagination = paginate_links([
       </div>
 
       <?php if (empty($validation_results)) : ?>
-        <div class="notice notice-info inline">
+        <div class="notice notice-info inline yaml-cf-notice">
           <p><?php esc_html_e('No imported posts to check yet.', 'yaml-custom-fields'); ?></p>
         </div>
       <?php else : ?>
@@ -225,7 +225,12 @@ $yaml_cf_pagination = paginate_links([
               ?>
               <tr class="yaml-cf-validation-row" data-status="<?php echo $yaml_cf_has_issues ? 'issues' : 'healthy'; ?>">
                 <td>
-                  <span class="dashicons yaml-cf-type-icon <?php echo $yaml_cf_post->post_type === 'page' ? 'dashicons-admin-page' : 'dashicons-admin-post'; ?>"></span>
+                  <?php
+                  // The icon is the whole cell, so the type is also said in words
+                  \YamlCF\Helpers\Icons::render($yaml_cf_post->post_type === 'page' ? 'page_only' : 'post', 'yaml-cf-type-icon');
+                  $yaml_cf_type_object = get_post_type_object($yaml_cf_post->post_type);
+                  ?>
+                  <span class="screen-reader-text"><?php echo esc_html($yaml_cf_type_object ? $yaml_cf_type_object->labels->singular_name : $yaml_cf_post->post_type); ?></span>
                 </td>
                 <td>
                   <strong>
@@ -256,10 +261,10 @@ $yaml_cf_pagination = paginate_links([
                   <?php endif; ?>
 
                   <?php if ($yaml_cf_has_issues) : ?>
-                    <span class="dashicons dashicons-warning yaml-cf-status-bad"></span>
+                    <?php \YamlCF\Helpers\Icons::render('status_warning', 'yaml-cf-status-bad'); ?>
                     <span class="yaml-cf-status-bad"><?php esc_html_e('Needs attention', 'yaml-custom-fields'); ?></span>
                   <?php else : ?>
-                    <span class="dashicons dashicons-yes-alt yaml-cf-status-good"></span>
+                    <?php \YamlCF\Helpers\Icons::render('status_success', 'yaml-cf-status-good'); ?>
                     <span class="yaml-cf-status-good"><?php esc_html_e('OK', 'yaml-custom-fields'); ?></span>
                   <?php endif; ?>
                 </td>
@@ -297,7 +302,7 @@ $yaml_cf_pagination = paginate_links([
                   <a href="<?php echo esc_url(get_edit_post_link($yaml_cf_post->ID)); ?>"
                      class="button button-small"
                      target="_blank">
-                    <?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
+                    <?php \YamlCF\Helpers\Icons::render('edit'); ?><?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
                   </a>
                 </td>
               </tr>
@@ -308,6 +313,7 @@ $yaml_cf_pagination = paginate_links([
         <?php if ($total_orphaned_fields > 0) : ?>
           <p class="yaml-cf-orphans-actions">
             <button type="submit" class="button">
+              <?php \YamlCF\Helpers\Icons::render('delete'); ?>
               <?php
               echo esc_html(sprintf(
                 /* translators: %d: number of stored values */

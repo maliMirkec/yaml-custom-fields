@@ -141,7 +141,7 @@ class PickerRenderer {
     echo '<span class="yaml-cf-picker-chip-label">' . esc_html($label) . '</span>';
     if (!$readonly) {
       echo '<button type="button" class="yaml-cf-picker-remove">';
-      echo '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';
+      \YamlCF\Helpers\Icons::render('remove');
       echo '<span class="screen-reader-text">';
       /* translators: %s: the chosen value's name */
       echo esc_html(sprintf(__('Remove %s', 'yaml-custom-fields'), $label));

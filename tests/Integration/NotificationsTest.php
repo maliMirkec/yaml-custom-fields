@@ -35,7 +35,11 @@ class NotificationsTest extends WPTestCase {
 
 		$this->assertSame(1, substr_count($html, 'notice-success'));
 		$this->assertStringContainsString('Saved &lt;b&gt;ok&lt;/b&gt;', $html);
-		$this->assertStringContainsString('role="alert"', $html);
+		// The kind is said in words, not only shown by colour and icon; a
+		// live-region role on markup present at page load would say nothing
+		$this->assertStringContainsString('<span class="screen-reader-text">Error: </span>', $html);
+		$this->assertStringContainsString('<span class="screen-reader-text">Done: </span>', $html);
+		$this->assertStringNotContainsString('role=', $html);
 		$this->assertStringContainsString('<strong>Not saved:</strong> Broken', $html);
 		$this->assertStringContainsString('<li>Line 3</li>', $html);
 		$this->assertSame('', $this->renderNotices(), 'Notices are shown only once');

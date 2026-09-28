@@ -25,15 +25,15 @@ class DataObjectRenderer extends BaseFieldRenderer implements BlockFieldRenderer
     $multiple = isset($field['multiple']) && $field['multiple'];
 
     if (empty($object_type)) {
-      echo '<p class="yaml-cf-status-bad">' . esc_html__('This field needs a list to choose from. Add object_type to the schema.', 'yaml-custom-fields') . '</p>';
+      $this->printSchemaProblem(__('This field needs a collection to choose from. Add object_type to the schema.', 'yaml-custom-fields'));
       return;
     }
 
     $data_types = get_option('yaml_cf_data_object_types', []);
 
     if (!isset($data_types[$object_type])) {
-      /* translators: %s: data object type name */
-      echo '<p class="yaml-cf-status-bad">' . sprintf(esc_html__('The list "%s" does not exist. Check the name in the schema.', 'yaml-custom-fields'), esc_html($object_type)) . '</p>';
+      /* translators: %s: collection short name */
+      $this->printSchemaProblem(sprintf(__('There is no collection with the short name "%s". Check the name in the schema.', 'yaml-custom-fields'), $object_type));
       return;
     }
 
@@ -123,7 +123,7 @@ class DataObjectRenderer extends BaseFieldRenderer implements BlockFieldRenderer
     $object_type = isset($options['object_type']) ? $options['object_type'] : '';
 
     if (empty($object_type)) {
-      echo '<p class="description yaml-cf-status-bad">' . esc_html__('This field needs a list to choose from. Add object_type to the schema.', 'yaml-custom-fields') . '</p>';
+      $this->printSchemaProblem(__('This field needs a collection to choose from. Add object_type to the schema.', 'yaml-custom-fields'));
       return;
     }
 
@@ -199,5 +199,17 @@ class DataObjectRenderer extends BaseFieldRenderer implements BlockFieldRenderer
       'readonly' => $readonly,
       'total' => $total,
     ]);
+  }
+
+  /**
+   * Say that the schema is set up wrong, as the plugin's other notices do
+   *
+   * @param string $message What is wrong
+   * @return void
+   */
+  private function printSchemaProblem($message) {
+    echo '<div class="notice notice-error inline yaml-cf-notice">';
+    echo '<p><span class="screen-reader-text">' . esc_html(\YamlCF\Core\NotificationManager::typeLabel('error')) . ' </span>' . esc_html($message) . '</p>';
+    echo '</div>';
   }
 }

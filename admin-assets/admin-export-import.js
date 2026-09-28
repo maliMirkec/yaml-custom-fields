@@ -22,15 +22,19 @@ jQuery(document).ready(function ($) {
     return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // Busy: a spinner, with words for screen readers. The result that follows
+  // is announced, so the wait is not silent and the end is not missed.
   function showSpinner($message) {
-    $message.empty().append($('<span>').addClass('spinner is-active yaml-cf-spinner-inline'));
+    $message.empty().append(
+      $('<span>').addClass('spinner is-active yaml-cf-spinner-inline'),
+      $('<span>').addClass('screen-reader-text').text(__('Working…', 'yaml-custom-fields'))
+    );
   }
 
+  // The result as the plugin's one notice, inline where the action was
   function showResult($message, success, text) {
-    const prefix = success ? '✓ ' : __('Problem:', 'yaml-custom-fields') + ' ';
-    $message.empty().append(
-      $('<span>').addClass(success ? 'yaml-cf-message-success' : 'yaml-cf-message-error').text(prefix + text)
-    );
+    $message.empty();
+    window.YamlCF.notify(String(text), success ? 'success' : 'error', { target: $message, key: $message.attr('id') });
   }
 
   // Hand the browser a file without a round trip through the server
@@ -150,9 +154,10 @@ jQuery(document).ready(function ($) {
 
   $('#yaml-cf-step1-next').on('click', function () {
     if (chosenItems().length === 0 && !wantsPosts()) {
-      window.YamlCF.showMessage(__('Choose at least one thing to export.', 'yaml-custom-fields'), 'warning');
+      window.YamlCF.notify(__('Choose at least one thing to export.', 'yaml-custom-fields'), 'warning', { target: $('#yaml-cf-step1-message'), key: 'yaml-cf-step1-message' });
       return;
     }
+    $('#yaml-cf-step1-message').empty();
 
     if (wantsPosts()) {
       if (!postsLoaded) {
@@ -261,7 +266,8 @@ jQuery(document).ready(function ($) {
   // ---------------------------------------------------------- posts table
 
   function showPostsError(message) {
-    $('#yaml-cf-posts-loading').empty().append($('<p>').addClass('yaml-cf-message-error').text(message)).show();
+    const $loading = $('#yaml-cf-posts-loading').empty().show();
+    window.YamlCF.notify(String(message), 'error', { target: $loading, key: 'posts-loading' });
   }
 
   function loadPosts(page) {
@@ -628,21 +634,36 @@ jQuery(document).ready(function ($) {
   });
 
   function renderImportResults(data) {
-    let html = '<p>' + escapeHtml(data.message) + '</p>';
+    // The outcome itself is the notice next to the Import button; this panel
+    // lists what went wrong, as a notice of the same kind, and what to do next.
+    const $content = $('#yaml-cf-import-results-content').empty();
 
     if (data.errors && data.errors.length) {
-      html += '<h4>' + escapeHtml(__('Problems:', 'yaml-custom-fields')) + '</h4><ul class="yaml-cf-error-list">';
+      const $problems = window.YamlCF.notify(
+        sprintf(
+          /* translators: %d: number of problems */
+          _n('%d thing needs a look:', '%d things need a look:', data.errors.length, 'yaml-custom-fields'),
+          data.errors.length
+        ),
+        'warning',
+        { target: $content, key: 'import-problems' }
+      );
+      const $list = $('<ul>').addClass('yaml-cf-notice-details');
       data.errors.forEach(function (error) {
-        html += '<li>' + escapeHtml(error) + '</li>';
+        $list.append($('<li>').text(String(error)));
       });
-      html += '</ul>';
+      $problems.append($list);
     }
 
-    html += '<p class="yaml-cf-spaced-top">';
-    html += '<a href="' + escapeAttr(yamlCF.admin_url + 'admin.php?page=yaml-cf-data-validation') + '" class="button">';
-    html += escapeHtml(__('Check images and files', 'yaml-custom-fields')) + '</a></p>';
+    $content.append(
+      $('<p>').addClass('yaml-cf-spaced-top').append(
+        $('<a>')
+          .attr('href', yamlCF.admin_url + 'admin.php?page=yaml-cf-data-validation')
+          .addClass('button')
+          .text(__('Check images and files', 'yaml-custom-fields'))
+      )
+    );
 
-    $('#yaml-cf-import-results-content').html(html);
     $('#yaml-cf-import-results').show();
   }
 });

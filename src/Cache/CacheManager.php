@@ -35,7 +35,7 @@ class CacheManager {
      * Whether saving site details, shared content or a site part clears the
      * cache of every page that has fields.
      *
-     * @param bool $enabled The choice made on the plugin's main screen.
+     * @param bool $enabled The choice made on the plugin's Settings screen.
      */
     return (bool) apply_filters('yaml_cf_clear_post_caches_on_site_save', $enabled);
   }

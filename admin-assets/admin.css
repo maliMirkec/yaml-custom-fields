@@ -533,13 +533,6 @@
   line-height: 22px;
 }
 
-.yaml-cf-image-list-actions .dashicons {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  line-height: 22px;
-}
-
 /* The gap a dragged tile leaves behind */
 .yaml-cf-image-list-placeholder-tile {
   height: 110px;
@@ -559,12 +552,6 @@
   display: flex;
   align-items: center;
   gap: 5px;
-}
-
-.yaml-cf-reset-data .dashicons {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
 }
 
 /* Object Fields */
@@ -619,13 +606,6 @@
   padding: 0 6px;
   min-height: 28px;
   line-height: 26px;
-}
-
-.yaml-cf-block-actions .dashicons {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
 }
 
 .yaml-cf-move-up,
@@ -879,12 +859,11 @@
   line-height: 1.2;
 }
 
-.yaml-cf-copy-snippet.copied {
-  color: #46b450;
-}
-
+/* "Copied": the button's own label says so, in the success notices' green
+   (the lighter green read at under 3:1 on white) */
+.yaml-cf-copy-snippet.copied,
 .yaml-cf-copy-snippet.copied .dashicons {
-  color: #46b450;
+  color: var(--ycf-mint-text);
 }
 
 /* Code Snippet Hover Popover */
@@ -945,46 +924,6 @@
   font-style: italic;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
-}
-
-/* Code Snippet Tooltip (for after copy) */
-.yaml-cf-snippet-tooltip {
-  position: absolute;
-  background: #46b450;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  z-index: 10001;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  animation: tooltipFadeIn 0.2s ease-out;
-}
-
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.yaml-cf-snippet-tooltip::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  margin-left: -5px;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 5px solid #46b450;
 }
 
 /* Responsive */
@@ -1532,10 +1471,6 @@
   margin-top: 10px;
 }
 
-.yaml-cf-inline-message {
-  margin-left: 15px;
-}
-
 .yaml-cf-file-input {
   margin-bottom: 10px;
 }
@@ -1562,23 +1497,6 @@
   border-radius: 4px;
 }
 
-/* Callout boxes (info / warning) */
-.yaml-cf-callout {
-  padding: 12px;
-  border-left: 4px solid #17a2b8;
-  background: #d1ecf1;
-}
-
-.yaml-cf-callout.is-warning {
-  border-left-color: #ffc107;
-  background: #fff3cd;
-}
-
-.yaml-cf-callout p,
-.yaml-cf-callout ul {
-  margin: 0;
-}
-
 /* Export page: match-by radios, pagination, results */
 .yaml-cf-radio-label {
   display: inline-flex;
@@ -1601,18 +1519,6 @@
 
 .yaml-cf-spinner-inline {
   float: none;
-}
-
-.yaml-cf-message-success {
-  color: #008a20;
-}
-
-.yaml-cf-message-error {
-  color: #d63638;
-}
-
-.yaml-cf-error-list {
-  color: #d63638;
 }
 
 .yaml-cf-debug-details {
@@ -1663,6 +1569,7 @@
 .yaml-cf-meta-box-header {
   margin-bottom: 15px;
   padding-bottom: 10px;
+  border-top: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
 }
 
@@ -1943,12 +1850,6 @@
   outline: 2px solid transparent;
 }
 
-.wp-core-ui .yaml-cf-admin-container .button-link.yaml-cf-link-button {
-  color: var(--ycf-purple-dark);
-  text-decoration: underline;
-  padding: 0 4px;
-}
-
 /* Hints and counters */
 .yaml-cf-hint {
   color: var(--ycf-muted);
@@ -2161,9 +2062,14 @@
   margin: 18px 0 0;
 }
 
-/* Dashboard tables */
+/* Dashboard tables
+ *
+ * Fixed layout: columns keep the widths set here rather than being measured
+ * from what is in them. Switching a template on or off changes a row's
+ * content, and with the automatic layout every column shifted each time. */
 .yaml-cf-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   background: #fff;
@@ -2206,8 +2112,17 @@
   background: #fcfbff;
 }
 
+.yaml-cf-col-template {
+  width: 26%;
+}
+
 .yaml-cf-col-toggle {
   width: 130px;
+}
+
+/* A fixed column does not grow for a long file name, so the name wraps */
+.yaml-cf-cell-template {
+  overflow-wrap: anywhere;
 }
 
 .yaml-cf-cell-template strong {
@@ -2229,16 +2144,37 @@
   color: var(--ycf-muted);
 }
 
-.yaml-cf-row.is-disabled .yaml-cf-when-enabled,
-.yaml-cf-row.is-enabled .yaml-cf-when-disabled {
-  display: none;
+/* Both states of a cell sit in the same spot, one on top of the other, and
+   only one is visible. The cell is as tall as the taller of the two whichever
+   is showing, so switching a row on or off moves nothing below it.
+   visibility: hidden also takes the hidden state out of the tab order and
+   away from screen readers. */
+.yaml-cf-states {
+  display: grid;
 }
 
+.yaml-cf-states > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.yaml-cf-row.is-disabled .yaml-cf-states > .yaml-cf-when-enabled,
+.yaml-cf-row.is-enabled .yaml-cf-states > .yaml-cf-when-disabled {
+  visibility: hidden;
+}
+
+/* A label ("Optional", "3 fields") with its buttons on the line below */
 .yaml-cf-cell-status {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.yaml-cf-cell-actions {
+  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* On/off switch */
@@ -2389,120 +2325,7 @@
   color: var(--ycf-muted);
 }
 
-/* Queued notices (NotificationManager) */
-.yaml-cf-notice .yaml-cf-notice-details {
-  margin: 0 0 10px 18px;
-  list-style: disc;
-}
-
-/* Toasts (instant feedback, YamlCF.showMessage) */
-#yaml-cf-notifications {
-  position: fixed;
-  top: 46px;
-  right: 20px;
-  z-index: 999998;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: min(380px, calc(100vw - 40px));
-  max-width: none;
-}
-
-.yaml-cf-toast {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 10px 12px 14px;
-  background: #fff;
-  color: #1d2327;
-  border-radius: 10px;
-  border-left: 4px solid var(--ycf-indigo);
-  box-shadow: 0 8px 24px rgba(18, 18, 18, 0.14), 0 0 0 1px rgba(18, 18, 18, 0.06);
-  animation: yamlCfToastIn 0.2s ease-out;
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.yaml-cf-toast.is-leaving {
-  opacity: 0;
-  transform: translateX(8px);
-}
-
-.yaml-cf-toast > .dashicons {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.yaml-cf-toast-text {
-  flex: 1;
-  line-height: 1.5;
-}
-
-.yaml-cf-toast.is-success {
-  border-left-color: var(--ycf-mint);
-}
-
-.yaml-cf-toast.is-success > .dashicons {
-  color: #07875c;
-}
-
-.yaml-cf-toast.is-error {
-  border-left-color: #d63638;
-}
-
-.yaml-cf-toast.is-error > .dashicons {
-  color: #d63638;
-}
-
-.yaml-cf-toast.is-warning {
-  border-left-color: #dba617;
-}
-
-.yaml-cf-toast.is-warning > .dashicons {
-  color: #996800;
-}
-
-.yaml-cf-toast.is-info > .dashicons {
-  color: var(--ycf-purple);
-}
-
-.yaml-cf-toast-close {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: var(--ycf-muted);
-  cursor: pointer;
-}
-
-.yaml-cf-toast-close:hover {
-  background: #f0f0f1;
-  color: var(--ycf-ink);
-}
-
-.yaml-cf-toast-close:focus-visible {
-  box-shadow: var(--ycf-focus);
-  outline: 2px solid transparent;
-}
-
-@keyframes yamlCfToastIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .yaml-cf-toast,
   .yaml-cf-toggle-track,
   .yaml-cf-toggle-track::before,
   .yaml-cf-reference summary::after {
@@ -2555,12 +2378,6 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--ycf-muted);
-  }
-
-  #yaml-cf-notifications {
-    top: 56px;
-    right: 10px;
-    width: calc(100vw - 20px);
   }
 }
 
@@ -2738,7 +2555,6 @@
   padding: 0;
 }
 
-.yaml-cf-admin-container .yaml-cf-callout,
 .yaml-cf-admin-container .yaml-cf-panel,
 .yaml-cf-admin-container pre,
 .yaml-cf-admin-container .yaml-cf-code-editor,
@@ -2800,12 +2616,6 @@
   align-items: center;
   gap: 4px;
   border-radius: 6px;
-}
-
-.wp-core-ui .yaml-cf-meta-box-actions .button .dashicons {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
 }
 
 .wp-core-ui .yaml-cf-meta-box-actions .yaml-cf-reset-data {
@@ -3284,30 +3094,25 @@
   color: var(--ycf-ink);
 }
 
-/* The block heading carries its own rule; a section's sits on the intro block
+/* The heading row carries the rule, so it runs under the title and the
+   "Collapse all" button alike. A section's sits on the intro block instead,
    so it spans the description too. */
-.yaml-cf-block-heading {
+.yaml-cf-block-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding-bottom: 12px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--ycf-line);
-}
-
-/* The heading shares its row with "Collapse all" */
-.yaml-cf-block-heading-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .yaml-cf-block-heading-row .yaml-cf-block-heading {
   flex-grow: 1;
 }
 
-.yaml-cf-collapse-all {
+.wp-core-ui .yaml-cf-collapse-all {
   flex: 0 0 auto;
-  margin-bottom: 16px;
-  font-size: 13px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -3424,11 +3229,15 @@
 /* ---------------------------------------------------------------------------
  * The custom fields box in the post editor
  *
- * A real meta box, so core prints the header, the collapse toggle and the
- * open or closed state. Only the icon beside the title is ours.
+ * The header, the show/hide button and the open or closed state are core's
+ * (in the classic editor MetaBox::renderAfterTitle() prints the same markup).
+ * Only the icon beside the title is ours: the plugin's own icon, the one in
+ * the admin menu (Icons::MAP['plugin'], dashicons-forms), hidden from screen
+ * readers.
  * ------------------------------------------------------------------------ */
 #yaml-cf-meta-box .hndle::before {
-  content: '\f481';
+  content: '\f314';
+  content: '\f314' / '';
   font-family: dashicons;
   font-size: 20px;
   width: 20px;
@@ -3436,6 +3245,32 @@
   line-height: 1;
   margin-right: 8px;
   color: var(--ycf-purple);
+}
+
+/* Core lays the title out as a flex row with "space-between" (room for the
+   dashboard's Configure link), and the icon above is a flex item of its own:
+   the icon went to the far left and the title to the far right. */
+#yaml-cf-meta-box .hndle {
+  justify-content: flex-start;
+}
+
+/* The show/hide arrow. Core draws it only for boxes inside a
+   .meta-box-sortables area; in the classic editor this box is printed under
+   the title, outside one, so the button was there but its arrow was not.
+   The same glyphs as core: up when open, down when closed. */
+#yaml-cf-meta-box.yaml-cf-after-title .handlediv .toggle-indicator::before {
+  content: "\f142";
+  content: "\f142" / '';
+  display: inline-block;
+  font: normal 20px/1 dashicons;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-decoration: none;
+}
+
+#yaml-cf-meta-box.yaml-cf-after-title.closed .handlediv .toggle-indicator::before {
+  content: "\f140";
+  content: "\f140" / '';
 }
 
 /* ---------------------------------------------------------------------------
@@ -3686,73 +3521,253 @@
    Notices
    ==========================================================================
 
-   One look for every notice the plugin prints, so a saved-message and a note
-   about what was skipped read as the same kind of object.
+   The plugin has one notice, and this is its only style. Every message uses
+   it, wherever it comes from:
 
-   Two families end up on screen and they are NOT in the same place in the DOM,
-   which is what let them drift apart:
+     - after a save, printed by NotificationManager (under the page heading)
+     - after a background action, built by YamlCF.notify() in admin.js (the
+       same place, or inline next to the button that was used)
+     - notes a screen prints for itself (.notice.inline)
 
-     .yaml-cf-notice                        queued messages from
-                                            NotificationManager, printed on
-                                            admin_notices, so they sit above the
-                                            plugin's container, not inside it
-     .yaml-cf-admin-container .notice.inline  contextual notes printed by a
-                                            template, inside the container
+   All of them carry the class .yaml-cf-notice and WordPress's own
+   notice-success / -info / -warning / -error for the kind. Nothing floats,
+   nothing fades away on a timer, and the kind is never shown by colour
+   alone: the icon below shows it, and a visually hidden label ("Error:")
+   says it. The block editor shows its own notices (core/notices).
 
-   Both are styled here together. WordPress's own notice-info / -success /
-   -warning / -error class still carries the severity, so markup stays plain and
-   neither family needs a bespoke class.
-
-   The floating toasts in #yaml-cf-notifications are deliberately not included:
-   they are a transient overlay with their own shape, and they borrow the same
-   colour tokens further down. */
-.notice.yaml-cf-notice,
-.yaml-cf-admin-container .notice.inline {
+   The icon is drawn here from the kind, so every notice gets the same one
+   without extra markup. `content: "…" / ""` gives it empty alternative text,
+   so screen readers skip the glyph; the first line is for older browsers. */
+.notice.yaml-cf-notice {
+  position: relative;
   background: var(--ycf-info-soft);
   border: 0;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: none;
   color: var(--ycf-info-text);
   margin: 16px 0;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 44px;
+}
+
+.notice.yaml-cf-notice::before {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  font: normal 20px/1 dashicons;
+  -webkit-font-smoothing: antialiased;
+  content: "\f348";
+  content: "\f348" / "";
+}
+
+.notice.yaml-cf-notice.notice-success::before {
+  content: "\f12a";
+  content: "\f12a" / "";
+}
+
+.notice.yaml-cf-notice.notice-warning::before {
+  content: "\f534";
+  content: "\f534" / "";
+}
+
+.notice.yaml-cf-notice.notice-error::before {
+  content: "\f153";
+  content: "\f153" / "";
 }
 
 /* Room for the dismiss button WordPress positions in the corner */
-.notice.yaml-cf-notice.is-dismissible,
-.yaml-cf-admin-container .notice.inline.is-dismissible {
+.notice.yaml-cf-notice.is-dismissible {
   padding-right: 38px;
 }
 
-.notice.yaml-cf-notice p,
-.yaml-cf-admin-container .notice.inline p {
+/* A notice is focused when an error comes back from a save, so it is read
+   first. Show where focus went. */
+.notice.yaml-cf-notice:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.notice.yaml-cf-notice p {
   color: inherit;
-  margin: 0.4em 0;
+  margin: 0;
+  line-height: 20px;
 }
 
-.notice.yaml-cf-notice p:first-child,
-.yaml-cf-admin-container .notice.inline p:first-child {
-  margin-top: 0;
+.notice.yaml-cf-notice .yaml-cf-notice-details {
+  margin: 6px 0 0 18px;
+  list-style: disc;
 }
 
-.notice.yaml-cf-notice p:last-child,
-.yaml-cf-admin-container .notice.inline p:last-child {
-  margin-bottom: 0;
-}
-
-.notice.yaml-cf-notice.notice-success,
-.yaml-cf-admin-container .notice.inline.notice-success {
+.notice.yaml-cf-notice.notice-success {
   background: var(--ycf-mint-soft);
   color: var(--ycf-mint-text);
 }
 
-.notice.yaml-cf-notice.notice-warning,
-.yaml-cf-admin-container .notice.inline.notice-warning {
+.notice.yaml-cf-notice.notice-warning {
   background: var(--ycf-warning-soft);
   color: var(--ycf-warning-text);
 }
 
-.notice.yaml-cf-notice.notice-error,
-.yaml-cf-admin-container .notice.inline.notice-error {
+.notice.yaml-cf-notice.notice-error {
   background: var(--ycf-error-soft);
   color: var(--ycf-error-text);
+}
+
+/* Where YamlCF.notify() puts notices, under the page heading */
+.yaml-cf-notices:empty {
+  display: none;
+}
+
+/* Inline results take their own line under the buttons they are about */
+.yaml-cf-inline-message {
+  flex-basis: 100%;
+}
+
+.yaml-cf-inline-message:empty {
+  display: none;
+}
+
+.yaml-cf-inline-message .notice.yaml-cf-notice {
+  margin: 0;
+}
+
+/* ==========================================================================
+   Status line
+   ==========================================================================
+
+   How an action done without leaving the page went: a switch saved, a section
+   that could not be added, changes waiting to be saved. Shown right next to
+   the control that was used (YamlCF.status() in admin.js), never above the
+   page, so nothing moves under the pointer when it appears.
+
+   The room is kept before anything is said: an empty slot is already one line
+   tall where it sits on its own line, and sits beside a button where the row
+   has space. Same icons and colours as the notices above, and the kind is
+   spelled out for screen readers inside the slot. */
+.yaml-cf-status {
+  display: block;
+  min-height: 20px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+/* Beside a button, in a row that already has the height */
+.yaml-cf-block-controls .yaml-cf-status,
+.submit .yaml-cf-status,
+.yaml-cf-hint.yaml-cf-status {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.submit .yaml-cf-status {
+  margin-left: 8px;
+}
+
+/* A hint that doubles as the status keeps its size */
+.yaml-cf-hint.yaml-cf-status {
+  font-size: 13px;
+}
+
+.yaml-cf-status.is-success {
+  color: var(--ycf-mint-text);
+}
+
+.yaml-cf-status.is-info {
+  color: var(--ycf-info-text);
+}
+
+.yaml-cf-status.is-warning {
+  color: var(--ycf-warning-text);
+}
+
+.yaml-cf-status.is-error {
+  color: var(--ycf-error-text);
+}
+
+.yaml-cf-status:is(.is-success, .is-info, .is-warning, .is-error)::before {
+  display: inline-block;
+  width: 16px;
+  margin-right: 4px;
+  font: normal 16px/20px dashicons;
+  vertical-align: top;
+  -webkit-font-smoothing: antialiased;
+}
+
+.yaml-cf-status.is-success::before {
+  content: "\f12a";
+  content: "\f12a" / "";
+}
+
+.yaml-cf-status.is-info::before {
+  content: "\f348";
+  content: "\f348" / "";
+}
+
+.yaml-cf-status.is-warning::before {
+  content: "\f534";
+  content: "\f534" / "";
+}
+
+.yaml-cf-status.is-error::before {
+  content: "\f153";
+  content: "\f153" / "";
+}
+
+/* ==========================================================================
+   Icons
+   ==========================================================================
+
+   Every icon the plugin prints comes from YamlCF\Helpers\Icons (or
+   YamlCF.icon() in admin.js) and carries .yaml-cf-icon, so they all sit the
+   same way next to their text: a little larger than the text, lined up with
+   it, and with room between the two. */
+/* width and height are 1em of the icon's own (larger) size, so the box is
+   exactly the glyph: a taller box left the glyph sitting at its top edge */
+.yaml-cf-icon {
+  width: 1em;
+  height: 1em;
+  font-size: 1.25em;
+  line-height: 1;
+  margin-right: 0.4em;
+  vertical-align: -0.2em;
+}
+
+.yaml-cf-icon::before {
+  line-height: 1;
+}
+
+/* An icon that follows its text, such as the arrow on "Next" */
+.yaml-cf-icon.is-after {
+  margin-right: 0;
+  margin-left: 0.4em;
+}
+
+/* A button with an icon lines the two up as a row, centred, on every screen:
+   the plugin's own pages already did, the post editor's buttons did not */
+.wp-core-ui .button:has(> .yaml-cf-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+/* line-height: 1 overrides core's ".wp-core-ui .button .dashicons" (1.9, made
+   for 20px icons): with it, a 16px icon sat low in every button outside the
+   plugin's own screens, such as "Choose image" in the post editor */
+.wp-core-ui .button .yaml-cf-icon {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.wp-core-ui .button-small .yaml-cf-icon {
+  font-size: 14px;
+}
+
+/* Buttons that are only an icon: nothing to keep a distance from */
+.yaml-cf-block-actions .yaml-cf-icon,
+.yaml-cf-image-list-actions .yaml-cf-icon,
+.yaml-cf-picker-remove .yaml-cf-icon {
+  margin: 0;
 }

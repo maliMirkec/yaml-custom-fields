@@ -35,8 +35,7 @@ class TemplateGlobalController extends AdminController {
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
     $template_global_schema = isset($template_global_schemas[$template]) ? $template_global_schemas[$template] : '';
 
-    // Check if there's a validation error
-    $error_message = '';
+    // A schema refused on save comes back into the editor
     if (RequestHelper::getParam('error') === '1') {
       $invalid_schema = get_transient('yaml_cf_invalid_template_global_schema_' . get_current_user_id());
       if ($invalid_schema !== false) {
@@ -55,21 +54,7 @@ class TemplateGlobalController extends AdminController {
       }
     }
 
-    // Save results are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-
-    // Pass messages to JavaScript via localization
-    $page_config = [];
-    if ($success_message) {
-      $page_config['successMessage'] = $success_message;
-    }
-    if ($error_message) {
-      $page_config['errorMessage'] = $error_message;
-    }
-
-    if (!empty($page_config)) {
-      $this->localizePageInit($page_config);
-    }
+    // Save results are shown as queued notices (see NotificationManager)
 
     // Load template
     $this->loadTemplate('edit-template-global-schema-page.php', compact(
@@ -112,9 +97,6 @@ class TemplateGlobalController extends AdminController {
       }
     }
 
-    // Save results are shown as queued admin notices (see NotificationManager)
-    $success_message = '';
-
     // Localize the schema and which one it is, so that adding a section can ask
     // the server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem)
     $this->localizeScript([
@@ -122,11 +104,8 @@ class TemplateGlobalController extends AdminController {
       'schemaSource' => ['source' => 'template_global', 'key' => $template],
     ]);
 
-    // Pass messages and form tracking config to JavaScript
+    // Form tracking config for JavaScript; save results are queued notices
     $page_config = [];
-    if ($success_message) {
-      $page_config['successMessage'] = $success_message;
-    }
     $page_config['formTracking'] = [
       'enabled' => true,
       'container' => '#yaml-cf-template-global-data-form',

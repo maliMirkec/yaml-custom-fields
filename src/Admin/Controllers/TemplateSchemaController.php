@@ -13,8 +13,11 @@ if (!defined('ABSPATH')) {
 class TemplateSchemaController extends AdminController {
   /**
    * Whether deleting the plugin should leave the content in place
+   *
+   * The choice lives on the Settings screen now; kept here for code that
+   * still refers to it by this name.
    */
-  const KEEP_DATA_OPTION = 'yaml_cf_keep_data_on_uninstall';
+  const KEEP_DATA_OPTION = SettingsController::KEEP_DATA_OPTION;
 
   private $templateCache;
   private $schemaParser;
@@ -66,10 +69,6 @@ class TemplateSchemaController extends AdminController {
     // this plugin cannot see into.
     $theme_kind = $this->themeKind();
 
-    $keep_data_on_uninstall = (bool) get_option(self::KEEP_DATA_OPTION, false);
-    $clear_post_caches = (string) get_option(\YamlCF\Cache\CacheManager::CLEAR_ALL_POSTS_OPTION, '1') !== '0';
-    $rest_public_read = \YamlCF\Rest\RestApi::publicReadEnabled();
-
     $this->localizePageInit(['hasRefreshButton' => true]);
 
     $this->loadTemplate('admin-page.php', compact(
@@ -77,135 +76,8 @@ class TemplateSchemaController extends AdminController {
       'partial_rows',
       'global_field_count',
       'show_getting_started',
-      'theme_kind',
-      'keep_data_on_uninstall',
-      'clear_post_caches',
-      'rest_public_read'
+      'theme_kind'
     ));
-  }
-
-  /**
-   * Save the choices made on the main screen, then come back to it
-   *
-   * Hooked to admin_init. Saved inside render(), as they were, the choice was
-   * made after WordPress had printed its notices, so the confirmation only
-   * showed on whatever page was opened next.
-   *
-   * @return void
-   */
-  public function handleFormSubmissions() {
-    if (\YamlCF\Helpers\RequestHelper::getParam('page') !== 'yaml-custom-fields') {
-      return;
-    }
-
-    if ($this->saveSubmittedChoices()) {
-      wp_safe_redirect(admin_url('admin.php?page=yaml-custom-fields'));
-      exit;
-    }
-  }
-
-  /**
-   * Save whichever of the main screen's choices was submitted
-   *
-   * @return bool Whether a form was submitted
-   */
-  public function saveSubmittedChoices() {
-    return $this->handleKeepDataSubmission() || $this->handleClearCachesSubmission() || $this->handleRestAccessSubmission();
-  }
-
-  /**
-   * Save the choice about reading site details and collections over the REST API
-   *
-   * @return bool Whether this form was submitted
-   */
-  private function handleRestAccessSubmission() {
-    if (!isset($_POST['yaml_cf_rest_access_nonce'])) {
-      return false;
-    }
-
-    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_rest_access_nonce'])), 'yaml_cf_rest_access')) {
-      wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
-    }
-
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
-    }
-
-    $public = isset($_POST['yaml_cf_rest_public_read']) && $_POST['yaml_cf_rest_public_read'] === '1';
-    update_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION, $public ? '1' : '0', false);
-
-    $this->notificationManager->success(
-      $public
-        ? __('Site details and collections can now be read over the REST API without logging in.', 'yaml-custom-fields')
-        : __('Reading site details and collections over the REST API now needs a logged-in user who can edit posts.', 'yaml-custom-fields')
-    );
-
-    return true;
-  }
-
-  /**
-   * Save the choice about page caches when site-wide content is saved
-   *
-   * @return bool Whether this form was submitted
-   */
-  private function handleClearCachesSubmission() {
-    if (!isset($_POST['yaml_cf_clear_caches_nonce'])) {
-      return false;
-    }
-
-    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_clear_caches_nonce'])), 'yaml_cf_clear_caches')) {
-      wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
-    }
-
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
-    }
-
-    $clear = isset($_POST['yaml_cf_clear_caches']) && $_POST['yaml_cf_clear_caches'] === '1';
-    // '0' rather than false: update_option() does not save a false over a missing option
-    update_option(\YamlCF\Cache\CacheManager::CLEAR_ALL_POSTS_OPTION, $clear ? '1' : '0', false);
-
-    $this->notificationManager->success(
-      $clear
-        ? __('Saving site-wide content will now clear the cache of every page with fields.', 'yaml-custom-fields')
-        : __('Saving site-wide content will no longer clear the cache of every page with fields.', 'yaml-custom-fields')
-    );
-
-    return true;
-  }
-
-  /**
-   * Save the choice about what happens to the content if the plugin is deleted
-   *
-   * Deleting the plugin removes the field content from every page, and that is
-   * the site's own writing, not settings. It cannot be undone and there was no
-   * way to ask for it to be kept.
-   *
-   * @return bool Whether this form was submitted
-   */
-  private function handleKeepDataSubmission() {
-    if (!isset($_POST['yaml_cf_keep_data_nonce'])) {
-      return false;
-    }
-
-    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_keep_data_nonce'])), 'yaml_cf_keep_data')) {
-      wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
-    }
-
-    if (!current_user_can('manage_options')) {
-      wp_die(esc_html__('This action needs administrator permissions.', 'yaml-custom-fields'));
-    }
-
-    $keep = isset($_POST['yaml_cf_keep_data']) && $_POST['yaml_cf_keep_data'] === '1';
-    update_option(self::KEEP_DATA_OPTION, $keep, false);
-
-    $this->notificationManager->success(
-      $keep
-        ? __('Deleting the plugin will now leave the field content in place.', 'yaml-custom-fields')
-        : __('Deleting the plugin will now remove the field content as well.', 'yaml-custom-fields')
-    );
-
-    return true;
   }
 
   /**

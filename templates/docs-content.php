@@ -622,7 +622,7 @@ if (!defined('ABSPATH')) {
 
   <h3>Deleting the plugin</h3>
   <p>Deactivating the plugin changes nothing. <strong>Deleting</strong> it removes the schemas, the site details, the collections and the content filled into the fields on every page and post, and that cannot be undone.</p>
-  <p>To keep the content, tick <strong>Keep the content if the plugin is deleted</strong> at the bottom of the YAML Custom Fields page before deleting. The content then stays in the database and comes back if the plugin is installed again.</p>
+  <p>To keep the content, tick <strong>Keep the content if the plugin is deleted</strong> under <strong>YAML CF → Settings</strong> before deleting. The content then stays in the database and comes back if the plugin is installed again.</p>
 
   <h3>The REST API</h3>
   <p>Field content is available over the WordPress REST API, for a front end built in something other than PHP, a mobile app, or another plugin.</p>
@@ -633,7 +633,7 @@ if (!defined('ABSPATH')) {
   </ul>
   <p>Sending a <code>yaml_cf</code> object back to a page saves it. Only the fields named in the request change; the rest are left alone. Whoever sends it has to be allowed to edit that page, and what they send is cleaned exactly as the editor cleans it.</p>
   <p>A page that is not published is not readable without permission, and neither are its fields.</p>
-  <p>Site details and collections need a logged-in user who can edit posts. To let anyone read them, tick <strong>Let anyone read the site details and collections</strong> under REST API on the plugin's main screen. Leave it unticked if any site detail or collection item should stay private: every item becomes readable, including ones no page shows. Code can decide instead, and wins over the setting:</p>
+  <p>Site details and collections need a logged-in user who can edit posts. To let anyone read them, tick <strong>Let anyone read the site details and collections</strong> under REST API on the plugin's Settings screen. Leave it unticked if any site detail or collection item should stay private: every item becomes readable, including ones no page shows. Code can decide instead, and wins over the setting:</p>
   <pre><code>add_filter('yaml_cf_rest_public_read', '__return_true');</code></pre>
 
   <h3>Function signatures</h3>

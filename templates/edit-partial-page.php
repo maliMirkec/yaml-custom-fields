@@ -25,14 +25,14 @@ if (!defined('ABSPATH')) {
     <div class="yaml-cf-intro">
       <p>
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-custom-fields')); ?>" class="button">
-          <span class="dashicons dashicons-arrow-left-alt2"></span>
+          <?php \YamlCF\Helpers\Icons::render('back'); ?>
           <?php esc_html_e('Back to YAML Custom Fields', 'yaml-custom-fields'); ?>
         </a>
         <?php
         $yaml_cf_edit_schema_url = admin_url('admin.php?page=yaml-cf-edit-schema&template=' . rawurlencode($template));
         ?>
         <a href="<?php echo esc_url($yaml_cf_edit_schema_url); ?>" class="button button-secondary yaml-cf-button-gap">
-          <span class="dashicons dashicons-admin-generic"></span>
+          <?php \YamlCF\Helpers\Icons::render('schema'); ?>
           <?php esc_html_e('Edit schema', 'yaml-custom-fields'); ?>
         </a>
       </p>
@@ -63,6 +63,7 @@ if (!defined('ABSPATH')) {
         <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-custom-fields')); ?>" class="button button-large">
           <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
         </a>
+        <span class="yaml-cf-status" data-slot="unsaved"></span>
       </p>
     </form>
   </div>

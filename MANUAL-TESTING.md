@@ -119,12 +119,18 @@ fields:
 ## 1. Main screen (YAML CF menu)
 
 - Go to **YAML CF** in the admin menu.
+- ✅ The menu lists **Settings** between **Content Check** and **Documentation**.
+- ✅ Each section heading and each button has an icon, with a little space between icon and text. The same thing always has the same icon (for example site details, shared fields, Edit schema).
 - ✅ First visit shows **Get started in four steps**.
 - ✅ **Page & post templates** lists `page.php` and `single.php` first, then the rest A–Z.
 - ✅ **Site parts & archive pages** lists `header.php`, `footer.php`, `index.php`, `archive.php` and so on.
 - Switch **Custom fields** on for `page.php`.
-- ✅ A success message appears without a page reload.
-- ✅ The row shows **No fields yet** and a **Create schema** button.
+- ✅ "✓ Saved" appears under the switch, without a page reload. The page does not move.
+- ✅ The row shows **No fields yet** and, on the line below it, a **Create schema** button. Under **Shared fields**: **Optional**, with **Add shared fields** below it.
+- Switch several templates on and off, quickly.
+- ✅ **Nothing in the table moves**: columns keep their width and rows keep their height. Only the content inside the switched row changes.
+- Narrow the browser window below about 780px.
+- ✅ Each template becomes a card, with the column names above each part.
 - Reload the page.
 - ✅ The switch is still on.
 - Switch it off.
@@ -139,6 +145,17 @@ fields:
 - ✅ The tables list block templates such as `page` and `single`.
 - ✅ If a table is empty, it names the theme and says Site Editor templates appear once saved.
 - Switch back to the classic theme.
+
+---
+
+## 1b. Settings screen
+
+- Go to **YAML CF → Settings**.
+- ✅ Three cards: **Page caches**, **REST API** and **If this plugin is deleted**, each with its own icon.
+- ✅ The main **YAML CF** screen no longer shows them.
+- Change each tick box and click its **Save this choice**.
+- ✅ The page comes back to **Settings** with a green notice saying what changed, and the box keeps its new state.
+- Sections 18, 20 and 21 test what each choice does.
 
 ---
 
@@ -183,7 +200,11 @@ fields:
 - Create a new page (template: default).
 - ✅ Block editor: a **Custom fields** box appears below the content.
 - ✅ Classic editor (install the Classic Editor plugin to check): the box sits under the title.
-- ✅ The box shows a **Template: page.php** chip, and **Edit schema**, **Export fields**, **Import fields** and **Empty all fields** buttons.
+- ✅ The box title has the same icon as **YAML CF** in the admin menu.
+- ✅ The box shows a **Template: page.php** chip, and **Edit schema**, **Export fields**, **Import fields** and **Empty all fields** buttons, each with an icon.
+- In the **classic editor**, click the arrow at the right of the box's title bar.
+- ✅ The box folds away. Reload the page – ✅ it is still folded. Click the arrow again – ✅ it opens, and stays open after a reload.
+- ✅ In the block editor the same arrow folds the box away too.
 - Log in as the Author and open one of their pages.
 - ✅ **Edit schema** is not shown to the Author.
 - Switch `page.php` off on the main screen.
@@ -209,11 +230,11 @@ Fill in each field, click **Update** or **Publish**, then reload the editor. Che
 
 ### 3c. Unsaved changes warning
 - Change any field.
-- ✅ A warning says there are unsaved changes.
+- ✅ The line at the top of the Custom fields box says there are changes not saved yet.
 - Try to leave the page.
 - ✅ The browser asks to confirm.
 - Click **Update**.
-- ✅ The warning disappears.
+- ✅ After saving, that line is back to normal.
 
 ### 3d. Writers cannot slip in code
 - Log in as the Author (no `unfiltered_html`) and put `<script>alert(1)</script><p>ok</p>` into **Embed** and **Body**, then update.
@@ -326,7 +347,7 @@ fields:
 - Click **Edit site details**, fill in both, click **Save content**.
 - ✅ Success message.
 - On the main screen, in the `page.php` row, tick **Use site details on these pages**.
-- ✅ A "Site details setting saved" message appears. Reload – ✅ still ticked.
+- ✅ "✓ Saved" appears under the checkbox. Reload – ✅ still ticked.
 - Open a page on `page.php`.
 - ✅ A read-only **Site details** part is shown, with an **Edit site details** link.
 - ✅ In the theme, `ycf_get_field('phone')` on that page returns the site detail.
@@ -537,7 +558,7 @@ Use a browser or a REST client. Replace `ID` with a page ID.
 - ✅ With **Use site details on these pages** ticked, the site details are **not** in it while REST reading is closed (default).
 - Logged out, open `/wp-json/yaml-cf/v1/site-details` and `/wp-json/yaml-cf/v1/collections/team`.
 - ✅ Both are refused (401).
-- On the main screen, tick **Let anyone read the site details and collections, without logging in**, then **Save this choice**.
+- Go to **YAML CF → Settings** and tick **Let anyone read the site details and collections, without logging in**, then **Save this choice**.
 - ✅ Both routes now return data; the page's `yaml_cf` field now includes site details.
 - `/wp-json/yaml-cf/v1/collections/team?per_page=2&page=2` – ✅ paged, with `X-WP-Total` headers.
 - `/wp-json/yaml-cf/v1/collections/team?search=ada` – ✅ only matches.
@@ -567,14 +588,14 @@ Use a browser or a REST client. Replace `ID` with a page ID.
 
 - With a page cache plugin active, edit **Site details** and save.
 - ✅ Pages with fields show the new value straight away.
-- On the main screen, untick **Clear the cache of every page with fields when site-wide content is saved**, **Save this choice**.
+- Go to **YAML CF → Settings** and untick **Clear the cache of every page with fields when site-wide content is saved**, **Save this choice**.
 - ✅ Saving site details is faster; cached pages keep the old value until the cache plugin purges them.
 
 ---
 
 ## 21. Deleting the plugin
 
-- On the main screen, tick **Keep the content if the plugin is deleted**, **Save this choice**.
+- Go to **YAML CF → Settings** and tick **Keep the content if the plugin is deleted**, **Save this choice**.
 - Deactivate and delete the plugin, then install and activate it again.
 - ✅ Schemas, site details, collections and page content are all back.
 - Untick the choice, save, delete the plugin again.
@@ -584,7 +605,70 @@ Use a browser or a REST client. Replace `ID` with a page ID.
 
 ---
 
-## 22. Accessibility and browsers (quick pass)
+## 22. Messages and notices
+
+The plugin tells you how things went in two ways, and never with pop-ups in a screen corner:
+
+- **Status next to the control** for anything done without leaving the page (a switch, adding a section, unsaved changes). It appears in space that is already there, so **nothing on the page moves**.
+- **A notice under the page heading** for the result of a save that reloads the page. It is there before you start reading, so nothing moves either.
+
+Both use the same icons: ✓ done, ⓘ note, ⚠ warning, ⊗ error.
+
+### Status next to the control
+- On the main screen, switch a template's **Custom fields** off and on.
+- ✅ "✓ Saved" appears just under that switch. **The page does not move.** No notice appears at the top.
+- Tick **Use site details on these pages**.
+- ✅ "✓ Saved" appears under the checkbox. The page does not move. The "Saved" under the other switch disappears (only the latest is shown).
+- Disconnect from the network (developer tools → Offline) and use a switch.
+- ✅ "⊗ Not saved. Try again." appears in the same place, and the switch goes back to how it was.
+- In the page editor, change a field. Do this in the **block editor** (the default, e.g. with Twenty Twenty-One) and in the classic editor.
+- ✅ The line under **Template: …** in the Custom fields box changes to "⚠ Changes not saved yet. Save to keep them." Nothing moves. Keep typing – it does not flash or repeat.
+- Undo your change (type the old value back).
+- ✅ The line goes back to "Fill in the fields below…".
+- Click **Remove** on a section.
+- ✅ The section goes, focus moves to the next section, and the box's line says there are changes to save. No notice at the top.
+- Choose no section type and click **Add section**.
+- ✅ "⚠ Choose a section type first." appears next to the button, and focus goes to the section type list.
+- On **Site details**, change a field without saving.
+- ✅ "⚠ There are changes that are not saved yet." appears next to the **Save content** button. It goes away when you save.
+- Click a **Copy code** button.
+- ✅ The button itself says **Copied** for a moment. Nothing else appears.
+
+### Notices after a save
+- Save **Site details**.
+- ✅ After the page reloads, a green notice with ✓ is under the page heading, with a close button.
+- Wait a minute.
+- ✅ It is still there. Nothing disappears by itself.
+- Save a schema with a mistake.
+- ✅ A red notice with ⊗, and keyboard focus is on it (press Tab: the next thing after it is focused).
+- With the keyboard only: Tab to a notice's close button and press Enter.
+- ✅ The notice closes and focus moves to the next notice (or the page heading), not the top of the page.
+- In the **block editor**, use **Import fields**.
+- ✅ The result appears in the editor's own notice bar at the top.
+
+### Other notices
+- On **Export & Import**, export a file and import one.
+- ✅ The result appears as a notice directly under the buttons; nothing above it moves. Import problems are listed in an amber notice.
+- On **Content Check** and **Collections**, look at the grey information notes.
+- ✅ Same shape as the other notices, with an ⓘ icon.
+
+### With a screen reader (VoiceOver on macOS: Cmd+F5; NVDA on Windows)
+- Switch a template on.
+- ✅ You hear "Done: Custom fields turned on for …" once.
+- Remove a section in the page editor.
+- ✅ You hear "Section removed. Save to keep the change.", then that there are changes not saved yet.
+- Cause an error (for example a failed save or a broken import file).
+- ✅ You hear "Error: …" straight away, interrupting other speech.
+- Search in a big picker (Tags).
+- ✅ You hear how many results were found, or "Nothing matched."
+- Click **Copy code**.
+- ✅ You hear "Code copied. Paste it into the theme file."
+- Move through a notice with the reading keys.
+- ✅ The notice starts with its kind ("Error:", "Warning:", "Done:", "Note:"); the icon itself is not read.
+
+---
+
+## 23. Accessibility and browsers (quick pass)
 
 - Tab through the main screen and the Custom fields box using only the keyboard.
 - ✅ Every switch, button, picker and gallery control can be reached and used.
