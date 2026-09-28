@@ -8,29 +8,31 @@ Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Custom fields for pages, posts and every part of the site. Set the fields once; writers fill them in.
+Custom fields for pages, posts and every part of the site. You set the fields once. Writers fill them in.
 
 == Description ==
 
-YAML Custom Fields adds boxes to pages, like "Headline", "Team photo" or "Event date". Writers fill them in, and the website shows that content in the right place.
+YAML Custom Fields adds boxes to fill in on pages, like "Headline", "Team photo" or "Event date". Writers fill them in. The website shows them in the right place.
 
-The fields of each page template are set in a short list, called a schema. It takes a few lines per field.
+You list the fields of each page template in a short text, called a schema. Each field takes a few lines.
 
 = What it does =
 
 * Gives each page template its own fields.
-* Holds the content of the header, footer and other site parts, filled in once.
-* Adds shared fields, the same on every page with one template.
-* Keeps site details, like a phone number or social links, used across the whole website.
-* Builds pages from sections that writers add, remove and reorder.
-* Keeps reusable lists, like team members or partners, for any page to pick from.
-* Exports and imports the setup and content, for backups or a move to another website.
-* Finds imported posts with missing images or files.
+* Adds fields to the header, the footer and other site parts.
+* Adds shared fields: one value for every page with the same template.
+* Keeps site details, like a phone number, for the whole site.
+* Lets writers build pages from sections they add, remove and reorder.
+* Keeps collections, like team members, for any page to pick from.
+* Exports and imports fields and content, for backups or moving to another site.
+* Finds missing images and files, and content left behind by removed fields.
+* Shows fields in block themes with a shortcode.
+* Makes fields available over the REST API.
 
 = Field types =
 
 * One line of text
-* A few lines of text
+* Several lines of text
 * Text with formatting (bold, links, lists)
 * Code, like an embed or a form
 * Yes or no (tick box)
@@ -39,16 +41,17 @@ The fields of each page template are set in a short list, called a schema. It ta
 * Dropdown
 * Category or tag
 * Kind of content (posts, pages and more)
-* Item from a reusable list
-* Image, or a gallery of several images
+* Item from a collection
+* Image, or a gallery
 * File, or several files
 * Group of fields
 * Sections
-* Info box with a note for writers
+* Info box: a note for writers
+* Section heading: a title with a gap above it
 
 = How it works =
 
-1. Go to **YAML Custom Fields** and switch on a template.
+1. Go to **YAML CF** and switch on **Custom fields** for a template.
 2. Click **Create schema** and list the fields:
 
 `fields:
@@ -59,76 +62,80 @@ The fields of each page template are set in a short list, called a schema. It ta
     label: Photo
     type: image`
 
-3. Open a page that uses the template. The fields sit in a "Custom fields" panel, below the content in the block editor and below the title in the classic editor.
-4. The theme shows each field with one line:
+3. Open a page that uses the template. The fields are in a "Custom fields" box. In the block editor it's below the content. In the classic editor it's below the title.
+4. Show each field in the theme with one line:
 
 `<h1><?php echo esc_html( ycf_get_field( 'headline' ) ); ?></h1>`
 
-The Documentation page inside the plugin explains every step in plain words.
+The **Documentation** page in the plugin explains every step in plain words.
 
 == Installation ==
 
 1. In the WordPress admin, go to **Plugins → Add New**.
 2. Search for "YAML Custom Fields".
 3. Click **Install Now**, then **Activate**.
-4. Go to **YAML Custom Fields** in the menu on the left.
+4. Go to **YAML CF** in the menu on the left.
 
-For a ZIP file, use **Plugins → Add New → Upload Plugin** instead.
+For a ZIP file, use **Plugins → Add New → Upload Plugin**.
 
 = Requirements =
 
 * WordPress 6.4 or newer
 * PHP 8.1 or newer
 
-Everything else the plugin needs is included.
+Everything else is included.
 
 == Frequently Asked Questions ==
 
 = What is a schema? =
 
-A short list of the fields a page gets. Each field has a name, a label and a type. It is written in YAML, a simple text format with one setting per line.
+A short list of the fields a page gets. Each field has a name, a label and a type. It's written in YAML, a simple text format with one setting per line.
 
-= Is coding needed? =
+= Do I need to code? =
 
-Not for writers, who only fill in fields. Setting up the fields and showing them on the website needs a few lines in the theme. The **Copy code** button next to each field copies the exact line.
+Writers don't. They only fill in fields. To show fields on the website, the theme needs one line per field. The **Copy code** button next to each field copies that line for you.
 
 = Does it work with any theme? =
 
-Yes, classic themes and block themes alike. The theme decides where each field shows up. A child theme is scanned together with the theme it builds on, so the parent's templates are listed too.
+Yes, classic and block themes. A child theme is scanned together with its parent, so the parent's templates are listed too.
 
-In a block theme there is no template file to edit, so use the `[ycf field="name"]` shortcode in a Shortcode block.
+Block themes have no template files to edit. Use the `[ycf field="name"]` shortcode in a Shortcode block.
 
 = Does it work with the block editor? =
 
-Yes. The fields appear in a "Custom fields" panel, below the content in the block editor and below the title in the classic editor. The Classic Editor plugin is not needed.
+Yes. The fields are in a "Custom fields" box below the content. You don't need the Classic Editor plugin.
 
 = Is there an API? =
 
-Yes. Field content is available over the WordPress REST API: every page and post carries a `yaml_cf` object, and there are routes for the site details and for collections. The Documentation page inside the plugin has the details.
+Yes, the WordPress REST API. Every page and post has a `yaml_cf` object. There are also routes for site details and collections. The Documentation page has the details.
 
 = Which content types are supported? =
 
-Posts, pages and other public content types, such as an "Events" type added by a theme or plugin.
+Posts, pages and other public content types, like an "Events" type from a theme or plugin.
 
 = Who can change the setup? =
 
-Only administrators change schemas and settings. Writers fill in fields on the posts they are allowed to edit.
+Only administrators change schemas and settings. Writers fill in fields on posts they may edit.
 
-= What happens when the plugin is switched off? =
+= What happens when I turn the plugin off? =
 
-The content stays. It is only removed when the plugin is **deleted**.
+Nothing is lost. The content stays.
 
-= How does content move to another website? =
+= What happens when I delete the plugin? =
 
-**YAML Custom Fields → Export & Import** saves it to a file. Images and files are not inside that file, so the media library has to be copied as well. **Content Check** then finds anything missing.
+All its data is removed: schemas, site details, collections and page content. To keep the content, tick **Keep the content if the plugin is deleted** under **YAML CF → Settings** first.
 
-= Where are problems reported? =
+= How do I move content to another site? =
 
-On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful details: what was done, what was expected and what happened.
+Use **YAML CF → Export & Import** to save it to a file. Images and files aren't in that file, so copy the media library too. Then **Content Check** finds anything missing.
+
+= Where do I report problems? =
+
+On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Please say what you did, what you expected and what happened.
 
 == Screenshots ==
 
-1. The YAML Custom Fields page, with a switch per template and the status of its fields.
+1. The YAML CF screen, with a switch per template and the status of its fields.
 2. The schema editor for a template.
 3. The schema editor for a site part, like the header.
 4. The content of a site part.
@@ -137,76 +144,89 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 == Changelog ==
 
 = 2.0.0 =
-* **CHANGED: Needs WordPress 6.4 or Newer** - It used to say 5.0, but only current versions were tested, and supporting older ones meant keeping code that could lose an option if an update was interrupted. WordPress will not offer this update to a site on an older version
-* **NEW: Works in the Block Editor** - The fields are now a real meta box, so they appear in the block editor as well as the classic one. The Classic Editor plugin is no longer needed. In the classic editor they stay directly under the title, where they have always been; in the block editor they sit below the content, because the space above it belongs to the blocks
-* **NEW: Galleries** - Image fields support `list: true`: pick many images in one trip to the media library, see them as a grid of thumbnails, and reorder them by dragging or with the keyboard
-* **NEW: Search Instead of Endless Lists** - A taxonomy or collection field with more than 50 choices becomes a search box, so a page with thousands of tags or collection items no longer carries every one of them. The cut-off can be changed with the `yaml_cf_picker_threshold` filter
-* **NEW: Sections Fold Away** - Each repeating section can be collapsed, shows the text of its first field in its header instead of repeating the block name, and a "Collapse all" button folds them all at once
-* **NEW: yaml_cf_field_value Filter** - The filter the documentation has always described now actually exists, and runs for every route a value can arrive by
-* **NEW: Warning When a Field Loses Its Content** - Renaming or deleting a field in a schema now says which fields are affected, and that their content is still saved
-* **IMPROVED: Faster Field Reads** - Resolving a post's template no longer touches the filesystem on every `ycf_get_field()` call, which mattered most in archive loops
-* **IMPROVED: Added Sections Render on the Server** - "Add section" now asks the server for the markup instead of rebuilding every field type in JavaScript. A section added on the page is now identical to one that came with it, which is the class of bug behind the 1.2.3 fixes
-* **IMPROVED: Much Smaller Editor Pages** - Every taxonomy term and collection item used to be written into the page for the old JavaScript field builder. That is gone, so a post editor on a site with thousands of tags or collection items loads a fraction of the markup
-* **FIXED: Unreadable Active Filter Button** - The selected filter on the Content Check page was purple text on a purple background, and now reads white. It also reports its state to screen readers
-* **FIXED: Nested Field Names in the New Renderers** - The unfinished renderers in `src/Rendering` ignored their nesting prefix and now refuse to render rather than silently dropping a value
-* **FIXED: ycf_get_field() and ycf_get_fields() Could Disagree** - The two functions worked out values by different rules, so the same field on the same page could come back with two different values. In particular `ycf_get_fields()` ignored the "Use the shared value on this page" ticks entirely. Both now read from one place, in the order the documentation describes
-* **FIXED: A Typo in a Field Type Passed Unnoticed** - `type: strng` used to save with "The schema looks good.", render nothing at all, and then drop the field's content the next time the page was saved. Types are now checked when the schema is saved, inside groups and sections too, and the message suggests the type that was probably meant. Content belonging to a field with an unknown type is left alone rather than dropped
-* **IMPROVED: Fewer Repeated Lookups Per Page** - A page's field values are worked out once per request instead of once per `ycf_get_field()` call, which re-read the same options for every field on the page
-* **FIXED: Child Themes Showed No Templates** - The theme scan asked for the active theme's files without asking for the parent's, so a child theme that overrides only style.css reported an empty template list although the parent had page.php and single.php. A partial belonging to the child was also stored under its full path instead of its name
-* **NEW: Block Themes Are Supported** - A block theme's templates (`page`, `single`, `single-event` and templates made in the Site Editor) are now listed and can hold fields, and templates that show a list of posts are sorted into site parts. Before this, a block theme showed an empty table
-* **IMPROVED: An Empty Template List Says Why** - Instead of "The active theme has no page or post templates yet", the page now names the theme it looked in and, for a block theme, says that Site Editor templates appear once saved
-* **IMPROVED: Plugin Data No Longer Loads on Every Page View** - Schemas, shared content and site details were stored as autoloaded options, so WordPress read all of them into memory on every request, front end included. They are now read only when something asks for them, and an existing site is corrected once, automatically
-* **IMPROVED: No More Copy of the Schema in Every Post** - Every save wrote the whole parsed schema into the post, although it can be worked out from the post's template. It is worked out now, so the database stays smaller and editing a schema takes effect at once instead of when each post is next saved
-* **IMPROVED: Editor Scripts Stay Off Screens That Have No Fields** - The post editor no longer loads this plugin's scripts or the media library when the post's template has no schema
-* **NEW: Choose What Happens to the Content if the Plugin Is Deleted** - Deleting the plugin removes the content filled into every field, which cannot be undone. The YAML Custom Fields page now explains this and offers to keep the content
-* **IMPROVED: Onboarding Says the Theme Needs a Line of Code** - "The theme shows what was typed" read as though nothing else was needed. The steps now include showing a field in the theme, with the line to copy
-* **FIXED: Two Fields Could Share a Name** - A schema with the same name twice saved happily, and one field then quietly replaced the other in the stored data. Duplicate names are now refused, as is the name the plugin uses for its own bookkeeping
-* **SECURITY: Administrator Actions Have Their Own Token** - The token in a writer's post editor was the same one that saved schemas and imported bundles. Administrator-only actions now use a separate token that only administrators are given
-* **SECURITY: The Taxonomy Picker Checks Permissions** - It confirmed only that a taxonomy existed, so a writer could list the terms of a private taxonomy belonging to another plugin. It now checks that the taxonomy is visible and that the user may assign its terms
-* **SECURITY: Writers Cannot Ask for Administrator-Only Schemas** - The "Add section" request accepted site details, shared field and collection schemas from the post editor. Those now need administrator permissions
-* **SECURITY: Stricter CSS Cleaning** - Cleaning ran once per pattern, so a value could close back up into the very thing that was removed. It now repeats until nothing changes, and strips comments first
-* **SECURITY: A Size Limit on Schemas** - A schema is a short list of fields, and is now refused above 256 KB rather than being handed to the parser whole
-* **FIXED: Warnings in the Editor from Shorthand in Shared Fields** - A shared fields schema written with `- info:` or `- section:` shorthand filled the post editor with "Undefined array key" warnings, because only the page's own schema was expanded before being drawn. Every schema is expanded the same way now, wherever it is used
-* **FIXED: Shorthand Inside a Repeating Section** - The same problem inside a section's own fields, where a field with no label of its own also went unhandled
-* **FIXED: Removing a Field from a Schema No Longer Destroys Its Content** - The editor has always said that content is still saved when a field is dropped from a schema, and that putting the name back brings it back. It was not true: the next save of any page on that template threw the content away. Now it is true, for fields inside a group as well as at the top level. Since a dropped field is usually a typo or a rename, one mistyped line could take the content of every page on a template with it
-* **FIXED: Moving a Field into Shared Fields Kept Each Page's Own Value** - It used to be deleted on the next save. The page still shows the shared value, but moving the field back now restores what each page had
-* **FIXED: A Tick Box Could Not Be Unticked** - An unticked box sends nothing, and the field was missing the hidden companion every other clearable field has, so on a schema whose only field was a tick box it could never be turned off again
-* **FIXED: The Same on Every Screen** - Site parts, site details, shared fields and collections all threw away the content of a removed field too, and worse: they emptied the whole entry whenever a form sent nothing. Importing a file no longer removes content the file says nothing about either
-* **NEW: Content Check Finds Content Left Behind** - Values belonging to fields that are no longer in a schema are listed under "Values with no field", with a button to remove them when they really are not wanted. Pages whose template has no schema are reported as unchecked rather than treated as entirely stranded
-* **FIXED: Schema Editors That Said Nothing** - Saving the site details schema or a shared fields schema never mentioned dropped fields, so content quietly stopped showing. Both now say which fields lost their place, as the template schema editor always has
-* **IMPROVED: Collections Scale** - Every item of a collection used to share one database row, read and written whole: showing one item, searching for one, or saving one meant loading all of them, on every keystroke in the picker. Each item now has a row of its own beside a small index of names, so searching reads the names and then only the handful of items being shown. The item list is paged fifty at a time. An existing site is moved across once, automatically, and works either way in the meantime
-* **NEW: REST API** - Field content was invisible to anything but a PHP theme, so a front end built in something else, a mobile app or another plugin could not read a single value. Every page and post now carries its resolved values as `yaml_cf`, and there are routes for the site details and for a collection. Sending values back saves them, changing only the fields named in the request, with the same permission check and the same cleaning as the editor. Site details and collections need a logged-in user who can edit posts, until an administrator makes them public with the REST API setting on the plugin's main screen: not everything in them is shown on the website, and the collections route hands out every item
-* **NEW: Show a Field Without Editing the Theme** - `[ycf field="headline"]` puts a field on the page from a Shortcode block, a widget or the content, so a block theme can display field content at last. It handles each kind of field properly: formatting is kept, an image becomes a picture, a file becomes a link, and a code field prints as it stands
-* **SECURITY: A Page's Fields No Longer Carry Site Details to Visitors** - A template that uses site details mixed every one of them into its pages' `yaml_cf` REST field, which anyone who could read a page could see, although the site details route itself is closed by default. They now follow that route's rule
-* **SECURITY: Writers Get Only Their Own Post's Schema** - "Add section" in the post editor now names the post, and a writer is only given the schema of a post they may edit, never a site part's schema asked for as a template
-* **FIXED: Fields Could Be Written into Another Post** - When another plugin saved a second post during the same save (a translation, a copy), that post received the fields of the page being edited. The fields are now saved only into the post the form belongs to
-* **FIXED: Saving After a Long Break Lost the Changes Silently** - A form left open until its security token expired saved nothing and showed the stored content again, so everything typed was gone without a word. It now stops and says what happened
-* **FIXED: Collection Labels Went Stale** - Putting a different field first in a collection's schema left every item listed and picked by its old label until it was saved again. The labels are worked out again when the schema is saved, and a section break or info box at the top is no longer taken for the label
-* **FIXED: yaml_cf_get_image() With a Custom Size** - Asking for an image as `[width, height]`, which WordPress accepts, stopped the page with a fatal error
-* **FIXED: Fields Named With Digits Only** - A field such as `2024` was moved to another name by a partial REST update or a merging settings import
-* **FIXED: Themes Built on singular.php** - A theme with `singular.php` and no `page.php` or `single.php`, such as Twenty Twenty, could not be given page fields at all. `singular.php` (and `singular` on a block theme) is now listed and used, and a block theme's `page-about` or `page-42` takes over once it has a schema, as on a classic theme
-* **FIXED: Large Collection Imports Could Lose Their Lock** - Replacing a big collection could outlast the few seconds after which another save treats the collection's lock as abandoned. The import now keeps it current as it goes
-* **FIXED: Imported Site Details Kept Another Site's Images** - Image and file IDs that point at nothing on this site are cleared from site details, site parts and shared content on import, as they already were for pages and collections
-* **CHANGED: ycf_has_field() Means "Has a Value"** - As the documentation has always said. A field cleared in the editor is stored as an empty string, and `ycf_has_field()` used to answer yes for it, so `if (ycf_has_field('cta'))` printed the markup around a value that was not there. An empty text or an emptied list is now no value; an unticked box and a zero still are
-* **FIXED: The Shared Value Tick Always Wins** - A key left in post data by development builds before 1.2.0 could outrank "Use the shared value on this page", against the documented order. It is now ignored
-* **FIXED: Importing a Page Emptied the Fields the File Left Out** - A file that named only some fields changed those and emptied the rest of the page's fields. Fields a file does not mention now keep their content, on a single page's import and in the import wizard; a field the file names, even as empty, still wins. Importing a site part or shared content through the wizard keeps the fields the file leaves out in the same way
-* **FIXED: Import Notices in the Block Editor** - The result of "Import fields" was printed where the block editor never shows it, so a failed import said nothing. Messages now appear in the editor's own notice area
-* **FIXED: "Empty All Fields" Left Galleries, File Lists and Search Pickers Filled** - They kept their values and were saved again on Update. They are emptied with everything else now
-* **FIXED: The Import Preview Could Not Tick Pages From Older Files** - A file that does not record post types had its pages marked missing, so they could not be ticked, although the import would have found them. A post matched by ID is now marked missing when it is of a different type than the file says, or cannot hold fields, because the import skips it
-* **FIXED: Content Check Offered to Delete Fields in Use** - A field named with digits only (`name: 2024`) was listed as having no field, and a page's own copy of a field that moved into the shared fields, which is kept so moving it back restores it, was offered for removal. Neither is listed now. Removing values also tells page caches, since a theme can still print a stranded value
-* **FIXED: Field Names That Break the Form** - A name written as a list, or containing square brackets, is refused when the schema is saved. A bracket ended the name early in the form, so the value was saved under a different name
-* **FIXED: Shared Fields Were Invisible Without Page Fields** - A template set up with shared fields and no page fields of its own showed no Custom fields box in the editor, although the theme showed the shared values. The box now appears and shows the shared content
-* **NEW: Save and Add Another** - The collection item form has a second button that saves the item and opens an empty form for the next one, for filling in a collection several items at a time
-* **NEW: A Settings Screen** - Page caches, reading over the REST API and what happens to the content if the plugin is deleted moved from the bottom of the main screen to **YAML CF → Settings**, so the screen used every day is about templates only
-* **FIXED: The Custom Fields Box Could Not Be Folded Away in the Classic Editor** - The box had no show/hide arrow there. It now has the same one as every other box, and stays open or closed as it was left. Its title carries the plugin's icon from the admin menu
-* **IMPROVED: Icons Help You Find Your Way** - Section headings, table columns and buttons across the plugin now have icons, and the same thing always has the same icon (site details, shared fields, collections, Edit schema, Delete and so on). Icons sit a little apart from their text and are skipped by screen readers, which read the text instead. The small move and remove buttons on sections now have names screen readers can read
-* **IMPROVED: One Kind of Message, and an Accessible One** - Messages came in several shapes: pop-ups in a screen corner that faded after a few seconds, notices with and without icons, coloured text next to a button, a tooltip and a box of its own. Now a switch, a section added or removed, or changes waiting to be saved say how it went right next to the control, in space the page already keeps for it, so nothing moves on screen; results of a save that reloads the page are a notice under the heading. The same icon always means the same kind. Nothing disappears by itself. Each message is read out to screen readers once, errors straight away, with its kind ("Error:", "Warning:") spoken so colour and icon are never the only sign; an error after a save gets keyboard focus, and closing a notice keeps focus on the page. In the block editor, messages use the editor's own notice area. Search pickers now say how many results they found, and the Copy code button says "Copied" on itself instead of adding a message
-* **FIXED: No Way to Use Site Details on a Template's Pages** - Pages can read site details as their own fields, and show them in the editor, once their template is switched over to them. The switch was missing from every screen, so this was only reachable by editing the database or importing settings. It is back on the main screen, next to each page and post template, once site details have fields
-* **FIXED: A Collection Field Could Show Another Collection's Item** - An import keeps the item IDs in its file, so two collections can both hold `entry_1`, and `ycf_get_data_object()` returned whichever collection it searched first. It now reads from the collection the field's schema names
-* **IMPROVED: Clearer Permission Message** - Exporting or importing a page's fields without permission to edit it said "needs administrator permissions", which is not what it needs
-* **SECURITY: Picker Labels Are Text** - The name of a chosen term or collection item was inserted into the page as markup when building its remove button. It is inserted as text
-* **REMOVED: Nine Unused Background Requests** - Save, load, import and export requests that nothing in the plugin called any more have been removed. Each was a second copy of what a screen already does, and they had drifted apart: one emptied a site part when sent a malformed request
-* **UPDATED: WordPress 7.1 Compatibility** - Confirmed against 7.1 and updated "Tested up to"
+
+**Changed**
+
+* **Needs WordPress 6.4 or newer.** Older versions weren't tested. WordPress won't offer this update to older sites.
+* **The shared value tick always wins.** When "Use the shared value on this page" is ticked, `ycf_get_fields()` now shows the shared value too. Before, it ignored the tick.
+* **A page's own value beats a site detail with the same name.**
+* **`ycf_has_field()` means "has a value".** An empty text or an empty list is no value. An unticked box or a zero still is.
+* **Mistakes in a schema are refused when saved.** Unknown types (with a "Did you mean…?" hint), the same name twice, names with square brackets, and names the plugin uses itself. Schemas already saved keep working.
+
+**New**
+
+* **Works in the block editor.** The fields are a real box now. No Classic Editor plugin needed.
+* **Block themes.** Their templates are listed and can have fields.
+* **`[ycf]` shortcode.** Show a field without editing the theme. Works in a Shortcode block, a widget or the content.
+* **REST API.** Every page and post has a `yaml_cf` object. There are routes for site details and collections. You can save through it too, with the same checks as the editor.
+* **Settings screen.** **YAML CF → Settings** has three choices: page caches, REST API access, and what happens when the plugin is deleted.
+* **Keep content when the plugin is deleted.** A choice on the Settings screen.
+* **Galleries.** Image fields take `list: true`. Pick many images at once. Reorder by dragging or with the keyboard.
+* **Search box for big lists.** A category or collection field with more than 50 choices becomes a search box. Change the limit with the `yaml_cf_picker_threshold` filter.
+* **Sections fold away.** Each section shows its first field as its title. A small **Collapse all** button folds them all.
+* **Save and add another.** For collection items. Saves and opens an empty item.
+* **Content Check finds left-behind content.** Values of removed fields are listed under "Values with no field", with a button to remove them.
+* **Warning when a field loses its place.** Removing or renaming a field in any schema says which fields are affected.
+* **`yaml_cf_field_value` filter.** Change any value before the theme gets it.
+* **Use site details on these pages.** The switch is back on the main screen.
+
+**Better**
+
+* **One kind of message.** Messages look the same everywhere, with the same icons. Nothing pops up in a corner. Nothing disappears on its own. Results of a switch or button show right next to it, so the page doesn't jump.
+* **Accessible messages.** Screen readers read each message once, with its kind ("Error:", "Warning:"). Errors get keyboard focus. Pickers say how many results they found.
+* **Icons.** Headings, columns and buttons have icons. The same thing always has the same icon.
+* **One field per row** in every form.
+* **The Custom fields box** can be folded in the classic editor too, and remembers it. The "not saved yet" line works in the block editor too.
+* **Main screen.** The table doesn't jump when you switch templates on and off. It works on small screens.
+* **Faster.** Plugin data isn't loaded on every page view. Values are worked out once per page. Editor scripts only load where there are fields. Editor pages are much smaller.
+* **Collections scale.** Each item has its own database row. The item list has pages of 50.
+* **No copy of the schema in every post.** Schema changes take effect at once.
+* **"Add section" is drawn by the server,** so a new section is the same as one that was already there.
+* **Clearer texts.** Onboarding says the theme needs a line of code. An empty template list says why. Permission messages say what's really needed.
+
+**Fixed**
+
+* Removing a field from a schema no longer deletes its content. Put the name back and the content comes back. The same on every screen.
+* A tick box can be unticked again.
+* Importing no longer empties fields the file doesn't mention.
+* A template with only shared fields now shows the Custom fields box.
+* Child themes showed no templates.
+* Themes built on `singular.php` (like Twenty Twenty) couldn't get page fields.
+* `ycf_get_field()` and `ycf_get_fields()` could give different values for the same field.
+* A typo in a field type showed nothing and then lost the field's content.
+* Two fields could share a name, and one replaced the other.
+* Shortcuts like `- info:` and `- section:` caused warnings in shared fields and inside sections.
+* Fields could be saved into another post when a plugin saved a second post at the same time.
+* A form left open too long lost your changes without a word. Now it says so.
+* Collection labels didn't update after a schema change.
+* A collection field could show an item from another collection.
+* Big collection imports could lose their lock.
+* Imports kept image IDs from another site in site details, site parts and shared content.
+* `ycf_get_image()` with a custom size like `[300, 200]` crashed the page.
+* Fields named with digits only (like `2024`) could be renamed by some saves.
+* The import preview couldn't tick pages from older export files.
+* Content Check offered to delete fields still in use.
+* "Empty all fields" left galleries, file lists and pickers filled.
+* Import messages didn't show in the block editor.
+* The active filter button in Content Check was unreadable.
+
+**Security**
+
+* Admin-only actions use their own security token.
+* Writers can only get their own post's schema.
+* The category picker checks the user may use that taxonomy.
+* Site details no longer leak to visitors through a page's REST data.
+* Picker labels are inserted as text, not HTML.
+* CSS cleaning repeats until nothing is left to remove.
+* Schemas over 256 KB are refused.
+
+**Removed**
+
+* Nine old background requests nothing used anymore.
+
+**Updated**
+
+* Tested with WordPress 7.1.
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"
@@ -303,7 +323,7 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 == Upgrade Notice ==
 
 = 2.0.0 =
-Read this before updating. This version needs WordPress 6.4 or newer. Two things change what the website shows. Pages where "Use the shared value on this page" is ticked now really do show the shared value through `ycf_get_fields()`, which used to ignore the tick. Where a page field and a site detail share a name, the page's own value now wins. Schemas with a mistake in them - an unknown field type, or the same field name twice - are refused when saved from now on; schemas already saved keep working, and the editor says what is wrong. The update tidies the database once, by itself, the first time an administrator opens a page: it stops the plugin's options being read on every page view, removes a copy of the schema it used to keep in every post, repairs site parts of a child theme that were filed under their full path, and gives every item of a collection a database row of its own instead of one row shared by all of them. A collection is read correctly either way while that is pending, so nothing depends on when it happens. Field content is also readable over the REST API from now on. Each page's fields are readable wherever the page itself is. Site details and collections are not public until you tick the REST API setting on the plugin's Settings screen. Back up before updating, as with any update.
+Back up first. Needs WordPress 6.4+. The shared value tick now wins in ycf_get_fields(), and a page value beats a site detail with the same name. Schemas with mistakes are refused. The database is tidied once, by itself.
 
 = 1.2.6 =
 Important fix for code fields. HTML/JavaScript/CSS code is now properly preserved using base64 encoding. Re-save any code fields that previously had content stripped.
@@ -334,28 +354,35 @@ Initial release of YAML Custom Fields.
 
 == Developer Documentation ==
 
-The full guide is on the plugin's Documentation page. A short summary follows.
+The full guide is on the plugin's Documentation page. Here's the short version.
 
 = Functions =
 
-`ycf_get_field( 'name' )                 // One field
-ycf_get_field( 'name', 42 )             // One field of another post
+`ycf_get_field( 'name' )                        // One field
+ycf_get_field( 'name', 42 )                    // A field of another post
 ycf_get_field( 'name', 'partial:header.php' )  // A site part
-ycf_get_field( 'title', null, $section ) // A field inside a section
-ycf_get_fields()                        // All fields
-ycf_has_field( 'name' )                 // Does the field have a value?
-ycf_get_image( 'name', null, 'large' )  // Image: id, url, alt, title, caption, width, height
-ycf_get_file( 'name' )                  // File: id, url, path, filename, filesize, mime_type, title
-ycf_get_term( 'name' )                  // Category or tag (WP_Term)
-ycf_get_post_type( 'name' )             // Content type (WP_Post_Type)
-ycf_get_data_object( 'name' )           // Item from a reusable list
-ycf_get_data_objects( 'short-name' )    // Every item in a reusable list
-ycf_get_global_field( 'name' )          // One of the site details
-ycf_get_global_fields()                 // All site details`
+ycf_get_field( 'title', null, $section )       // A field inside a section
+ycf_get_fields()                               // All fields
+ycf_has_field( 'name' )                        // Does it have a value?
+ycf_get_image( 'name', null, 'large' )         // Image: id, url, alt, title, caption, width, height
+ycf_get_file( 'name' )                         // File: id, url, path, filename, filesize, mime_type, title
+ycf_get_term( 'name' )                         // Category or tag (WP_Term)
+ycf_get_post_type( 'name' )                    // Content type (WP_Post_Type)
+ycf_get_data_object( 'name' )                  // An item from a collection
+ycf_get_data_objects( 'short-name' )           // Every item in a collection
+ycf_get_global_field( 'name' )                 // One site detail
+ycf_get_global_fields()                        // All site details`
 
-Each function also has a long name that starts with `yaml_cf_`.
+Each function also has a long name starting with `yaml_cf_`.
 
-Output is always escaped: `esc_html()` for text, `esc_url()` for links, `wp_kses_post()` for formatted text. Code fields print as they are.
+Always escape what you print: `esc_html()` for text, `esc_url()` for links, `wp_kses_post()` for formatted text. Code fields print as they are.
+
+= Shortcode =
+
+`[ycf field="headline"]
+[ycf field="hero" size="large"]
+[ycf field="phone" source="site"]
+[ycf field="subtitle" default="Coming soon"]`
 
 = Where data is stored =
 
@@ -364,27 +391,24 @@ Output is always escaped: `esc_html()` for text, `esc_url()` for links, `wp_kses
 * Site parts: option `yaml_cf_partial_data`
 * Shared fields: options `yaml_cf_template_global_schemas` and `yaml_cf_template_global_data`
 * Site details: options `yaml_cf_global_schema` and `yaml_cf_global_data`
-* Reusable lists: option `yaml_cf_data_object_types`, items in `yaml_cf_data_object_entries_{short-name}`
+* Collections: option `yaml_cf_data_object_types`. Each item has its own option, plus a small index per collection. Read them with `ycf_get_data_objects()`.
 
 == Privacy Policy ==
 
-YAML Custom Fields does not collect or send any data. Everything stays in the site's own WordPress database.
+YAML Custom Fields doesn't collect or send any data. Everything stays in your WordPress database.
 
 == Third-Party Libraries ==
 
-This plugin includes the following third-party libraries:
-
-* **Symfony YAML Component** (v6.4) - Licensed under MIT License (GPL-compatible)
+* **Symfony YAML** (6.4), MIT license (works with GPL)
   - Homepage: https://symfony.com/components/Yaml
-  - License: https://github.com/symfony/yaml/blob/7.3/LICENSE
+  - License: https://github.com/symfony/yaml/blob/6.4/LICENSE
 
 == Credits ==
 
-* Developed by [Studio Cita](https://www.cita.hr)
+* Made by [Studio Cita](https://www.cita.hr)
 * Lead developer: [Silvestar Bistrović](https://www.silvestar.codes)
 
 == Support ==
 
-Help and examples:
-* [Plugin Documentation](https://github.com/maliMirkec/yaml-custom-fields)
-* [Report Issues](https://github.com/maliMirkec/yaml-custom-fields/issues)
+* [Plugin documentation](https://github.com/maliMirkec/yaml-custom-fields)
+* [Report a problem](https://github.com/maliMirkec/yaml-custom-fields/issues)

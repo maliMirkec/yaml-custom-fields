@@ -1,72 +1,59 @@
 # Translations
 
-This directory contains language translation files for the YAML Custom Fields plugin.
+This folder holds the plugin's translations.
 
-## Translation Files
+## File names
 
-Translation files should be placed in this directory with the following naming convention:
+- `yaml-custom-fields.pot`: the template. It lists every text to translate.
+- `yaml-custom-fields-{locale}.po`: a translation you edit. Example: `yaml-custom-fields-de_DE.po`.
+- `yaml-custom-fields-{locale}.mo`: the same translation, compiled for WordPress.
+- `yaml-custom-fields-{locale}-{hash}.json`: translations for the admin scripts.
 
-- `yaml-custom-fields-{locale}.po` - Portable Object file (source)
-- `yaml-custom-fields-{locale}.mo` - Machine Object file (compiled)
+## Make a translation with Poedit
 
-## Example Locales
+1. Install [Poedit](https://poedit.net/).
+2. Open `yaml-custom-fields.pot`.
+3. Pick your language.
+4. Translate the texts.
+5. Save. Poedit makes the `.po` and `.mo` files.
+6. Put both files in this folder.
 
-- `yaml-custom-fields-de_DE.po/mo` - German
-- `yaml-custom-fields-fr_FR.po/mo` - French
-- `yaml-custom-fields-es_ES.po/mo` - Spanish
-- `yaml-custom-fields-ja.po/mo` - Japanese
-
-## Creating Translations
-
-### Using Poedit
-
-1. Download and install [Poedit](https://poedit.net/)
-2. Create new translation from PHP sources
-3. Point to the plugin root directory
-4. Select target language
-5. Translate strings
-6. Save both .po and .mo files to this directory
-
-### Using WP-CLI
+## Make a translation with WP-CLI
 
 ```bash
-# Generate POT file (template)
-wp i18n make-pot /path/to/yaml-custom-fields /path/to/yaml-custom-fields/languages/yaml-custom-fields.pot
+# Update the template
+wp i18n make-pot /path/to/yaml-custom-fields /path/to/yaml-custom-fields/languages/yaml-custom-fields.pot --exclude=build,vendor,tests,examples
 
-# Create PO file from POT
+# Make a .po file for German
 wp i18n make-po /path/to/yaml-custom-fields/languages/yaml-custom-fields.pot de_DE
 
-# Create MO file from PO
+# Compile .po into .mo
 wp i18n make-mo /path/to/yaml-custom-fields/languages/
 
-# Create JSON files for JavaScript strings (admin scripts use wp.i18n)
+# Make the .json files for the admin scripts
 wp i18n make-json /path/to/yaml-custom-fields/languages/ --no-purge
 ```
 
-`yaml-custom-fields.pot` in this directory is the current template. Regenerate it after changing
-translatable strings (run `make-pot` from a copy of the plugin outside a WordPress install, or pass
-`--exclude=build,vendor,tests,examples`).
+- Update the template every time you add or change a text.
+- The admin scripts need the `.json` files. Without them, script texts stay in English.
+- Language packs from translate.wordpress.org already include the `.json` files.
 
-JavaScript strings are loaded with `wp_set_script_translations()`, which reads the
-`yaml-custom-fields-{locale}-{hash}.json` files created by `make-json`. Language packs from
-translate.wordpress.org include them automatically.
+## Translate online
 
-## WordPress.org Translation Platform
-
-Once the plugin is published on WordPress.org, translations can be contributed through:
+After the plugin is on WordPress.org, anyone can translate it here:
 https://translate.wordpress.org/projects/wp-plugins/yaml-custom-fields/
 
-## Text Domain
+## Text domain
 
-All translatable strings in this plugin use the text domain: `yaml-custom-fields`
+Every text uses the text domain `yaml-custom-fields`.
 
-## Need Help?
+## Questions?
 
-For translation questions, please open an issue on GitHub:
+Open an issue on GitHub:
 https://github.com/maliMirkec/yaml-custom-fields/issues
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Maintained By:** [Studio Cita](https://www.cita.hr)
+**Last updated:** 2026-09-28
+**Plugin version:** 2.0.0
+**Maintained by:** [Studio Cita](https://www.cita.hr)

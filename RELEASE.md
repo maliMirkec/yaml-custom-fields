@@ -1,183 +1,119 @@
 # Releasing to WordPress.org
 
-This guide explains how to package and release the plugin to WordPress.org.
+How to ship a new version.
 
-## Pre-Release Checklist
+## Before you release
 
-- [ ] All changes committed and pushed to GitHub
-- [ ] Version number updated in `yaml-custom-fields.php`
-- [ ] Version number updated in `readme.txt`
-- [ ] Changelog updated in `readme.txt`
-- [ ] Scoped dependencies built (`./build-scoped.sh`)
-- [ ] Tested on a clean WordPress installation
-- [ ] Tested on a site upgraded from the previous version
-- [ ] Release-specific manual testing done (see `RELEASE-TESTING-<version>.md`)
-- [ ] All WordPress.org plugin checks pass
+- [ ] Version is the same in both places:
+  - `yaml-custom-fields.php`: `Version: 2.0.0` (the code reads the version from here)
+  - `readme.txt`: `Stable tag: 2.0.0`
+- [ ] Changelog and upgrade notice in `readme.txt` are written.
+- [ ] `Tested up to` in `readme.txt` is the newest WordPress version.
+- [ ] `composer check:release` passes. It checks syntax and coding style, builds the libraries, runs the unit tests and the audit scripts.
+- [ ] `composer test:integration` passes (see `tests/Integration/README.md`).
+- [ ] You tested by hand with `MANUAL-TESTING.md`.
+- [ ] You did the release checks in `RELEASE-TESTING-<version>.md` (if there is one).
+- [ ] You tested on a fresh site **and** on a site updated from the old version.
+- [ ] Everything is committed and pushed.
 
-## Creating a Release Package
+## Release the easy way (GitHub)
 
-### Option 1: Using the Package Script (Recommended)
+1. Push a tag with the version number:
 
-```bash
-./package-for-wporg.sh
-```
-
-This creates a ZIP file: `yaml-custom-fields.{version}.zip`
-
-The script:
-- ✅ Includes scoped dependencies (`build/vendor/`)
-- ❌ Excludes development files (vendor/, composer.json, build scripts)
-- ❌ Excludes assets (banners/icons - uploaded separately)
-
-### Option 2: Manual Packaging
-
-1. Ensure scoped dependencies are built:
    ```bash
-   ./build-scoped.sh
+   git tag 2.0.0
+   git push origin 2.0.0
    ```
 
-2. Create a clean copy:
-   ```bash
-   mkdir -p dist/yaml-custom-fields
-   rsync -av --exclude-from='.distignore' ./ dist/yaml-custom-fields/
-   ```
+2. GitHub (`.github/workflows/deploy-to-wporg.yml`) then:
+   - runs the unit tests;
+   - builds the libraries;
+   - sends the plugin to WordPress.org (SVN).
 
-3. Create ZIP:
-   ```bash
-   cd dist
-   zip -r ../yaml-custom-fields.zip yaml-custom-fields
-   ```
+- It needs `SVN_USERNAME` and `SVN_PASSWORD` in the GitHub repo secrets.
+- The update shows up on WordPress.org in about 15 minutes.
 
-## Testing the Package
+## Make a ZIP by hand
 
-Before uploading, test the ZIP file:
-
-1. Install on a **fresh WordPress site** (not your dev environment)
-2. Activate the plugin
-3. Verify no errors in PHP error log
-4. Test all functionality:
-   - Creating schemas
-   - Saving data
-   - Data objects
-   - Template partials
-5. Check browser console for JavaScript errors
-6. Deactivate and reactivate to test cleanup
-
-## Uploading to WordPress.org
-
-### First-Time Submission
-
-1. Submit via: https://wordpress.org/plugins/developers/add/
-2. Upload the ZIP file (created with `package-for-wporg.sh`)
-3. Wait for review (can take 1-2 weeks)
-4. Once approved, you can upload updates and assets through the web interface
-
-### Updating Existing Plugin
-
-Once your plugin is approved, update it by uploading new ZIP files:
-
-1. **Update version numbers:**
-   - `yaml-custom-fields.php` header: `Version: 1.2.4`
-   - `readme.txt` stable tag: `Stable tag: 1.2.4`
-   - Update changelog in `readme.txt`
-
-2. **Build new package:**
-   ```bash
-   ./build-scoped.sh
-   ./package-for-wporg.sh
-   ```
-
-3. **Upload to WordPress.org:**
-   - Go to: https://wordpress.org/plugins/developers/
-   - Select your plugin
-   - Upload the new ZIP file
-
-4. **Plugin update is live within 15 minutes!**
-
-### Uploading Assets (Banners, Icons, Screenshots)
-
-Upload assets through the WordPress.org web interface:
-
-1. Go to: https://wordpress.org/plugins/developers/
-2. Select your plugin: yaml-custom-fields
-3. Navigate to the Assets section
-4. Upload your assets:
-   - `banner-772x250.png` - Plugin header banner (small)
-   - `banner-1544x500.png` - Plugin header banner (large)
-   - `icon-128x128.png` - Plugin icon (small)
-   - `icon-256x256.png` - Plugin icon (large)
-   - `screenshot-1.png`, `screenshot-2.png`, etc. - Screenshots
-
-**Note:** Assets are uploaded separately from the plugin ZIP and are not included in the distribution package.
-
-## Important Notes
-
-### What Gets Distributed
-
-✅ **Included in user downloads:**
-- Plugin PHP files
-- Templates
-- Assets (CSS, JS)
-- **Scoped dependencies** (`build/vendor/`)
-- `readme.txt`
-- License
-
-❌ **Excluded (via .distignore):**
-- `vendor/` (unscoped - dev only)
-- `composer.json`, `composer.lock`
-- Build scripts (`build-scoped.sh`)
-- Development configs (`scoper.inc.php`)
-- Version control files (`.git`, `.gitignore`)
-- Screenshots/banners (uploaded separately)
-
-### Users Don't Need Composer
-
-Because we use PHP-Scoper:
-- ✅ Users get pre-built, scoped dependencies in `build/vendor/`
-- ✅ No `composer install` required
-- ✅ No conflicts with other plugins
-- ✅ Plug-and-play installation
-
-### Version Numbering
-
-WordPress.org requires:
-- Version in `yaml-custom-fields.php`: `Version: 1.2.2`
-- Version in `readme.txt`: `Stable tag: 1.2.2`
-- Both must match for proper updates
-
-## Troubleshooting
-
-### "Dependencies not found" Error
-
-**Cause**: Forgot to run build script before packaging
-
-**Solution**:
 ```bash
 ./build-scoped.sh
 ./package-for-wporg.sh
 ```
 
-### ZIP Too Large
+- This makes `yaml-custom-fields.zip`.
+- It includes `build/vendor/` (users need it).
+- It leaves out developer files. The list is in `.distignore`.
 
-**Cause**: Development files included
+## Test the ZIP
 
-**Solution**: Check `.distignore` is properly configured and used by packaging script
+1. Install the ZIP on a **fresh** WordPress site. Not your dev site.
+2. Turn the plugin on.
+3. Check the PHP error log. It should be empty.
+4. Quick test:
+   - Turn on fields for a template and add fields.
+   - Fill them in on a page and save.
+   - Fill in Site details and Shared content.
+   - Add a collection and an item.
+   - Check the values show on the website.
+5. Check the browser console. No errors.
+6. Turn the plugin off and on again.
 
-### Plugin Not Updating
+## First time on WordPress.org
 
-**Cause**: `readme.txt` stable tag doesn't match plugin version
+1. Go to https://wordpress.org/plugins/developers/add/
+2. Upload the ZIP.
+3. Wait for the review (1–2 weeks, sometimes more).
+4. After approval, you get an SVN folder. The GitHub workflow uses it.
 
-**Solution**: Ensure `Stable tag: 1.2.2` in readme.txt matches the version in `yaml-custom-fields.php`
+## Pictures (banners, icons, screenshots)
 
-## Resources
+These go to the SVN `assets/` folder, not into the ZIP:
 
-- [WordPress Plugin Handbook](https://developer.wordpress.org/plugins/)
-- [Plugin Assets](https://developer.wordpress.org/plugins/wordpress-org/plugin-assets/)
-- [Release Checklist](https://developer.wordpress.org/plugins/wordpress-org/plugin-developer-faq/)
-- [Plugin Developer Dashboard](https://wordpress.org/plugins/developers/)
+- `banner-772x250.png` and `banner-1544x500.png`: the header picture
+- `icon-128x128.png` and `icon-256x256.png`: the plugin icon
+- `screenshot-1.png`, `screenshot-2.png`, …: screenshots. Their captions are in `readme.txt` under `== Screenshots ==`.
+
+## What ships and what doesn't
+
+**In the ZIP:**
+- The plugin PHP files, `src/`, `templates/`
+- `admin-assets/` (CSS, JS)
+- `build/vendor/` (the libraries)
+- `languages/`
+- `readme.txt`, `LICENSE.txt`, `uninstall.php`
+
+**Not in the ZIP** (see `.distignore`):
+- `vendor/` (developer tools)
+- `composer.json`, `composer.lock`
+- Build scripts, `bin/`, `scoper.inc.php`
+- Tests and lint settings
+- All `.md` files (they are for GitHub only)
+- `.git` files
+
+Users never need Composer. Everything is already built.
+
+## Problems
+
+**"Dependencies not found" after install**
+- You forgot to build before packing.
+- Fix: `./build-scoped.sh`, then `./package-for-wporg.sh`.
+
+**The ZIP is too big**
+- Developer files got in.
+- Fix: check `.distignore`.
+
+**Sites don't get the update**
+- `Stable tag` in `readme.txt` doesn't match `Version` in `yaml-custom-fields.php`.
+- Fix: make them the same.
+
+## Links
+
+- [Plugin Handbook](https://developer.wordpress.org/plugins/)
+- [Plugin assets](https://developer.wordpress.org/plugins/wordpress-org/plugin-assets/)
+- [Plugin developer FAQ](https://developer.wordpress.org/plugins/wordpress-org/plugin-developer-faq/)
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Maintained By:** Silvestar Bistrović
+**Last updated:** 2026-09-28
+**Plugin version:** 2.0.0
+**Maintained by:** Silvestar Bistrović

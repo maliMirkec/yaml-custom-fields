@@ -1,205 +1,151 @@
 # Release testing for 2.0.0
 
-What to click through by hand before publishing, and why each thing is on the list.
+What to check by hand before publishing 2.0.0.
 
-`MANUAL-TESTING.md` covers the plugin as a whole. This file covers only what
-changed in 2.0.0, ordered by how much damage it would do if it were wrong.
-Everything here is already covered by automated tests (259 unit, 566
-integration) — what those tests cannot do is start from a site that already has
-real data in it, or notice that a button stopped responding.
+- [MANUAL-TESTING.md](MANUAL-TESTING.md) covers the whole plugin.
+- This file covers **only what changed in 2.0.0**. The riskiest things come first.
+- The automatic tests already cover all of this (263 unit, 579 integration). But they can't start from a site with real old data, and they can't see a button that stopped working.
+- Tick the boxes as you go. **If it fails** says where to look.
 
-Tick the boxes as you go. If something fails, the **If it fails** line says what
-it points at.
-
-> **What you do not have to test by hand.** Three smoke tests run the same
-> fourteen-schema matrix — every field type, every shorthand form, nesting, and
-> the awkward cases — across the three surfaces a PHP warning can surface on:
+> **You don't need to hunt for PHP warnings.** Three tests already do that, with every field type and every odd case:
+> - `AdminScreenSmokeTest`: every admin screen and the Custom fields box, empty and filled, as an admin and as a writer.
+> - `AjaxSmokeTest`: all 10 AJAX actions, with good, missing and nonsense input.
+> - `PublicApiSmokeTest`: every theme function, with and without values, with deleted images and terms, inside sections and site parts.
 >
-> - `AdminScreenSmokeTest` — every admin screen and the post editor meta box,
->   empty, filled in, as an administrator and as a writer.
-> - `AjaxSmokeTest` — all ten AJAX handlers, as an administrator and as a
->   writer, and again with missing and with nonsense parameters.
-> - `PublicApiSmokeTest` — every theme-facing function for every field name, with
->   values, without values, with deleted attachments and terms, inside repeating
->   sections, on site parts, and with arguments a theme can get wrong.
+> A warning from the plugin fails the test and names the file and line. They run on PHP 8.1, 8.3 and 8.4.
 >
-> A warning from the plugin's own code fails the build and names the file and
-> line. All three were checked by deliberately introducing a fault and confirming
-> each one caught it. They run in CI on PHP 8.1, 8.3 and 8.4.
->
-> So do not spend time clicking through schema variations hunting for warnings.
-> Spend it on section 1, the upgrade path, which is the part no test can reach.
+> Spend your time on **section 1, the update**. No test can reach it.
 
 ---
 
 ## Before you start
 
-- [ ] Build the scoped dependencies: `./build-scoped.sh`
-- [ ] Have **two** test sites ready:
-  - **Site A — upgraded.** Install the currently published version (1.2.9)
-    first, add real content (see below), *then* replace it with the new build.
-    This is the one that matters.
-  - **Site B — clean.** New install of the new version, no history.
-- [ ] On Site A, before upgrading, set up: two templates with schemas, one with
-      shared fields, site details filled in, one collection with a few entries,
-      three or four pages with fields filled in (including an image, a rich-text
-      field and a repeating section), and at least one page where **"Use the
-      shared value on this page"** is ticked.
-- [ ] Note down what a few of those pages show on the front end. You will be
-      comparing against this later.
+- [ ] Build: `./build-scoped.sh`
+- [ ] Get **two** test sites:
+  - **Site A (updated).** Install 1.2.9 first. Add real content (see below). *Then* replace it with 2.0.0. This one matters most.
+  - **Site B (fresh).** A new install of 2.0.0. No history.
+- [ ] On Site A, **before** updating, add:
+  - two templates with fields, one of them with shared fields;
+  - site details, filled in;
+  - one collection with a few items;
+  - three or four pages with fields filled in (an image, rich text and sections);
+  - at least one page with **"Use the shared value on this page"** ticked.
+- [ ] Write down what a few of those pages show on the website. You'll compare later.
 
-> Take a database snapshot of Site A before upgrading. Section 1 is the only
-> part of this release that rewrites existing data, and you will want to be able
-> to run it more than once.
+> **Take a database backup of Site A before updating.** Section 1 is the only part that changes old data. You may want to run it more than once.
 
 ---
 
-## 1. The upgrade path
+## 1. The update
 
-**Why it is first:** `src/Core/Upgrader.php` is the only new code that changes
-data on a site that already exists. Every automated test starts from an empty
-database, so this is the one thing they genuinely cannot cover. It runs once, on
-the first admin page load after the update, and is tracked by the
-`yaml_cf_db_version` option.
+**Why first:** `src/Core/Upgrader.php` is the only code that changes data already on a site. Every automatic test starts from an empty database. It runs once, on the first admin page an admin opens after the update.
 
-- [ ] Upgrade Site A and load **any** admin page.
-- [ ] `wp option get yaml_cf_db_version` returns `5`.
-- [ ] Every page you noted down still shows exactly what it showed before.
-- [ ] Schemas, shared fields, site details and collections are all still there
-      and unchanged.
-- [ ] Load another admin page. `yaml_cf_db_version` is still `5` and nothing
-      else changed — it must not run twice.
+- [ ] Update Site A. Open **any** admin page.
+- [ ] `wp option get yaml_cf_db_version` says `5`.
+- [ ] The pages you wrote down show exactly the same as before.
+- [ ] Field lists, shared fields, site details and collections are all still there, unchanged.
+- [ ] Open another admin page. The version is still `5`. Nothing else changed. It must not run twice.
 
-**If it fails:** restore the snapshot before doing anything else. A partial
-migration is worse than none, and you will want the original to compare against.
+**If it fails:** restore the backup first. A half-done update is worse than none.
 
-### 1a. Options are no longer read on every page view
+### 1a. Settings aren't loaded on every page anymore
 
-- [ ] `wp option list --search='yaml_cf_*' --fields=option_name,autoload`
-- [ ] Every row reads `off`, `no` or `auto-off`. **`auto` counts as on** — that
-      is the value an option gets when it is saved without saying either way, and
-      it was the whole bug.
-- [ ] On Site B, save a schema, then check the same command. Newly created
-      options must be off as well, not just migrated ones.
+- [ ] Run `wp option list --search='yaml_cf_*' --fields=option_name,autoload`
+- [ ] Every row says `off`, `no` or `auto-off`. **`auto` counts as on.** That was the bug.
+- [ ] On Site B, save a field list. Run the command again. New rows must be off too.
 
-**If it fails:** a write path somewhere is still calling `update_option()`
-without its third argument.
+**If it fails:** some code still calls `update_option()` without the third argument.
 
 ### 1b. Child theme site parts survive
 
-Only applies if Site A runs a **child theme** and has a site part of its own
-(one in the child, not the parent) with a schema saved against it. Those were
-filed under their full path before this release.
+Only if Site A uses a **child theme** that has its own site part with fields.
 
-- [ ] That site part is still listed on the dashboard, still switched on, and
-      **Edit content** still shows what was filled in.
-- [ ] `wp option get yaml_cf_schemas --format=json` shows it keyed by its plain
-      name, with no absolute path left anywhere in the list.
+- [ ] That site part is still listed on the main screen, still on, and still has its content.
+- [ ] `wp option get yaml_cf_schemas --format=json` lists it by its short name. No long file paths.
 
-**If it fails:** the content is still in the database under the old key — check
-`repairChildThemePaths()` in `src/Core/Upgrader.php` before re-saving anything.
+**If it fails:** the content is still in the database under the old name. Look at `repairChildThemePaths()` in `src/Core/Upgrader.php` before saving anything.
 
-### 1c. The per-post schema copy is gone
+### 1c. Pages don't keep their own copy of the field list anymore
 
-- [ ] `wp post meta get <id> _yaml_cf_schema` on an upgraded page returns
-      nothing (it errors with "could not be found", which is the right answer).
-- [ ] The **Content Check** page still lists pages and still reports missing
-      images, as it did before the upgrade.
-- [ ] Edit a schema to add an image field, then open Content Check **without**
-      re-saving any page. The new field is taken into account.
+- [ ] `wp post meta get <id> _yaml_cf_schema` on an updated page finds nothing. That's right.
+- [ ] **Content Check** still lists pages and still finds missing images.
+- [ ] Add an image field to a field list. Open Content Check **without** saving any page. The new field is checked.
 
-**If it fails:** `PostSchemaLocator` is not finding the schema from the post's
-template. Check that the template name it resolves to matches the key the schema
-is stored under.
+**If it fails:** `PostSchemaLocator` isn't finding the field list from the page's template.
 
----
+### 1d. Collections moved to one row per item
 
-## 2. The admin still works at all
+**Why:** each item now has its own database row, plus a small index. This touches the most rows.
 
-**Why:** administrator-only actions moved to their own nonce
-(`yaml_cf_admin_nonce`), and every AJAX call in the admin now sends two tokens
-instead of one. If any call site was missed, that button silently stops working.
-This is the change most likely to break something visible.
-
-Click each of these and confirm it does what it says:
-
-- [ ] Switch a template **on**, then **off** again (`save_template_settings`)
-- [ ] Toggle **site details** on a template (`toggle_use_global`)
-- [ ] **Refresh templates** on the dashboard (`refresh_templates`)
-- [ ] **Export** — run the wizard all the way through and download a file
-      (`export_bundle`, `get_posts_with_data`)
-- [ ] **Import** — drop that file back in, check the preview lists its contents,
-      and complete the import (`inspect_bundle`, `import_bundle`)
-- [ ] In a post, **Add section** on a repeating field (`render_block_item`)
-- [ ] In a post, use a **taxonomy picker** on a taxonomy with more than 50 terms,
-      so the search box appears (`search_terms`)
-- [ ] In a post, use a **collection picker** the same way (`search_data_objects`)
-- [ ] Save a schema in the schema editor
-- [ ] Save content on a site part, on shared fields, and on site details
-
-**If it fails:** open the browser console. A failed nonce comes back as `-1` or
-`403`. Check that call site sends both `nonce` and `admin_nonce`.
-
-### 2a. Permissions still hold
-
-- [ ] Log in as a **Contributor**. The plugin's own menu is not visible.
-- [ ] As that Contributor, edit a post with fields: the fields show, **Add
-      section** works, and the pickers work.
-- [ ] As that Contributor, the **Copy code** snippets do *not* appear.
+- [ ] On Site A, before updating, use a collection item in a page field.
+- [ ] After updating: all items are listed, the page still shows its item, and the picker finds it.
+- [ ] `wp option list --search='yaml_cf_do_*' --fields=option_name,autoload` shows one row per item and one index. None autoloaded.
+- [ ] `yaml_cf_data_object_entries_*` rows are gone.
 
 ---
 
-## 3. Field values on the front end
+## 2. Every button still works
 
-**Why:** `ycf_get_field()` and `ycf_get_fields()` used to resolve values by
-different rules and could disagree about the same field. They now share one
-resolver. Two behaviours deliberately changed, and both only show up on sites
-that use these features.
+**Why:** admin-only actions now need a second, admin-only token. If one place was missed, its button quietly stops working.
 
-- [ ] A page where **"Use the shared value on this page"** is ticked shows the
-      **shared** value on the front end.
-- [ ] If your theme uses `ycf_get_fields()` anywhere, that page shows the shared
-      value there too. **This is the deliberate change** — before, `get_fields()`
-      ignored the tick completely. If a page's output changed here, that is the
-      fix working.
-- [ ] Untick it on that page. The page's own value comes back.
-- [ ] A field with a value on the page **and** a site detail of the same name
-      shows the **page's** value. (Second deliberate change; only applies if you
-      have a name used in both places.)
+Click each one. Check it does what it says:
+
+- [ ] Switch a template's **Custom fields** on, then off.
+- [ ] Tick and untick **Use site details on these pages**. The result shows next to it. The page doesn't jump.
+- [ ] **Refresh list** on the main screen.
+- [ ] **Export:** go through all steps and download the file.
+- [ ] **Import:** drop that file back in. The preview lists what's in it. Finish the import.
+- [ ] On a page: **Add section** in a sections field.
+- [ ] On a page: a **taxonomy picker** with more than 50 terms. A search box shows. Search works.
+- [ ] On a page: a **collection picker**, the same way.
+- [ ] Save a field list.
+- [ ] Save a site part, shared content and site details.
+- [ ] Save each choice on **YAML CF → Settings**.
+
+**If it fails:** open the browser console. A failed token shows as `-1` or `403`. Check that the call sends both `nonce` and `admin_nonce`.
+
+### 2a. Rights still hold
+
+- [ ] Log in as a **Contributor**. The YAML CF menu isn't there.
+- [ ] As that Contributor, edit a post with fields. The fields show. **Add section** and pickers work.
+- [ ] As that Contributor, the **Copy code** buttons don't show.
+
+---
+
+## 3. Values on the website
+
+**Why:** `ycf_get_field()` and `ycf_get_fields()` used to follow different rules. Now they share one. Two things changed on purpose.
+
+- [ ] A page with **"Use the shared value on this page"** ticked shows the **shared** value.
+- [ ] If the theme uses `ycf_get_fields()`, that shows the shared value too. **This is a planned change.** Before, it ignored the tick.
+- [ ] Untick it. The page's own value comes back.
+- [ ] A field filled in on the page **and** in site details, with the same name, shows the **page's** value. (Second planned change.)
 - [ ] A page never saved since a shared field was added shows the shared value.
-- [ ] A page saved with a field left **empty** stays empty — it does not fall
-      back to the shared value.
-- [ ] Repeating sections, images, galleries, files, rich text and code fields all
-      still render.
+- [ ] A field the writer cleared stays empty. It doesn't fall back to the shared value.
+- [ ] Sections, images, galleries, files, rich text and code all still show.
 
-**If it fails:** the order lives in one place, `yaml_cf_resolve_post_fields()` in
-`yaml-custom-fields.php`, and is written out in the docblock above it.
+**If it fails:** the order is in one place: `yaml_cf_resolve_post_fields()` in `yaml-custom-fields.php`.
 
 ---
 
-## 4. Schemas
+## 4. Field lists (schemas)
 
-**Why:** the validator now checks field types, duplicate names and reserved
-names, recursively. Schemas that used to save may now be refused — that is the
-point, but it needs to refuse the right things.
+**Why:** the plugin now checks types, repeated names and reserved names, at every level. Some lists that used to save are now refused. It must refuse the right ones.
 
-- [ ] Every schema already on Site A still opens and still saves unchanged.
-- [ ] `type: strng` is refused with *"Did you mean "string"?"*
-- [ ] A bad type **inside a group** is refused, and the message names the group.
-- [ ] A bad type **inside a repeating section** is refused the same way.
-- [ ] The same field name twice is refused.
-- [ ] The same name at two different depths (top level and inside a group) is
-      **accepted** — those are stored separately.
-- [ ] `- info:` and `- section:` shorthand still work, including inside a group.
-- [ ] `type: break` still works.
+- [ ] Every field list on Site A still opens and saves unchanged.
+- [ ] `type: strng` is refused with *Did you mean "string"?*
+- [ ] A bad type **inside a group** is refused. The message names the group.
+- [ ] A bad type **inside sections** is refused the same way.
+- [ ] The same name twice is refused.
+- [ ] The same name at two levels (top and inside a group) is **allowed**.
+- [ ] `- info:` and `- section:` shortcuts work, also inside a group and in shared fields.
+- [ ] `type: break` works. It shows a gap and a heading.
 
-**If it fails:** the list of valid types is `SchemaValidator::FIELD_TYPES`, and
-it is meant to match the renderers registered in `YamlCF\Rendering\FieldRenderer`
-exactly (a unit test checks the two agree).
+**If it fails:** the list of types is `SchemaValidator::FIELD_TYPES`. It must match `FieldRenderer`. A unit test checks this.
 
-### 4a. Legacy schemas with a bad type *(advanced, optional)*
+### 4a. Old field lists with a bad type *(optional)*
 
-Only reachable on a site that saved one before the check existed. To set one up:
+Only possible on a site that saved one before the check. To make one:
 
 ```
 wp option patch update yaml_cf_schemas page.php "fields:
@@ -210,217 +156,181 @@ wp option patch update yaml_cf_schemas page.php "fields:
 "
 ```
 
-- [ ] Editing a page on that template shows a **warning** where `subtitle` would
-      be, not an empty label.
-- [ ] Put a value in `subtitle` (via `wp post meta`), save the page in the
-      editor, and the value is **still there** afterwards. This is the data-loss
-      fix: the field posts nothing, so it used to be dropped.
-- [ ] Importing a bundle whose schema has a bad type still imports the template,
-      and says so in the result rather than skipping it.
+- [ ] Editing a page shows a **warning** where `subtitle` would be. Not an empty label.
+- [ ] Put a value in `subtitle` (with `wp post meta`). Save the page. The value is **still there**. Before, it was lost.
+- [ ] Importing a file with a bad type still imports the template, and says so.
 
 ---
 
 ## 5. Themes
 
-**Why:** child themes reported no templates at all, and block themes reported
-none either.
+**Why:** child themes and block themes used to show no templates.
 
-- [ ] **Child theme.** Activate a child of a classic theme where the child
-      overrides little or nothing. The dashboard lists the **parent's**
-      templates. A template both themes have is listed **once**.
-- [ ] Give the child a partial of its own (`header-promo.php` with `@ycf` in a
-      comment). It is listed under its plain name, not a long file path.
-- [ ] Save a schema against a parent template and fill it in on a page. It works
-      end to end.
-- [ ] **Block theme.** Activate Twenty Twenty-Four or Twenty Twenty-Five. The
-      dashboard lists `page`, `single` and any Site Editor templates. `index` and
-      `archive` appear under **site parts**, not templates.
-- [ ] Save a schema against `page`, fill it in on a page, and confirm
-      `ycf_get_field()` returns it. (Displaying it in a block theme still needs a
-      PHP call site — that is a known limitation, not a bug.)
-- [ ] **Empty state.** On a theme with no templates, the message names the theme
-      and says something useful. It must not still read *"The active theme has no
-      page or post templates yet."*
+- [ ] **Child theme:** activate a child of a classic theme. The main screen lists the **parent's** templates. A template in both is listed **once**.
+- [ ] Give the child its own site part (`header-promo.php` with `@ycf` in its top comment). It's listed by its short name.
+- [ ] Add fields to a parent template. Fill them in on a page. It works.
+- [ ] **Block theme:** activate Twenty Twenty-Four or Twenty Twenty-Five. The main screen lists `page`, `single` and any Site Editor templates. `index` and `archive` are under **site parts**.
+- [ ] Add fields to `page`. Fill them in. `[ycf field="…"]` in a Shortcode block shows the value.
+- [ ] **No templates:** the message names the theme and says something useful.
 
 ---
 
-## 5a. Where the fields appear
+## 6. The Custom fields box
 
-**Why:** the box moved from an editor hook to a real meta box so that it would
-appear in the block editor at all. A meta box sits below the content, so classic
-editor users saw their fields move. Both are now handled separately, and the two
-paths must never both print.
+### 6a. Where it shows
 
-- [ ] **Classic editor** (Classic Editor plugin, or a post type that opts out):
-      the fields are directly under the title, above the content, as before.
-- [ ] They appear **once**, not twice.
-- [ ] Filling them in and pressing Update still saves.
-- [ ] **Block editor**: the fields are in a "Custom fields" panel below the
-      content, and nothing extra is printed above it.
-- [ ] A post whose template has no schema shows no empty box in either editor.
+**Why:** the box is now a real meta box, so it shows in the block editor. The classic editor still gets it under the title. Only one of the two must print.
 
-**If it fails:** `register_meta_box()` and `render_schema_meta_box_after_title()`
-both consult `post_uses_block_editor()`; exactly one of them should act.
+- [ ] **Classic editor:** the box is right under the title, above the content.
+- [ ] It has a normal box header: title on the **left**, collapse arrow on the right. Clicking the arrow folds and unfolds it.
+- [ ] It shows **once**, not twice.
+- [ ] Fill it in, click **Update**. It saves.
+- [ ] **Block editor:** the box is in a "Custom fields" panel below the content.
+- [ ] A post whose template has no fields gets no empty box, in either editor.
+- [ ] A template with **only shared fields** (no page fields) still gets the box, with the shared values.
 
-## 5b. Removing a field keeps its content
+**If it fails:** `MetaBox::register()` and `MetaBox::renderAfterTitle()` both ask `use_block_editor_for_post()`. Exactly one of them must act.
 
-**Why:** the editor has always promised that dropping a field from a schema keeps
-what was typed into it, and that putting the name back brings it back. That was
-not true — the next save of any page on the template threw it away.
+### 6b. How it looks and behaves
 
-- [ ] Fill in two fields on a page. Remove one from the schema. Save the page.
-      The removed field's content is still in the database.
-- [ ] Put the field back under the same name: its content is there again.
-- [ ] A field still in the schema that you clear stays cleared.
-- [ ] A tick box can be unticked and stays unticked.
-- [ ] The same for a site part, for site details and for shared fields.
-- [ ] Saving the site details schema or a shared fields schema without a field
-      now says which fields lost their place.
+- [ ] **One field per row**, everywhere: the page editor, shared content, site details, collection items, site parts.
+- [ ] **Collapse all / Expand all** is a small button with an icon, inside the section title row. The title row border goes all the way across.
+- [ ] Section titles use the same icons as the side menu.
+- [ ] Change a field. The **"not saved yet"** line shows. Works in the classic editor **and** the block editor (try Twenty Twenty-One).
+- [ ] Save. The line goes away.
+- [ ] Shared values and site details show read-only. Their **Copy code** buttons copy (paste somewhere to check).
+- [ ] **Choose image**: the icon and text line up.
 
-## 5c. Content Check cleanup
+### 6c. Removing a field keeps its content
 
-- [ ] Content Check lists the kept values under "Values with no field".
-- [ ] **On a page whose template has no schema**, it says "not checked" and does
-      **not** list every field as stranded. This is the one to check carefully:
-      getting it wrong would offer to wipe every field on those pages.
-- [ ] Removing takes exactly the listed values and nothing else.
-- [ ] Put a field back into the schema, then submit a removal form that was
-      already on screen: that field is **not** removed.
+**Why:** the editor always promised this. It wasn't true. The next save threw the content away.
 
-## 5d. Collections
+- [ ] Fill in two fields on a page. Remove one from the field list. Save the page. The removed field's content is still in the database.
+- [ ] Put the field back with the same name. Its content is back.
+- [ ] A field you clear stays cleared.
+- [ ] A checkbox can be unticked and stays unticked.
+- [ ] Same for site parts, site details and shared fields.
+- [ ] Saving a site details or shared field list without a field says which fields lost their place.
 
-**Why:** a collection's items moved from one shared database row to one row each,
-with a small index beside them. This is the third data migration in the release,
-and it is the one that touches the most rows.
+### 6d. Content Check cleanup
 
-- [ ] On Site A, before upgrading, make a collection with a handful of items and
-      use one of them in a page field. After upgrading: the item list still shows
-      them all, the page still resolves its item, and the picker still finds it.
-- [ ] Add, edit and delete an item. All three still work.
-- [ ] Delete a whole collection: its items go with it, leaving nothing behind.
-- [ ] Export and re-import a bundle containing a collection; the items survive.
-- [ ] A collection with more than fifty items is paged, and page two shows
-      different items from page one.
-- [ ] `wp option list --search='yaml_cf_do_*' --fields=option_name,autoload`
-      shows one row per item plus one index, none of them autoloaded, and
-      `yaml_cf_data_object_entries_*` is gone.
+- [ ] Content Check lists the kept values under **"Values with no field"**.
+- [ ] **A page whose template has no fields** says "not checked". It must **not** list every field as left over. Check this carefully: getting it wrong would offer to wipe those pages.
+- [ ] Removing takes exactly the listed values. Nothing else.
+- [ ] Put a field back in the list. Then submit a removal form that was already open. That field is **not** removed.
 
-## 5e. The REST API
+---
 
-**Why:** this is a new public surface, and the write half is the highest-risk
-thing added in this release. Everything the plugin does to keep content safe
-happens at a small number of write points, and this adds one reachable over HTTP.
+## 7. Collections
 
-- [ ] `/wp-json/wp/v2/pages/<id>` includes a `yaml_cf` object with the values the
-      theme shows, including decoded code fields.
-- [ ] A **draft** page is not readable when logged out, and neither are its fields.
-- [ ] `/wp-json/yaml-cf/v1/site-details` returns the site details.
-- [ ] `/wp-json/yaml-cf/v1/collections/<slug>?page=2&per_page=50` pages, and
-      `?search=` finds items.
-- [ ] Logged out, `POST`ing a `yaml_cf` object changes nothing.
-- [ ] As a Contributor, writing to somebody else's page changes nothing.
-- [ ] As an administrator, sending **one** field leaves the others alone.
-- [ ] As an Editor (no `unfiltered_html`), sending `<script>` in a rich-text
-      field stores it stripped, exactly as the editor would.
-- [ ] `add_filter('yaml_cf_rest_public_read', '__return_false');` makes the two
-      site-wide routes require a logged-in user who can edit posts. A
-      Contributor holds `edit_posts`, so test with a logged-out request.
+- [ ] Add, edit and delete an item.
+- [ ] **Save and add another**: saves the item, shows "Item saved. Fill in the next one below.", and opens an empty item.
+- [ ] Delete a whole collection. Its items go with it.
+- [ ] Export and import a collection. The items survive.
+- [ ] A collection with more than 50 items has pages. Page two shows different items.
 
-**Decide before release:** those two routes read **publicly** by default. That is
-deliberate — they hold content the plugin renders into public pages — but if any
-of your sites keeps something private in site details or a collection, set the
-filter before updating.
+---
 
-## 5f. The [ycf] shortcode
+## 8. The REST API
 
-**Why:** this is what finally lets a block theme display field content. It is
-also reachable by anybody who can edit a post, so the `post=` attribute needs
-checking.
+**Why:** it's new, and the write part is the riskiest thing in this release.
 
-- [ ] On a **block theme**: put `[ycf field="headline"]` in a Shortcode block on a
-      page that has that field filled in. It shows the value.
+- [ ] `/wp-json/wp/v2/pages/<id>` has a `yaml_cf` object with the values the theme shows, code fields decoded.
+- [ ] A **draft** page and its fields can't be read when logged out.
+- [ ] Logged out, `/wp-json/yaml-cf/v1/site-details` and `/wp-json/yaml-cf/v1/collections/<name>` are **refused**. That's the default.
+- [ ] Tick **Let anyone read the site details and collections** under **YAML CF → Settings → REST API**. Now they can be read logged out.
+- [ ] `/wp-json/yaml-cf/v1/collections/<name>?page=2&per_page=50` pages. `?search=` finds items.
+- [ ] Logged out, sending a `yaml_cf` object changes nothing.
+- [ ] As a Contributor, writing to someone else's page changes nothing.
+- [ ] As an admin, sending **one** field leaves the rest alone.
+- [ ] As an Editor (no `unfiltered_html`), `<script>` in a rich-text field is stripped, like in the editor.
+
+---
+
+## 9. The [ycf] shortcode
+
+**Why:** it lets block themes show fields. Anyone who can edit a post can use it, so `post=` needs checking.
+
+- [ ] On a **block theme**, `[ycf field="headline"]` in a Shortcode block shows the value.
 - [ ] `source="site"` shows a site detail.
-- [ ] An image field renders a picture; `size="thumbnail"` changes it.
-- [ ] A file field renders a link; a text-with-formatting field keeps bold and
-      links; a code field prints as it stands.
-- [ ] `default="..."` shows when the field is empty.
-- [ ] A group field prints nothing rather than the word "Array".
-- [ ] **Logged out**, `[ycf field="x" post="<id of a draft>"]` prints nothing.
-- [ ] Logged out, `post="<id of a published page>"` does print that page's value.
-
-## 6. Messaging
-
-- [ ] On Site B, before creating any schema, the dashboard reads **"Get started
-      in four steps"** and the fourth is **"Show it in the theme"** with the
-      `ycf_get_field()` line.
-- [ ] It no longer says *"The theme shows what was typed."*
-- [ ] The **Documentation** page's value-order list matches what you saw in
-      section 3.
-- [ ] Spot-check new wording for typos: the empty-state messages, the unknown
-      type message, the deletion card.
+- [ ] An image field shows a picture. `size="thumbnail"` changes the size.
+- [ ] A file shows a link. Rich text keeps bold and links. Code prints as it is.
+- [ ] `default="…"` shows when the field is empty.
+- [ ] A group prints nothing. Not the word "Array".
+- [ ] **Logged out**, `post="<id of a draft>"` prints nothing.
+- [ ] Logged out, `post="<id of a published page>"` prints that page's value.
 
 ---
 
-## 7. Deleting the plugin
+## 10. Messages
 
-**Why:** this removes the content filled into every field, which cannot be
-undone. It is now a choice. Test it on a **throwaway** site.
+**Why:** all messages now look and work the same. The old floating toasts are gone.
 
-- [ ] The bottom of the YAML Custom Fields page has an **"If this plugin is
-      deleted"** card explaining what deletion removes.
-- [ ] Tick **Keep the content if the plugin is deleted** and save. The confirmation
-      appears and the box stays ticked after a reload.
-- [ ] Delete the plugin through **Plugins → Delete**. Re-install and activate it:
-      the schemas and the page content are all back.
-- [ ] Untick it, save, delete again. Everything is gone — options, post meta,
-      collections.
-
-**If it fails with the box ticked:** stop. That is unrecoverable data loss and
-must not ship.
+- [ ] After saving any screen, a message shows at the top, with an icon for its kind (success, error, warning, info).
+- [ ] Messages can be closed. They don't vanish on their own.
+- [ ] A screen reader reads each message, including its kind ("Error: …").
+- [ ] Buttons that work in place (like **Use site details on these pages** or **Copy code**) show their result right next to the button. The page doesn't jump.
+- [ ] Broken YAML keeps your text and shows a red message.
+- [ ] In the block editor, messages use the editor's own notices.
+- [ ] On Site B, before any fields exist, the main screen says **"Get started in four steps"**. Step four is **"Show it in the theme"**, with the `ycf_get_field()` line.
+- [ ] The **Documentation** page's value order matches section 3.
+- [ ] Look for typos in new texts.
 
 ---
 
-## 8. Performance, lightly
+## 11. Main screen and Settings
 
-- [ ] On a post whose template has **no** schema, view source in the editor: this
-      plugin's `admin.js` and `admin.css` are **not** loaded, and neither is the
-      media library.
-- [ ] On a post whose template **does** have a schema, they are all loaded.
-- [ ] Load a front-end page with a good number of fields. Nothing is slower than
-      before, and `WP_DEBUG` produces no notices.
-- [ ] Clear all the fields on a page and save. `wp option get yaml_cf_tracked_posts`
-      no longer lists that page.
+- [ ] Switching **Custom fields** on and off doesn't make the table jump. Columns keep their width.
+- [ ] Buttons like **Add shared fields** sit under their label (like "Optional").
+- [ ] **Edit schema** and **Edit site details** look like buttons. Icons line up with the text.
+- [ ] Icons have space between them and the text.
+- [ ] On a phone-size screen, the table still fits.
+- [ ] **YAML CF → Settings** exists and has three choices: **Page caches**, **REST API**, **If this plugin is deleted**.
+- [ ] Each choice saves and stays after a reload.
+
+---
+
+## 12. Deleting the plugin
+
+**Why:** this can remove all content. It's now a choice. Use a **throwaway** site.
+
+- [ ] **YAML CF → Settings** has an **"If this plugin is deleted"** part that says what gets removed.
+- [ ] Tick **Keep the content if the plugin is deleted**. Save. It stays ticked after a reload.
+- [ ] Delete the plugin (**Plugins → Delete**). Install it again and turn it on. Field lists and content are all back.
+- [ ] Untick it. Save. Delete again. Everything is gone: settings, post meta, collections.
+
+**If it fails with the box ticked:** stop. That's data loss. It must not ship.
+
+---
+
+## 13. Speed
+
+- [ ] Edit a post whose template has **no** fields. View source: the plugin's `admin.js`, `admin.css` and the media library are **not** loaded.
+- [ ] A post whose template **has** fields (or only shared fields) loads them.
+- [ ] A page with many fields on the website isn't slower. `WP_DEBUG` shows no notices.
+- [ ] Clear all fields on a page and save. `wp option get yaml_cf_tracked_posts` no longer lists it.
 
 ---
 
 ## Sign-off
 
-- [ ] Sections 1–7 pass on Site A (upgraded)
-- [ ] Sections 2–8 pass on Site B (clean)
-- [ ] `composer test` and `composer lint` pass
-- [ ] `RELEASE.md`'s own pre-release checklist is done
-- [ ] Version and changelog in `readme.txt` are correct
+- [ ] Sections 1–12 pass on Site A (updated).
+- [ ] Sections 2–13 pass on Site B (fresh).
+- [ ] `composer check:release` and `composer test:integration` pass.
+- [ ] The checklist in [RELEASE.md](RELEASE.md) is done.
+- [ ] Version and changelog in `readme.txt` are right.
 
 Tested by: ____________________  Version: ____________  Date: ____________
 
 ---
 
-## Known limitations in this release
+## Known limits in 2.0.0
 
-These are deliberate, not defects. They are worth knowing before someone reports
-them as bugs:
+These are on purpose, not bugs:
 
-- **A block theme needs a shortcode to display a field.** `[ycf]` closes the gap,
-  but there is still no block, so a field cannot be placed by dragging it.
-- **A collection's item labels are written when the item is saved.** Reordering a
-  collection's schema so a different field comes first does not relabel the items
-  already stored; they take their new label the next time each one is saved.
-- **Searching a collection over the REST API returns one page.** `search` is
-  capped at `per_page` and reports how many matched in `total`; it does not page
-  through the matches.
-- **`ycf_get_fields()` resolves every field on the page.** Asking for one value is
-  cheaper through `ycf_get_field()`.
+- **Block themes need the shortcode.** There's no block yet, so you can't drag a field onto a page.
+- **Collection item names are set when the item is saved.** If you reorder a collection's fields, old items get their new name the next time each is saved.
+- **REST search in a collection returns one page.** It says how many matched in `total`, but doesn't page through them.
+- **`ycf_get_fields()` reads every field on the page.** For one value, `ycf_get_field()` is faster.
 
-The three limitations listed here in 1.2.9 — block themes being unable to display
-fields, collections sharing one option, and fields being absent from the REST API
-— are all fixed in this release.
+The three limits from 1.2.9 are fixed: block themes can show fields, collections no longer share one row, and fields are in the REST API.

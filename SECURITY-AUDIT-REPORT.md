@@ -1,87 +1,104 @@
-# Security Audit Report - YAML Custom Fields
+# Security Audit Report
 
-**Date:** 2026-09-22
-**Version audited:** 1.2.9 (fixes below are in the unreleased changes that follow it)
-**Method:** Manual code review of `yaml-custom-fields.php`, `src/`, `templates/`, `admin-assets/`, build and CI files. Fixes are covered by unit tests and by integration tests in a WordPress test environment; a manual browser pass is still pending.
-
-This replaces the earlier report for 1.2.1, which predates the issues below.
+**Plugin:** YAML Custom Fields
+**Last checked:** 2026-09-28
+**Version:** 2.0.0 (not released yet). The problems below were found in 1.2.9 and are fixed in 2.0.0.
+**How:** We read all the code by hand: `yaml-custom-fields.php`, `src/`, `templates/`, `admin-assets/`, `uninstall.php`, and the build and GitHub files. Every fix has a test.
 
 ---
 
 ## Summary
 
-| Severity | Found | Fixed | Open |
+| How bad | Found | Fixed | Still open |
 |---|---|---|---|
 | High | 3 | 3 | 0 |
 | Medium | 4 | 4 | 0 |
 | Low | 3 | 3 | 0 |
 
-The plugin's baseline is solid: every form, AJAX and export handler checks a nonce and a capability, redirects use `wp_safe_redirect`, and most output is escaped. The serious issues were in how field data was **sanitized and decoded**, and they were reachable by any user who can edit a post (Contributor and up), not only administrators.
+**The good parts, even before:**
+- Every form, AJAX action and download checks a security token (nonce) and the user's rights.
+- Redirects use `wp_safe_redirect()`.
+- Most output was escaped.
+
+**The bad parts:** how field values were **cleaned and decoded**. Anyone who can write a post (Contributor and up) could reach them, not only admins.
 
 ---
 
-## Findings
+## What we found
 
 ### High
 
-**H1. Sanitization bypass via the code-field marker (fixed)**
-- Before: any value starting with `__YAMLCF_B64__` was stored untouched regardless of field type, and the public API base64-decoded it on read. A Contributor could store raw HTML/JS in a `string` field.
-- Fix: `YamlCF\Form\DataSanitizer` strips the marker from every non-code field. The public API only decodes fields that the matching schema defines as `code`.
+**H1. A trick to skip cleaning (fixed)**
+- Before: a value starting with `__YAMLCF_B64__` was saved as-is, in any field. A Contributor could put raw HTML or JavaScript in a text field.
+- Now: the plugin removes that marker from every field that is not a code field. Theme functions only decode code fields.
 
-**H2. Code fields ignored `unfiltered_html` (fixed)**
-- Before: code fields were stored raw for every user, although the docs promised `wp_kses_post()` for non-admins.
-- Fix: users without `unfiltered_html` get `wp_kses_post()` (HTML) or dangerous-pattern removal (CSS). This is the same model as the core Custom HTML block.
+**H2. Code fields let anyone save raw code (fixed)**
+- Before: code fields saved raw code for every user.
+- Now: users without the `unfiltered_html` right get cleaned code. HTML goes through `wp_kses_post()`; CSS loses dangerous parts. WordPress's own Custom HTML block works the same way.
 
-**H3. Per-post JSON import stored unsanitized data (fixed)**
-- Before: the meta box import (`edit_post` capability) wrote the file's `data` and `schema` straight to post meta. When no post matched, it silently imported the first post in the file.
-- Fix: data is sanitized against the site's own schema, the file's schema is ignored, and a missing match is an error.
+**H3. Importing a JSON file in the Custom fields box saved anything (fixed)**
+- Before: the import saved the file's values and fields as they were. If no post matched, it quietly imported the first post in the file.
+- Now: values are cleaned using the site's own fields. The file's fields are ignored. No match means an error message.
 
 ### Medium
 
-**M1. Admin imports stored unsanitized data (fixed)**
-- Settings, page data and data object imports now validate imported schemas, sanitize all values against the effective schemas, and sanitize slugs and keys. Page-data import checks `edit_post` for each target post.
+**M1. Admin imports saved values without cleaning (fixed)**
+- Imports for settings, page data and collections now check the fields, clean every value, and clean names and slugs.
+- Page data import checks that you may edit each post.
 
-**M2. XSS sinks in admin JavaScript (fixed)**
-- Export/import results inserted post titles and values from the import file (source URL, dates, errors) with `.html()`. They are now escaped or built as DOM nodes.
+**M2. Admin scripts could run code from an import file (fixed)**
+- Post titles and values from the file were inserted as HTML.
+- Now they are escaped, or built safely.
 
-**M3. Read-only global fields were submitted with the post (fixed)**
-- These fields shared `yaml_cf[...]` names with editable fields, so a site-global value could overwrite a local one, and template-global values were frozen as stale copies in post meta.
-- Fix: read-only fields render inside a disabled `<fieldset>`. Stale copies are ignored on read and dropped on the next save.
+**M3. Read-only values were sent with the post (fixed)**
+- Site details and shared values had the same field names as the page's own fields. A site value could overwrite a page value, and old copies of shared values got stuck in the post.
+- Now read-only values sit in a disabled `<fieldset>`, so the browser doesn't send them. Their Copy buttons stay outside it, so they still work.
+- Old stuck copies are ignored and removed on the next save.
 
-**M4. Validation scan ran without a capability check (fixed)**
-- `admin.php?page=yaml-cf-data-validation` ran an unbounded query on `admin_init` for any logged-in user. It now requires `manage_options`.
+**M4. The Data Validation page had no rights check (fixed)**
+- Any logged-in user could start a big scan.
+- Now it needs `manage_options` (admins only).
 
 ### Low
 
-**L1. Arbitrary text in admin notices via `error_msg` (fixed)**: schema errors now travel in a per-user transient, not the URL.
+**L1. Any text could be put in an admin message (fixed)**
+- Errors traveled in the web address (`error_msg`).
+- Now they are stored for that one user for a short time (a transient).
 
-**L2. JSON upload handling (fixed)**: the upload is read from PHP's temporary file, confirmed with `is_uploaded_file()`. It is never copied into the public uploads folder, and no global upload filters are added.
+**L2. Uploaded JSON files (fixed)**
+- The plugin reads the file from PHP's temporary folder and checks it with `is_uploaded_file()`.
+- It never copies it to the public uploads folder.
 
-**L3. Request and storage handling (fixed)**:
-- `RequestHelper` now reads `$_GET`/`$_POST` with a single `wp_unslash()`. Before, it used `filter_input()` plus `wp_unslash()`, which stripped real backslashes from submitted data, and `getParam()` HTML-encoded values twice.
-- Post meta is saved with `wp_slash()`, because `update_post_meta()` unslashes its value. Without this, backslashes in non-code fields were lost on every save. This corrupted data rather than creating a security hole; the integration tests cover it.
+**L3. Backslashes lost when saving (fixed)**
+- The plugin read form values in a way that removed real backslashes, and escaped some values twice.
+- Post meta is now saved with `wp_slash()`, because WordPress removes one level of backslashes when it saves.
+- This was a data bug, not a security hole. Tests cover it.
 
 ---
 
-## Other hardening in the same changes
-- `uninstall.php` is the only uninstall path. It escapes its `LIKE` patterns, uses the options/meta/transient APIs, and no longer flushes the whole object cache.
-- `build/vendor` ships only the production dependencies (symfony/yaml, polyfill-ctype, deprecation-contracts) with their licenses. It no longer ships symfony/console, other dev packages or a Windows `.exe`.
-- The deploy workflow runs the unit tests first, pins actions to commit SHAs, and uses read-only permissions.
-- Data object type schemas are validated when saved in the admin.
-- The Data Validation page now actually detects missing attachments. It passed the whole stored schema where the validator expected its field list, so it never found any.
-- All AJAX handlers live in `src/Ajax/Handlers`. They share one nonce and capability check, and use the same import/export services as the rest of the plugin.
+## Other safety work in 2.0.0
 
-## Residual risks and notes
-- **Theme output is the theme's responsibility.** Code fields are meant to be echoed raw. Every other field should be escaped in templates (`esc_html`, `esc_url`, `wp_kses_post`), as the docs now show.
-- **Existing data** stored before these changes is not rewritten. The read-side checks cover top-level fields. Values nested inside blocks or objects are re-sanitized the next time the post, entry or settings are saved.
-- When a user without `unfiltered_html` saves a post, code previously entered by an administrator is filtered.
-- The Export/Import post list and the Data Validation page are paginated. Cache clearing after a global change still collects the IDs of every post with field data (IDs only).
+- `uninstall.php` is the only way data is removed. It uses the WordPress APIs, escapes its search patterns, and no longer empties the whole object cache.
+- `build/vendor` ships only what the plugin needs to run (symfony/yaml, polyfill-ctype, deprecation-contracts) and their licenses. No developer tools, no `.exe`.
+- The GitHub release runs the unit tests first, pins every action to an exact version, and has read-only rights.
+- Collection fields are checked when you save them.
+- The Data Validation page really finds missing images and files now. Before, it never found any.
+- All 10 AJAX actions live in `src/Ajax/Handlers`. They share one security check. Actions only admins may do use a separate admin-only token.
+- Messages the plugin shows are escaped. Scripts build them as text, not HTML.
 
-## Verification
-- Unit tests: `composer test:unit`. `tests/Unit/Form/DataSanitizerTest.php` covers the marker bypass, the `unfiltered_html` gate, nested names, blocks and lists.
-- Integration tests: `composer test:integration` (see `tests/Integration/README.md`). They cover the meta box save, AJAX nonce and capability checks, import sanitization, pagination, the validation page, export/import round trips and uninstall. CI runs both suites on PHP 8.1, 8.3 and 8.4.
-- Manual checks, still pending in a browser:
-  1. As a Contributor, a marker-prefixed string field value comes back as plain text.
-  2. As a Contributor, a crafted JSON import is sanitized.
-  3. A post titled `<img src=x onerror=alert(1)>` shows as text on the Export/Import page.
-  4. Template-global edits reach posts saved earlier.
+## Things to keep in mind
+
+- **The theme must escape its output.** Code fields are meant to be printed raw. Every other field should be escaped in the theme (`esc_html`, `esc_url`, `wp_kses_post`). The docs show how.
+- **Old data is not rewritten.** Top-level values are checked when read. Values inside sections are cleaned again the next time someone saves.
+- If a user without `unfiltered_html` saves a post, code an admin put there earlier gets cleaned.
+- After a site-wide change, clearing page caches still collects the IDs of all posts with field data (IDs only).
+
+## How to check
+
+- Unit tests: `composer test:unit` (263 tests). `tests/Unit/Form/DataSanitizerTest.php` covers the marker trick, the `unfiltered_html` rule, sections and lists.
+- Integration tests: `composer test:integration` (579 tests). See `tests/Integration/README.md`. They cover saving posts, AJAX security checks, import cleaning, the validation page, export and import, and uninstall. GitHub runs both on PHP 8.1, 8.3 and 8.4.
+- By hand, in a browser:
+  1. As a Contributor, put `__YAMLCF_B64__` + some code in a text field. It comes back as plain text.
+  2. As a Contributor, import a JSON file with HTML in it. The HTML is cleaned.
+  3. Make a post titled `<img src=x onerror=alert(1)>`. The Export/Import page shows it as text, and nothing pops up.
+  4. Change a shared value. Posts saved earlier show the new value.

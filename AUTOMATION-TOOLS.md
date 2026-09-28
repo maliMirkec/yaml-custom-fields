@@ -1,381 +1,181 @@
-# Automated Testing & Security Tools
+# Automatic Checks
 
-This document describes the automated tools created for the YAML Custom Fields plugin to ensure code quality and security before WordPress.org submission.
+The scripts and commands that check the plugin for you.
 
 ---
 
-## 🛠️ Available Tools
+## The two commands you need
 
-### 1. Security Audit Script
-**File:** `bin/security-audit.sh`
-**Purpose:** Automated security vulnerability scanning
+```bash
+composer check          # before every commit
+composer check:release  # before every release
+```
 
-**Usage:**
+- **`composer check`**: syntax, coding style, unit tests. Takes seconds.
+- **`composer check:release`**: all of the above, plus the build, the security scan and the quality scan.
+
+Run the integration tests too: `composer test:integration` (see [tests/Integration/README.md](tests/Integration/README.md)).
+
+---
+
+## The tools
+
+### 1. Security scan
+
 ```bash
 bash bin/security-audit.sh
 ```
 
-**What It Checks:**
-- ✅ Nonce verification in AJAX handlers
-- ✅ SQL injection prevention (prepared statements)
-- ✅ Capability checks (authorization)
-- ✅ Output escaping (XSS prevention)
-- ✅ Input sanitization
-- ✅ File upload security
-- ✅ Dangerous functions (eval, exec, etc.)
-- ✅ External requests (phone-home check)
-- ✅ Text domain configuration
-- ✅ Required files (uninstall.php, readme.txt)
-- ✅ Debug code detection
-- ✅ Direct file access protection
+**It looks for:**
+- security tokens (nonces) in AJAX actions;
+- unsafe database queries;
+- rights checks;
+- escaped output;
+- cleaned input;
+- file upload checks;
+- risky functions (`eval`, `exec`, `base64_decode`…);
+- calls to outside servers;
+- debug code left behind;
+- files that can be opened directly (every PHP file must stop if WordPress isn't loaded);
+- required files (`uninstall.php`, `readme.txt`, license).
 
-**Exit Codes:**
-- `0` = Success (no errors)
-- `1` = Errors found (must fix before submission)
+**Result:** `0` = fine. `1` = something must be fixed.
 
----
+### 2. Quality scan
 
-### 2. Code Quality Check Script
-**File:** `bin/code-quality-check.sh`
-**Purpose:** WordPress plugin directory compliance validation
-
-**Usage:**
 ```bash
 bash bin/code-quality-check.sh
 ```
 
-**What It Checks:**
-- ✅ File structure correctness
-- ✅ Plugin header completeness
-- ✅ readme.txt validation
-- ✅ WordPress Coding Standards (if PHPCS installed)
-- ✅ Test coverage
-- ✅ Documentation completeness
-- ✅ Asset requirements
-- ✅ Unwanted files detection
-- ✅ Namespace usage
-- ✅ Build status
+**It looks for:**
+- the right files and folders;
+- a complete plugin header;
+- a valid `readme.txt`;
+- tests and docs;
+- files that shouldn't ship;
+- namespaces;
+- a fresh build.
 
-**Exit Codes:**
-- `0` = Success
-- `1` = Errors found
+**Result:** `0` = fine. `1` = something must be fixed.
 
----
+### 3. Coding style
 
-### 3. PHPUnit Tests
-**File:** `phpunit.xml`
-**Purpose:** Automated unit testing
-
-**Usage:**
 ```bash
-# Run all tests
-php composer.phar test
-
-# Run only unit tests
-php composer.phar test:unit
-
-# Run specific test file
-vendor/bin/phpunit tests/Unit/Helpers/MarkdownParserTest.php
+composer lint          # show problems. Must be zero.
+composer lint:fix      # fix what can be fixed on its own
+composer lint:diff     # only files you changed
+composer lint:report   # problems grouped by rule
+composer lint:syntax   # php -l on src/ and templates/
 ```
 
-**Coverage:** 254 unit tests (`composer test`, no WordPress needed) and 483 integration tests (`composer test:integration`, against a real WordPress). See `tests/Integration/README.md` for running the integration suite.
+- The rules are in `phpcs.xml.dist`. It says which WordPress rules we use and why.
+- Don't run `phpcs --standard=WordPress` by hand. It skips that file and prints thousands of findings we don't use.
+- No `phpcs:ignore` comments. Fix the code.
 
----
+### 4. Tests
 
-## 📊 Latest Audit Results
-
-### Security Audit
-```
-Status: ✅ GOOD with 4 warnings
-- 25 nonce verifications found
-- 31 capability checks found
-- 169 output escaping instances
-- 48 input sanitization instances
-- 0 critical security issues
-```
-
-**Warnings:**
-1. File uploads may need enhanced validation
-2. Text domain not loaded (easy fix)
-3. LICENSE file missing (optional)
-4. Direct file access protection recommended
-
-### Code Quality Check
-```
-Status: ✅ GOOD with 3 warnings
-- All required files present
-- readme.txt validated
-- 8 test files found
-- All classes use namespaces
-```
-
-**Warnings:**
-1. Domain Path missing in header (i18n)
-2. .git in directory (excluded via .distignore)
-3. .DS_Store in directory (excluded via .distignore)
-
----
-
-## 🔄 Continuous Testing Workflow
-
-### Before Every Commit
 ```bash
-# Syntax, coding standards and unit tests in one go
+composer test:unit         # 263 tests, no WordPress needed
+composer test:integration  # 579 tests, real WordPress
+```
+
+More in [TESTING.md](TESTING.md).
+
+### 5. GitHub
+
+- **`.github/workflows/tests.yml`**: runs lint and both test sets on every push and pull request. PHP 8.1, 8.3 and 8.4.
+- **`.github/workflows/deploy-to-wporg.yml`**: when you push a version tag, it runs the unit tests, builds, and sends the plugin to WordPress.org.
+
+---
+
+## Latest results (2026-09-28)
+
+**Tests**
+- Unit: 263 tests, 741 checks. All pass.
+- Integration: 579 tests, 2417 checks. All pass.
+
+**Coding style**
+- Zero findings.
+
+**Security scan: good, 3 warnings. All three are expected:**
+1. "Unsafe SQL" in `src/Data/CollectionLock.php`. The query *is* prepared, one line below. The script only reads the first line.
+2. "Direct superglobal access". Form handlers read `$_POST`, but always with a nonce check, `wp_unslash()` and cleaning.
+3. "Dangerous function `base64_decode`". Code fields are stored base64-encoded. Only code fields are decoded.
+
+Other numbers: 23 nonce checks, 41 rights checks, 261 escaped outputs, 71 cleaned inputs, 106 of 106 PHP files protected, no outside calls, no debug code.
+
+**Quality scan: good, 1 warning:**
+- `.git` folder found. It's left out of the ZIP by `.distignore`. Fine.
+
+---
+
+## Before every commit
+
+```bash
 composer check
 ```
 
-Or the pieces separately:
+If you added, removed or renamed a class in `src/`, also run:
+
 ```bash
-composer lint:syntax    # php -l over src/ and templates/
-composer lint           # WordPress Coding Standards
-composer lint:diff      # only the files changed since the last commit
-composer test:unit
+./build-scoped.sh
 ```
 
-### Before Creating Release
+The built autoloader only knows the classes it saw. `ScopedAutoloaderTest` fails if you forget.
+
+## Before a release
+
 ```bash
-# 1. Run full test suite
-php composer.phar test
-
-# 2. Run security audit
-bash bin/security-audit.sh
-
-# 3. Run code quality check
-bash bin/code-quality-check.sh
-
-# 4. Build production version
-bash build-scoped.sh
-
-# 5. Create distribution ZIP
-bash package-for-wporg.sh
-
-# 6. Test ZIP on fresh WordPress install
+composer check:release     # style, build, unit tests, security, quality
+composer test:integration  # real WordPress
+./package-for-wporg.sh     # make the ZIP
 ```
 
----
+Then:
+1. Install the ZIP on a fresh WordPress.
+2. Do the quick check in [TESTING.md](TESTING.md).
+3. For big releases, do [MANUAL-TESTING.md](MANUAL-TESTING.md) too.
 
-## 🚀 Quick Commands Reference
-
-### Testing
-```bash
-# All tests
-php composer.phar test
-
-# Unit tests only
-php composer.phar test:unit
-
-# Integration tests only
-php composer.phar test:integration
-
-# Specific test
-vendor/bin/phpunit tests/Unit/Helpers/MarkdownParserTest.php
-
-# With coverage (requires Xdebug)
-vendor/bin/phpunit --coverage-html coverage/
-```
-
-### Security & Quality
-```bash
-# Security scan
-bash bin/security-audit.sh
-
-# Code quality
-bash bin/code-quality-check.sh
-
-# WordPress Coding Standards
-# Uses phpcs.xml.dist, which records which parts of WPCS this plugin enforces
-# and why the rest are excluded. Do not pass --standard=WordPress by hand: it
-# bypasses that file and reports ~40,000 house-style findings.
-composer lint
-composer lint:fix       # apply the auto-fixable ones
-composer lint:report    # remaining findings grouped by sniff
-
-# PHP syntax check
-composer lint:syntax
-```
-
-### Building
-```bash
-# Install dev dependencies
-php composer.phar install
-
-# Install production only
-php composer.phar install --no-dev
-
-# Build scoped dependencies
-bash build-scoped.sh
-
-# Create distribution ZIP
-bash package-for-wporg.sh
-```
+Full steps: [RELEASE.md](RELEASE.md).
 
 ---
 
-## 📝 Adding New Tests
+## Security checks by hand
 
-### 1. Create Test File
+The scripts can't check everything. Test these yourself:
 
-**Location:** `tests/Unit/<Category>/<ClassName>Test.php`
-
-**Template:**
-```php
-<?php
-namespace YamlCF\Tests\Unit\Category;
-
-use YamlCF\Tests\TestCase;
-use YamlCF\Category\ClassName;
-
-class ClassNameTest extends TestCase {
-    private $instance;
-
-    protected function setUp(): void {
-        parent::setUp();
-        $this->instance = new ClassName();
-    }
-
-    /**
-     * Test description
-     */
-    public function testSomething() {
-        $result = $this->instance->method();
-        $this->assertEquals('expected', $result);
-    }
-}
-```
-
-### 2. Run New Test
-```bash
-vendor/bin/phpunit tests/Unit/Category/ClassNameTest.php
-```
-
-### 3. Update Test Count
-Update documentation when adding tests.
+- [ ] Log in as a Contributor, an Author, an Editor and an Admin. Each sees only what they should.
+- [ ] Upload a file that isn't JSON to an import. It's refused.
+- [ ] Import JSON with HTML and script tags in it. They are cleaned.
+- [ ] Try it on a multisite network.
 
 ---
 
-## 🔍 Integration with CI/CD (Future)
+## Quick list
 
-### GitHub Actions Example
-```yaml
-name: Tests
+| What | Command |
+|---|---|
+| Before a commit | `composer check` |
+| Before a release | `composer check:release` |
+| Unit tests | `composer test:unit` |
+| Integration tests | `composer test:integration` |
+| Coding style | `composer lint` |
+| Fix style | `composer lint:fix` |
+| Syntax | `composer lint:syntax` |
+| Security scan | `bash bin/security-audit.sh` |
+| Quality scan | `bash bin/code-quality-check.sh` |
+| Build | `./build-scoped.sh` |
+| Make ZIP | `./package-for-wporg.sh` |
 
-on: [push, pull_request]
+## Links
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '7.4'
-
-      - name: Install dependencies
-        run: php composer.phar install
-
-      - name: Run tests
-        run: php composer.phar test
-
-      - name: Security audit
-        run: bash bin/security-audit.sh
-
-      - name: Code quality
-        run: bash bin/code-quality-check.sh
-```
+- [PHPUnit](https://phpunit.de/)
+- [Plugin Check plugin](https://wordpress.org/plugins/plugin-check/)
+- [readme.txt validator](https://wordpress.org/plugins/developers/readme-validator/)
+- [Plugin security handbook](https://developer.wordpress.org/plugins/security/)
 
 ---
 
-## 📊 Test Coverage Goals
-
-### Current Coverage
-- ✅ Helpers: 100% (all 3 classes)
-- ✅ Schema: 100% (all 3 classes)
-- ✅ Form: 100% (all 2 classes)
-- ⏳ Integration: 0% (planned)
-
-### Coverage Targets
-- Unit Tests: 80%+ ✅ Achieved
-- Integration Tests: 50%+ (future)
-- E2E Tests: Critical paths (future)
-
----
-
-## 🛡️ Security Testing Checklist
-
-### Automated (via bin/security-audit.sh)
-- [x] Nonce verification
-- [x] SQL injection prevention
-- [x] XSS prevention (output escaping)
-- [x] CSRF protection
-- [x] Authorization checks
-- [x] Input sanitization
-- [x] File upload security
-- [x] Dangerous function detection
-
-### Manual Testing
-- [ ] Test file uploads with malicious files
-- [ ] Test with different user roles
-- [ ] Test in multisite environment
-- [ ] Penetration testing (optional)
-- [ ] Third-party security scan (optional)
-
----
-
-## 💡 Tips for Maintaining Quality
-
-### Before Every Commit
-1. Run `composer check` (syntax, coding standards, unit tests)
-2. Run `composer lint:diff` to see standards findings only in what you changed
-3. Review changed files for security issues
-
-### Weekly
-1. Run full security audit: `bash bin/security-audit.sh`
-2. Run code quality check: `bash bin/code-quality-check.sh`
-3. Update dependencies: `php composer.phar update`
-
-### Before Each Release
-1. Run ALL tests
-2. Run ALL audits
-3. Test on fresh WordPress install
-4. Validate readme.txt
-5. Build and test distribution ZIP
-6. Tag release in git
-
----
-
-## 📚 Testing Resources
-
-### Documentation
-- PHPUnit: https://phpunit.de/
-- WordPress Testing: https://make.wordpress.org/core/handbook/testing/
-- Plugin Testing: https://developer.wordpress.org/plugins/wordpress-org/plugin-security/
-
-### Tools
-- Plugin Check: https://wordpress.org/plugins/plugin-check/
-- readme.txt Validator: https://wordpress.org/plugins/developers/readme-validator/
-- PHPCS: https://github.com/squizlabs/PHP_CodeSniffer
-
----
-
-## 🎯 Quick Reference
-
-| Task | Command |
-|------|---------|
-| Run all tests | `php composer.phar test` |
-| Security audit | `bash bin/security-audit.sh` |
-| Code quality | `bash bin/code-quality-check.sh` |
-| Build plugin | `bash build-scoped.sh` |
-| Create ZIP | `bash package-for-wporg.sh` |
-| Check syntax | `composer lint:syntax` |
-| Coding standards | `composer lint` |
-| Fix standards | `composer lint:fix` |
-| Pre-commit gate | `composer check` |
-| Pre-release gate | `composer check:release` |
-
----
-
-**Last Updated:** 2026-09-26
-**Plugin Version:** 2.0.0
-**Test Coverage:** 254 unit and 483 integration tests
+**Last updated:** 2026-09-28
+**Plugin version:** 2.0.0
+**Tests:** 263 unit, 579 integration

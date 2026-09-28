@@ -1,118 +1,80 @@
-# Building Scoped Dependencies
+# Building the Libraries
 
-This plugin uses [PHP-Scoper](https://github.com/humbug/php-scoper) to prevent dependency conflicts with other WordPress plugins.
+The plugin uses one outside library: **Symfony YAML** (version 6.4). It reads the field lists.
 
-## Why Scoping?
+We copy the library into `build/vendor/` and give it our own name. The tool that does this is [PHP-Scoper](https://github.com/humbug/php-scoper).
 
-The plugin uses Symfony YAML (v5.4), which is a common dependency in WordPress plugins. Without scoping:
-- If another plugin uses a different version of Symfony YAML, only one version loads
-- This causes conflicts and can break one or both plugins
-- It's a "race condition" - whichever plugin loads first wins
+## Why?
 
-With PHP-Scoper:
-- All Symfony namespaces are prefixed with `YamlCF\Vendor\`
-- Example: `Symfony\Component\Yaml` becomes `YamlCF\Vendor\Symfony\Component\Yaml`
-- Both versions can coexist without conflicts
+- Other plugins may use Symfony YAML too, maybe a different version.
+- PHP can load only one of them. The other plugin (or ours) may break.
+- So we rename ours: `Symfony\Component\Yaml` becomes `YamlCF\Vendor\Symfony\Component\Yaml`.
+- Now both copies can live side by side.
 
-## Development Workflow
-
-### Initial Setup
-
-1. Install dependencies (including PHP-Scoper):
-   ```bash
-   composer install
-   ```
-
-2. Build scoped dependencies:
-   ```bash
-   ./build-scoped.sh
-   ```
-
-### Making Changes
-
-If you update `composer.json` or add new dependencies:
-
-1. Update dependencies:
-   ```bash
-   composer update
-   ```
-
-2. Rebuild scoped dependencies:
-   ```bash
-   ./build-scoped.sh
-   ```
-
-3. Test the plugin to ensure everything works
-
-### Directory Structure
-
-```
-/vendor/           - Unscoped dependencies (gitignored, dev only)
-/build/vendor/     - Scoped dependencies (committed to repo)
-scoper.inc.php     - PHP-Scoper configuration
-build-scoped.sh    - Build script
-```
-
-## Testing Scoped Dependencies
-
-Run the test script to verify scoping works:
+## First time
 
 ```bash
-php test-scoped.php
+composer install
+./build-scoped.sh
 ```
 
-Expected output:
+## When to build again
+
+Run `./build-scoped.sh` again when you:
+
+- change `composer.json` or update a library (`composer update`);
+- **add, remove or rename a class in `src/`.**
+
+Why the second one? The built autoloader only knows the classes it saw at build time. A new class it doesn't know about won't load.
+
+`composer check:release` builds first and then runs the tests, so the tests always use the build you ship.
+
+## Folders
+
 ```
-✅ Test 1 PASSED: Simple YAML parsing works
-✅ Test 2 PASSED: Namespace is scoped
-✅ All tests passed! Scoped dependencies are working correctly.
+vendor/          - Tools for developers only. Not in git. Not shipped.
+build/vendor/    - The renamed library and the autoloader. In git. Shipped.
+scoper.inc.php   - PHP-Scoper settings
+build-scoped.sh  - The build script
 ```
 
-## Configuration
+## What ships
 
-The scoping configuration is in `scoper.inc.php`:
+- `build/vendor/` holds only what the plugin needs to run: symfony/yaml, polyfill-ctype and deprecation-contracts, with their licenses.
+- No developer tools ship.
+- Users never run Composer. Everything is already in the ZIP.
 
-- **Prefix**: `YamlCF\Vendor` - All namespaces get this prefix
-- **Output**: `build/vendor/` - Where scoped files are generated
-- **Exclusions**: WordPress functions/classes are never scoped
-- **Patchers**: Custom transformations if needed
+## Settings (`scoper.inc.php`)
 
-## Distribution
+- **Prefix:** `YamlCF\Vendor`
+- **Output:** `build/vendor/`
+- WordPress functions and classes are never renamed.
 
-When distributing the plugin:
+## Problems
 
-1. Ensure `build/vendor/` is committed to git
-2. **Do NOT** commit the `vendor/` directory
-3. Users don't need to run Composer - scoped dependencies are included
+**"Dependencies not found" message in the admin**
+- `build/vendor/scoper-autoload.php` is missing.
+- Fix: run `./build-scoped.sh`.
 
-## Troubleshooting
+**A class "not found" error after you added a class**
+- The build doesn't know the new class yet.
+- Fix: run `./build-scoped.sh`.
 
-### "Dependencies not found" error
+**Warnings during the build**
+- PHP-Scoper prints some PHP 8.3 deprecation warnings.
+- They are harmless. The build is fine.
 
-The plugin shows this if `build/vendor/scoper-autoload.php` doesn't exist.
+**Check that there are no conflicts**
+1. Install another plugin that uses Symfony YAML.
+2. Turn on both plugins.
+3. Both should work.
 
-**Solution**: Run `./build-scoped.sh`
+## Links
 
-### PHP deprecation warnings during build
-
-The build script suppresses PHP 8.3 deprecation warnings from PHP-Scoper dependencies.
-This is normal and doesn't affect the scoped output.
-
-### Testing for conflicts
-
-To verify there are no conflicts:
-
-1. Install another plugin that uses Symfony YAML
-2. Activate both plugins
-3. Both should work without errors
-
-## Resources
-
-- [PHP-Scoper Documentation](https://github.com/humbug/php-scoper)
-- [Delicious Brains Article](https://deliciousbrains.com/php-scoper-namespace-composer-depencies/)
+- [PHP-Scoper docs](https://github.com/humbug/php-scoper)
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Maintained By:** Silvestar Bistrović
+**Last updated:** 2026-09-28
+**Plugin version:** 2.0.0
+**Maintained by:** Silvestar Bistrović

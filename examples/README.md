@@ -1,174 +1,155 @@
-# YAML Custom Fields - Examples
+# Examples
 
-This directory contains comprehensive examples demonstrating all features and field types available in the YAML Custom Fields WordPress plugin.
+Two files that show every field type and how to print it in a theme.
 
-## What's Included
+## What's here
 
-### 1. complete-schema-example.yaml
-A comprehensive YAML schema showcasing **all 15+ field types** with:
-- Inline comments explaining each field type
-- All available options (min/max, required, multiple, validation, etc.)
-- Nested objects and data object references
-- Block/repeater fields with all possible inner field types
-- Taxonomy and post type selectors
-- Code fields with different languages
+**`complete-schema-example.yaml`**: a field list (schema) with every field type.
+- Each field has a comment that says what it does.
+- It shows the options: required, min/max, multiple, and more.
+- It shows sections, groups (objects) and collections.
 
-### 2. complete-template-example.php
-A complete WordPress page template demonstrating:
-- How to retrieve all field types using `ycf_*` functions
-- Proper escaping for security
-- Handling arrays, loops, and nested data
-- Block field patterns with switch/case
-- Data object retrieval
-- WordPress helper function integration
+**`complete-template-example.php`**: a page template that prints every field.
+- It shows how to read each field type.
+- It escapes everything safely.
+- It shows loops for lists and sections.
 
 ---
 
-## How to Use These Examples
+## Try the field list
 
-### Using the Schema Example
+1. Go to **YAML CF** in the admin.
+2. Turn on **Custom fields** for a template, for example `page.php`.
+3. Click **Create schema** (or **Edit schema**).
+4. Paste in `complete-schema-example.yaml`.
+5. Save.
 
-1. **Navigate to YAML Custom Fields** in WordPress admin
-2. **Enable YAML** for a page template (e.g., `page.php`)
-3. **Click "Add Schema" or "Edit Schema"**
-4. **Copy the contents** of `complete-schema-example.yaml`
-5. **Paste into the schema editor**
-6. **Save the schema**
+**You also need:**
+- A collection called `universities`.
+  - Go to **YAML CF → Collections**.
+  - Add a collection named `universities`. Its fields are in the comments at the end of the YAML file.
+  - Add a few items.
+- The taxonomies `portfolio_cat` and `faq_category`.
+  - Your theme (or another plugin) has to register them.
+  - Or remove those two fields from the list.
 
-**Important Prerequisites:**
-- **Data Objects**: This schema references a "universities" data object type
-  - Go to **YAML CF > Data Objects**
-  - Create a new type called "universities"
-  - Use the schema from `complete-schema-example.yaml` comments
-  - Add some test entries
+## Try the template
 
-- **Custom Taxonomies**: The schema uses custom taxonomies:
-  - `portfolio_cat` (Portfolio Category)
-  - `faq_category` (FAQ Category)
-  - Create these taxonomies in your theme or ensure they exist before using
+1. Copy `complete-template-example.php` into your theme folder.
+2. Edit a page.
+3. Pick **"YAML Custom Fields - Complete Example"** in the Template box.
+4. Fill in the fields and publish.
+5. View the page.
 
-### Using the Template Example
-
-**Option 1: As a Page Template**
-1. **Copy** `complete-template-example.php` to your active theme directory
-2. **Rename** (optional) to match WordPress naming: `page-example.php`
-3. **Edit a page** in WordPress
-4. **Select Template** dropdown
-5. **Choose** "YAML Custom Fields - Complete Example"
-6. **Publish** and view the page
-
-**Option 2: As a Reference**
-- Use the code as a reference guide when building your own templates
-- Copy specific sections for the field types you're using
-- Adapt the patterns to your theme's structure
+You can also just read the file and copy the parts you need.
 
 ---
 
-## Field Types Reference
+## Field types
 
-The examples demonstrate all available field types:
-
-1. **string** - Single-line text with min/max length
-2. **text** - Multi-line textarea
-3. **rich-text** - WordPress WYSIWYG editor
-4. **code** - Code editor with syntax highlighting
-5. **boolean** - Checkbox for true/false
-6. **number** - Number input with min/max
-7. **date** - Date picker with optional time
-8. **select** - Dropdown with single/multiple selection
-9. **taxonomy** - WordPress categories, tags, custom taxonomies
-10. **post_type** - Dropdown to select registered post types
-11. **data_object** - Reference to structured data objects
-12. **image** - WordPress media uploader for images
-13. **file** - WordPress media uploader for any file
-14. **object** - Nested group of fields
-15. **block** - Repeatable blocks for flexible page builders
+| Type | What it is |
+|---|---|
+| `string` | One line of text |
+| `text` | Several lines of text |
+| `rich-text` | The WordPress text editor |
+| `code` | Code (HTML, CSS, JS…) |
+| `boolean` | A checkbox: yes or no |
+| `number` | A number, with optional min and max |
+| `date` | A date, with optional time |
+| `select` | A dropdown. Can allow more than one choice. |
+| `taxonomy` | Categories, tags or your own taxonomy |
+| `post_type` | Pick a post type |
+| `data_object` | Pick an item from a collection |
+| `image` | An image. Add `list: true` for a gallery. |
+| `file` | Any file from the media library |
+| `object` | A group of fields |
+| `block` | Sections the writer can add, remove and reorder |
+| `info` | A note for the writer. It stores nothing. |
+| `section` (or `break`) | A heading with a gap above it. It stores nothing. |
 
 ---
 
-## Template Functions Quick Reference
+## Theme functions, quick list
+
+Every function has a short `ycf_` name and a long `yaml_cf_` name. They do the same thing.
 
 ```php
-// Get a field value
+// A field on the current page
 $value = ycf_get_field('field_name');
 
-// Get image data with size
+// Does the field have a value? (empty text or an empty list = no)
+if (ycf_has_field('field_name')) { … }
+
+// All fields at once
+$all = ycf_get_fields();
+
+// An image, in a chosen size
 $image = ycf_get_image('image_field', null, 'medium');
 
-// Get file data
+// A file
 $file = ycf_get_file('file_field');
 
-// Get taxonomy term(s)
+// A term (or terms)
 $term = ycf_get_term('taxonomy_field');
 
-// Get data object
-$object = ycf_get_data_object('data_object_field');
+// An item from a collection
+$item = ycf_get_data_object('data_object_field');
 
-// Get all fields at once
-$all_fields = ycf_get_fields();
+// All items of a collection
+$items = ycf_get_data_objects('universities');
 
-// Check if field exists and has value
-if (ycf_has_field('field_name')) {
-  // Field exists
-}
+// Site details
+$phone = ycf_get_global_field('phone');
 
-// For partials
+// A site part, like the header
 $logo = ycf_get_field('logo', 'partial:header.php');
 
-// For blocks with context
-$blocks = ycf_get_field('page_sections');
-foreach ($blocks as $block) {
-  $title = ycf_get_field('title', null, $block);
+// Fields inside sections
+$sections = ycf_get_field('page_sections');
+foreach ($sections as $section) {
+  $title = ycf_get_field('title', null, $section);
 }
 ```
 
 ---
 
-## Important Notes
+## Good to know
 
-### Nested Blocks Not Supported
-- Block fields **cannot** contain other block fields
-- Objects **can** be nested inside blocks
-- Objects **can** contain other objects (multi-level nesting)
+**Nesting**
+- A section (`block`) can't hold another section.
+- A section can hold groups (`object`).
+- A group can hold other groups.
 
-### Escaping Functions
-Always use proper escaping:
-- `esc_html()` - Plain text output
-- `esc_url()` - URLs
-- `esc_attr()` - HTML attributes
-- `wp_kses_post()` - Rich-text content (safe HTML)
-- Code fields for admin use can be output unescaped (use with caution)
+**Always escape what you print**
+- `esc_html()`: plain text
+- `esc_url()`: links
+- `esc_attr()`: HTML attributes
+- `wp_kses_post()`: rich text
+- Code fields are meant to be printed as they are. Only people allowed to post raw HTML can save raw code.
 
-### Data Hierarchy
-YAML Custom Fields supports a three-level data hierarchy:
-1. **Page-specific data** (stored in post meta)
-2. **Template global data** (shared across all posts using same template)
-3. **Site-wide global data** (for partials like headers and footers)
+**Where a value comes from**
+- **The page's own value.** Filled in on each page.
+- **Shared content.** One value for every page that uses the same template.
+  - A writer can tick **"Use the shared value on this page"** on a field. Then the shared value wins.
+  - A field that is only in the shared list always uses the shared value.
+- **Site details.** One value for the whole site. A template can turn them on with **"Use site details on these pages"**. They are used when the page has no value of its own.
+- If a field was cleared on purpose, it stays empty. It does not fall back.
 
-Use the "Use template global" checkbox per field to toggle between page and template global data.
-
----
-
-## Additional Resources
-
-- **Main Documentation**: [Plugin README](../README.md)
-- **In-Admin Docs**: WordPress Admin > YAML Custom Fields > Documentation
-- **Testing Guide**: [README-TESTING.md](../README-TESTING.md)
-- **Manual Testing**: [MANUAL-TESTING.md](../MANUAL-TESTING.md)
-- **GitHub Repository**: https://github.com/maliMirkec/yaml-custom-fields
+`ycf_get_field()` picks the right value for you. The full order is in the [README](../README.md#which-value-wins).
 
 ---
 
-## Contributing
+## More help
 
-Found an issue with the examples or have suggestions? Please report it on [GitHub Issues](https://github.com/maliMirkec/yaml-custom-fields/issues).
+- [Plugin README](../README.md)
+- In the admin: **YAML CF → Documentation**
+- [Testing guide](../TESTING.md)
+- [Manual test guide](../MANUAL-TESTING.md)
+- GitHub: https://github.com/maliMirkec/yaml-custom-fields
+- Found a problem? [Open an issue](https://github.com/maliMirkec/yaml-custom-fields/issues).
 
 ---
 
-**Built with ❤️ for the WordPress community**
-
----
-
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Maintained By:** Silvestar Bistrović
+**Last updated:** 2026-09-28
+**Plugin version:** 2.0.0
+**Maintained by:** Silvestar Bistrović

@@ -202,6 +202,11 @@ fields:
 - ✅ Classic editor (install the Classic Editor plugin to check): the box sits under the title.
 - ✅ The box title has the same icon as **YAML CF** in the admin menu.
 - ✅ The box shows a **Template: page.php** chip, and **Edit schema**, **Export fields**, **Import fields** and **Empty all fields** buttons, each with an icon.
+- ✅ **Edit schema** looks like a button, not a link. Icons in all buttons line up with the text.
+- ✅ Fields are **one per row**, full width. Never two or three side by side.
+- ✅ Section headings (**Basics**, **Media**, **Links**) have icons, and **Shared fields** and **Site details** use the same icons as in the menu.
+- ✅ No fields showing? Check the **Template:** chip. The page may use another template (like `page-test.php`) that has no fields.
+- ✅ In the **classic editor**, the box title is on the **left** and the arrow is on the right, like other boxes.
 - In the **classic editor**, click the arrow at the right of the box's title bar.
 - ✅ The box folds away. Reload the page – ✅ it is still folded. Click the arrow again – ✅ it opens, and stays open after a reload.
 - ✅ In the block editor the same arrow folds the box away too.
@@ -222,7 +227,7 @@ Fill in each field, click **Update** or **Publish**, then reload the editor. Che
 - **Colour** – ✅ the chosen option is kept.
 - ✅ The info box shows its text and has no input.
 - ✅ **Basics**, **Media** and **Links** show as headed groups.
-- **Hero image**: click **Choose image**, pick one – ✅ preview appears. Click **Remove** – ✅ preview goes; after Update it stays empty.
+- **Hero image**: click **Choose image** (✅ its icon lines up with the text), pick one – ✅ preview appears. Click **Remove** – ✅ preview goes; after Update it stays empty.
 - **Brochure**: click **Choose file**, pick the PDF – ✅ file name shows; it is kept.
 - **Topic** (short list) – ✅ the chosen category is kept.
 - **Post type** – ✅ the choice is kept.
@@ -231,6 +236,7 @@ Fill in each field, click **Update** or **Publish**, then reload the editor. Che
 ### 3c. Unsaved changes warning
 - Change any field.
 - ✅ The line at the top of the Custom fields box says there are changes not saved yet.
+- ✅ This works in the **block editor** too (try Twenty Twenty-One with no Classic Editor plugin).
 - Try to leave the page.
 - ✅ The browser asks to confirm.
 - Click **Update**.
@@ -253,6 +259,7 @@ Fill in each field, click **Update** or **Publish**, then reload the editor. Che
 - ✅ The Banner's header shows that title as its summary.
 - Use the arrow buttons to move the Quote above the Banner.
 - ✅ The order changes. After Update and reload, the order is kept.
+- ✅ **Collapse all** is a small button with an icon, inside the section's title row. The row's bottom border runs all the way across, under the button too.
 - With two or more items, click **Collapse all**.
 - ✅ All items fold away. Click the caret on one – ✅ it opens.
 - Click **Remove** on one item, then Update.
@@ -333,6 +340,8 @@ fields:
 - Open a page on `page.php`.
 - ✅ **Headline** shows the shared value (read-only, with **Edit**), a **This page only** box, and a **Use the shared value on this page** tick box.
 - ✅ **Disclaimer** is shown read-only under **Shared fields**, with an **Edit shared content** link.
+- Click the **Copy code** button of a read-only field, then paste somewhere.
+- ✅ The code is really copied, and the button says "Copied".
 - Tick **Use the shared value on this page**, Update.
 - ✅ The page's own box is greyed out. In the theme (section 16), `ycf_get_field('headline')` shows the shared value.
 - Untick it, type a page value, Update.
@@ -346,12 +355,15 @@ fields:
 
 - On the main screen, click **Create site details**, save a schema with `phone` and `email`.
 - ✅ **Site details** now appears in the menu.
-- Click **Edit site details**, fill in both, click **Save content**.
+- Click **Edit site details**.
+- ✅ Fields are one per row, full width. The same on **Shared content** and collection items.
+- Fill in both, click **Save content**.
 - ✅ Success message.
 - On the main screen, in the `page.php` row, tick **Use site details on these pages**.
 - ✅ "✓ Saved" appears under the checkbox. Reload – ✅ still ticked.
 - Open a page on `page.php`.
 - ✅ A read-only **Site details** part is shown, with an **Edit site details** link.
+- Click a site detail's **Copy code** button and paste somewhere. ✅ It copies.
 - ✅ In the theme, `ycf_get_field('phone')` on that page returns the site detail.
 - Untick the switch.
 - ✅ The page no longer shows site details, and `ycf_get_field('phone')` returns nothing.
@@ -397,7 +409,8 @@ fields:
 - Click **Edit items → Add an item**, fill in Ada / Engineer, **Save item**.
 - ✅ You stay on Ada's item, with a "saved" notice.
 - Click **Add an item**, fill in Grace / Designer, and click **Save and add another**.
-- ✅ The item is saved and an empty form opens for the next one, with a notice saying so. Fill in a third and **Save item**.
+- ✅ The item is saved and an empty form opens for the next one, with the notice "Item saved. Fill in the next one below." Fill in a third and **Save item**.
+- ✅ **Save and add another** has a + icon and sits next to **Save item**.
 - ✅ Items are listed by name.
 - Edit one, change the role, save.
 - ✅ The change is kept.

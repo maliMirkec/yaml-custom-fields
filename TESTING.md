@@ -1,142 +1,110 @@
 # Testing Guide
 
-This document explains how to run and write tests for the YAML Custom Fields WordPress plugin.
+How to run the tests and how to write new ones.
 
-## Table of Contents
+## Quick start
 
-- [Quick Start](#quick-start)
-- [Overview](#overview)
-- [Installation](#installation)
-- [Running Tests](#running-tests)
-- [Test Structure](#test-structure)
-- [Writing Tests](#writing-tests)
-- [Test Utilities](#test-utilities)
-- [Troubleshooting](#troubleshooting)
-- [Quick Regression Checklist](#quick-regression-checklist)
-- [Manual Testing Guide](#manual-testing-guide)
-
-## Quick Start
-
-**Running all tests:**
 ```bash
-composer test
+composer install
+composer check             # syntax + coding style + unit tests
+composer test:integration  # tests in a real WordPress
 ```
 
-**Current Coverage:** 254 unit tests (`composer test`, no WordPress needed) and 483 integration tests (`composer test:integration`, against a real WordPress)
+- **Unit tests:** 263 tests. No WordPress needed. Very fast.
+- **Integration tests:** 579 tests. They run in a real WordPress with a database. Setup: [tests/Integration/README.md](tests/Integration/README.md).
+- **By hand:** [MANUAL-TESTING.md](MANUAL-TESTING.md), step by step for every feature.
+- All tests pass right now.
 
-**See also:** [MANUAL-TESTING.md](MANUAL-TESTING.md) for comprehensive manual test suite
+## Two kinds of tests
 
-## Overview
+**Unit tests** (`tests/Unit/`)
+- Test one class at a time.
+- WordPress is not loaded. Some WordPress functions are faked in `tests/bootstrap-unit.php`.
+- Run with `composer test:unit` (or just `composer test`).
 
-The plugin uses **PHPUnit 9** for testing with two types of tests:
+**Integration tests** (`tests/Integration/`)
+- Test the plugin in a real WordPress: saving posts, AJAX, admin screens, REST, uninstall.
+- Need a WordPress copy and an **empty** test database. The tests wipe it.
+- Run with `composer test:integration`.
 
-1. **Unit Tests** - Test individual classes in isolation without WordPress (currently implemented)
-2. **Integration Tests** - Test classes with real WordPress environment (planned for future)
+**GitHub** runs both on every push and pull request, on PHP 8.1, 8.3 and 8.4 (`.github/workflows/tests.yml`).
 
-### Current Test Coverage
+## What you need
 
-We currently have **120 unit tests** covering:
+- PHP 8.1 or newer
+- Composer
+- For integration tests: MySQL and a WordPress copy
 
-- ✅ **Helpers** (3 files, 40 tests)
-  - `MarkdownParser` - Markdown to HTML conversion
-  - `HtmlHelper` - HTML attribute building and escaping
-  - `RequestHelper` - Request parameter sanitization
+`composer install` installs PHPUnit 9, the Yoast polyfills, the WordPress test library and the coding style tools.
 
-- ✅ **Schema Components** (3 files, 45 tests)
-  - `SchemaParser` - YAML parsing
-  - `SchemaValidator` - Schema structure validation
-  - `FieldNormalizer` - Field shorthand normalization
-
-- ✅ **Form/Security** (2 files, 35 tests)
-  - `DataSanitizer` - Data sanitization
-  - `AttachmentValidator` - Attachment validation
-
-## Installation
-
-### Prerequisites
-
-- PHP 7.4 or higher
-- Composer (included as `composer.phar` in plugin directory)
-
-### Install Test Dependencies
+## Run tests
 
 ```bash
-# From the plugin root directory
-php composer.phar install
-```
+# All unit tests
+composer test:unit
 
-This installs:
-- `phpunit/phpunit` (^9.0) - Testing framework
-- `yoast/phpunit-polyfills` (^2.0) - WordPress compatibility layer
+# All integration tests (set the WP_* variables first, see tests/Integration/README.md)
+composer test:integration
 
-## Running Tests
-
-### Run All Unit Tests
-
-```bash
-php composer.phar test:unit
-```
-
-### Run All Tests (Unit + Integration)
-
-```bash
-php composer.phar test
-```
-
-Note: Currently only unit tests are available. Integration tests will be added in the future.
-
-### Run Specific Test File
-
-```bash
+# One file
 vendor/bin/phpunit tests/Unit/Helpers/MarkdownParserTest.php
-```
 
-### Run Specific Test Method
-
-```bash
+# One test
 vendor/bin/phpunit --filter testParsesBoldSyntax tests/Unit/Helpers/MarkdownParserTest.php
+
+# One integration test file
+vendor/bin/phpunit -c phpunit-integration.xml.dist tests/Integration/SharedOnlyTemplateTest.php
 ```
 
-### Run Tests with Code Coverage (requires Xdebug)
+## Other checks
 
 ```bash
-vendor/bin/phpunit --coverage-html coverage/
+composer lint           # coding style. Must show zero findings.
+composer lint:fix       # fix what can be fixed on its own
+composer lint:syntax    # php -l on every file
+composer check:release  # everything, before a release
 ```
 
-## Test Structure
+- No `phpcs:ignore` comments. Fix the code instead.
+- `check:release` builds `build/vendor` first, so the tests run on the build you ship.
+
+## Folders
 
 ```
 tests/
-├── bootstrap-unit.php              # Bootstrap for unit tests (no WordPress)
-├── bootstrap.php                   # Bootstrap for integration tests (requires WordPress)
-├── TestCase.php                    # Base class for unit tests
-├── WPTestCase.php                  # Base class for integration tests
-├── Factories/
-│   ├── SchemaFactory.php          # Generate test schemas
-│   └── DataFactory.php            # Generate test data
-└── Unit/
-    ├── Helpers/                   # Tests for helper classes
-    │   ├── MarkdownParserTest.php
-    │   ├── HtmlHelperTest.php
-    │   └── RequestHelperTest.php
-    ├── Schema/                    # Tests for schema components
-    │   ├── SchemaParserTest.php
-    │   ├── SchemaValidatorTest.php
-    │   └── FieldNormalizerTest.php
-    └── Form/                      # Tests for form/security
-        ├── DataSanitizerTest.php
-        └── AttachmentValidatorTest.php
+├── bootstrap-unit.php         # Starts unit tests (fake WordPress functions)
+├── bootstrap.php              # Starts integration tests (real WordPress)
+├── TestCase.php               # Base class for unit tests
+├── WPTestCase.php             # Base class for integration tests
+├── FailsOnPluginWarnings.php  # Makes a test fail on any PHP warning from the plugin
+├── wp-tests-config.php        # Database settings for integration tests
+├── Factories/                 # Ready-made field lists and values
+├── themes/                    # Small test themes (block, child, parent, singular)
+├── Unit/
+│   ├── Form/                  # Cleaning values, checking attachments
+│   ├── Helpers/               # Markdown, HTML, request helpers
+│   ├── ImportExport/          # Export, import, old file formats
+│   ├── Rendering/             # How fields are drawn
+│   ├── Schema/                # Reading and checking field lists
+│   ├── Template/              # Sorting templates
+│   ├── NoticeConsistencyTest.php  # Every message uses the one notice style
+│   └── ScopedAutoloaderTest.php   # The build knows every class in src/
+└── Integration/               # See tests/Integration/README.md
 ```
 
-## Writing Tests
+## Two tests that catch common mistakes
 
-### Creating a New Test File
+- **`ScopedAutoloaderTest`** fails if you add a class to `src/` and forget `./build-scoped.sh`. The built autoloader only knows the classes it saw. A missing one breaks real sites.
+- **`NoticeConsistencyTest`** fails if you show a message the old way (toasts, callouts, tooltips, or a notice pushed in at the top of the page). Use the one notice style:
+  - Server side: `NotificationManager`.
+  - In scripts, next to a form: `YamlCF.notify(…, { target })`.
+  - For a button that works in place: `YamlCF.status(slot, text, type)`.
 
-1. Create a new file in `tests/Unit/<Category>/`
-2. Extend `YamlCF\Tests\TestCase`
-3. Follow the naming convention: `ClassNameTest.php`
+## Write a unit test
 
-Example:
+1. Add a file in `tests/Unit/<Folder>/`.
+2. Name it after the class: `MyHelperTest.php`.
+3. Extend `YamlCF\Tests\TestCase`.
 
 ```php
 <?php
@@ -146,339 +114,157 @@ use YamlCF\Tests\TestCase;
 use YamlCF\Helpers\MyHelper;
 
 class MyHelperTest extends TestCase {
-    private $helper;
-
-    protected function setUp(): void {
-        parent::setUp();
-        $this->helper = new MyHelper();
-    }
-
-    /**
-     * Test description
-     */
-    public function testSomething() {
-        $result = $this->helper->doSomething('input');
-        $this->assertEquals('expected', $result);
-    }
+  public function testTurnsEmptyInputIntoEmptyText() {
+    $this->assertSame('', MyHelper::parse(''));
+  }
 }
 ```
 
-### Test Method Naming
+**Extra checks in `TestCase`:**
+- `assertStringContains($needle, $haystack)`
+- `assertStringNotContains($needle, $haystack)`
+- `assertArrayStructure(['key1', 'key2'], $array)`
 
-Use descriptive names that explain what's being tested:
+## Write an integration test
 
-- `testParsesBoldSyntax()` - Good
-- `testParse()` - Too vague
-- `test1()` - Bad
-
-### Assertions
-
-The `TestCase` base class provides helper methods:
+1. Add a file in `tests/Integration/`.
+2. Extend `YamlCF\Tests\WPTestCase`.
+3. Add a short comment on top: what broke, and what the test proves.
 
 ```php
-// String assertions
-$this->assertStringContains('needle', 'haystack');
-$this->assertStringNotContains('needle', 'haystack');
+<?php
+namespace YamlCF\Tests\Integration;
 
-// Array assertions
-$this->assertArrayStructure(['key1', 'key2'], $array);
+use YamlCF\Tests\WPTestCase;
 
-// Standard PHPUnit assertions
-$this->assertEquals($expected, $actual);
-$this->assertTrue($value);
-$this->assertIsArray($value);
-$this->assertCount(5, $array);
+class MyFeatureTest extends WPTestCase {
+  public function testEditorCanSaveAField() {
+    $this->actingAs($this->createTestUser('editor'));
+    $post_id = $this->createTestPost(['post_type' => 'page'], ['title' => 'Hello']);
+
+    $this->assertSame('Hello', yaml_cf_get_field('title', $post_id));
+  }
+}
 ```
 
-### Using Test Factories
+**Helpers in `WPTestCase`:**
+- `createTestUser($role)`: makes a user.
+- `actingAs($user_id)`: logs that user in.
+- `createTestPost($args, $yaml_data)`: makes a post with field values.
+- Plugin options and posts are cleaned up after each test.
 
-Generate test data using factories:
+## Test data
 
 ```php
 use YamlCF\Tests\Factories\SchemaFactory;
 use YamlCF\Tests\Factories\DataFactory;
 
-// In your test
 $schema = SchemaFactory::createSimpleSchema();
-$data = DataFactory::createCompleteData();
+$data   = DataFactory::createCompleteData();
 ```
 
-Available factory methods:
+**SchemaFactory:** `createSimpleSchema()`, `createCompleteSchema()`, `createBlockSchema()`, `createNestedSchema()`, `createInvalidSchema()`, `createDataObjectSchema()`, `createFromArray($fields)`
 
-**SchemaFactory:**
-- `createSimpleSchema()` - Basic field schema
-- `createCompleteSchema()` - Full schema with all field types
-- `createBlockSchema()` - Block editor schema
-- `createNestedSchema()` - Group/repeater fields
-- `createInvalidSchema()` - Invalid YAML for error testing
+**DataFactory:** `createSimpleData()`, `createCompleteData()`, `createBlockData()`, `createNestedData()`, `createHtmlData()`, `createSpecialCharsData()`, `createEmptyData()`, `createIncompleteData()`, `createExportData()`, `createImportData()`, `createFromArray($fields)`, `randomString()`, `randomEmail()`
 
-**DataFactory:**
-- `createSimpleData()` - Basic field data
-- `createCompleteData()` - Complete data set
-- `createHtmlData()` - Data with HTML (for sanitization tests)
-- `createSpecialCharsData()` - Data with special characters
-- `createExportData()` - Data for export testing
-- `createImportData()` - Data for import testing
+## Tips
 
-## Test Utilities
+- Name tests by what they prove: `testClearedFieldStaysEmpty()`, not `testSave()`.
+- Test empty input, odd characters and bad input.
+- One idea per test.
+- Fix a bug? Write the test first. See it fail. Then fix.
 
-### Mocked WordPress Functions
+## Problems
 
-Unit tests use mocked WordPress functions (see `tests/bootstrap-unit.php`):
+**`Class "YamlCF\…" not found`**
+- Run `./build-scoped.sh`. The build doesn't know the class yet.
 
-- `esc_html()` - HTML entity encoding
-- `esc_attr()` - Attribute escaping
-- `esc_url()` - URL sanitization (blocks dangerous protocols)
-- `sanitize_text_field()` - Text sanitization
-- `sanitize_key()` - Key sanitization
-- `wp_kses()` - HTML filtering
-- `wp_kses_post()` - Post content filtering (basic mock)
-- `do_action()` - Action hooks (no-op)
-- `map_deep()` - Recursive array mapping
-- `wp_unslash()` - Stripslashes
+**`Call to undefined function esc_html()` in a unit test**
+- Add a fake version to `tests/bootstrap-unit.php`. Or make it an integration test.
 
-Note: These are simplified implementations for testing. Integration tests with real WordPress will use the actual functions.
+**Integration tests can't connect to the database**
+- Check the `WP_TESTS_DB_*` variables. Is MySQL running?
 
-### Test Organization
+**A test fails with a warning from the plugin**
+- That's on purpose (`FailsOnPluginWarnings`). Fix the warning.
 
-Group related tests together:
-
-```php
-/**
- * Test parsing bold syntax
- */
-public function testParsesBoldSyntax() { }
-
-/**
- * Test parsing italic syntax
- */
-public function testParsesItalicSyntax() { }
-
-/**
- * Test parsing combined markdown
- */
-public function testParsesCombinedMarkdown() { }
-```
-
-### Testing Edge Cases
-
-Always test edge cases:
-
-```php
-// Empty input
-public function testHandlesEmptyInput() {
-    $this->assertEquals('', MyClass::parse(''));
-    $this->assertEquals('', MyClass::parse(null));
-}
-
-// Special characters
-public function testHandlesSpecialCharacters() {
-    $input = 'Text with & < > " \'';
-    $result = MyClass::parse($input);
-    // Assertions...
-}
-
-// Invalid input
-public function testRejectsInvalidInput() {
-    $result = MyClass::parse('invalid');
-    $this->assertFalse($result);
-}
-```
-
-## Troubleshooting
-
-### Issue: Class not found
-
-**Error:** `Class "YamlCF\SomeClass" not found`
-
-**Solution:** Make sure the scoped vendor autoloader is loaded:
-```php
-// In tests/bootstrap-unit.php
-require_once dirname(__DIR__) . '/build/vendor/scoper-autoload.php';
-```
-
-### Issue: WordPress function not found
-
-**Error:** `Call to undefined function esc_html()`
-
-**Solution:** Add the function to `tests/bootstrap-unit.php`:
-```php
-if (!function_exists('esc_html')) {
-    function esc_html($text) {
-        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
-    }
-}
-```
-
-### Issue: Deprecation warnings
-
-**Issue:** Many deprecation warnings from `thecodingmachine/safe` library
-
-**Solution:** These are harmless warnings from a dependency. They don't affect test results. You can filter them with:
-```bash
-php composer.phar test:unit 2>&1 | grep -v "Deprecated"
-```
-
-### Issue: Tests timing out
-
-**Solution:** Increase the timeout in `phpunit.xml`:
-```xml
-<phpunit
-    processIsolationTimeout="120"
-    ...
->
-```
-
-### Issue: Memory limit
-
-**Solution:** Increase PHP memory limit:
-```bash
-php -d memory_limit=512M composer.phar test:unit
-```
-
-## Future Plans
-
-### Integration Tests
-
-Integration tests will be added in a future phase and will require:
-
-1. WordPress test environment setup:
-```bash
-bash bin/install-wp-tests.sh wordpress_test root '' localhost latest
-```
-
-2. Test database configuration
-3. Extended test coverage for:
-   - Data Repositories (database operations)
-   - AJAX Handlers (endpoint testing)
-   - Import/Export functionality
-   - Admin Controllers
-   - Field Renderers
-
-### Continuous Integration
-
-Automated testing on GitHub Actions/GitLab CI is planned for:
-- Running tests on every commit
-- Code coverage reporting
-- Multi-version PHP testing (7.4, 8.0, 8.1, 8.2)
-
-## Contributing
-
-When adding new features:
-
-1. Write tests first (TDD approach recommended)
-2. Ensure all tests pass before committing
-3. Add tests for edge cases and error conditions
-4. Update this documentation if adding new test utilities
-
-## Resources
-
-- [PHPUnit Documentation](https://phpunit.de/documentation.html)
-- [WordPress Plugin Unit Tests](https://make.wordpress.org/cli/handbook/misc/plugin-unit-tests/)
-- [Yoast PHPUnit Polyfills](https://github.com/Yoast/PHPUnit-Polyfills)
-
-## Summary
-
-**Current Status:**
-- ✅ 120 unit tests passing
-- ✅ 258 assertions
-- ✅ Core functionality covered (Helpers, Schema, Form/Security)
-- ⏳ Integration tests (planned)
-- ⏳ CI/CD pipeline (planned)
-
-**Test Execution Time:** ~15ms
-**Memory Usage:** ~12MB
-
-Run tests frequently during development to catch issues early!
+**Out of memory**
+- `php -d memory_limit=512M vendor/bin/phpunit`
 
 ---
 
-## Quick Regression Checklist
+## Quick check before a release (about 15 minutes)
 
-### Critical Path (15 minutes)
+**Before you start**
+- [ ] `WP_DEBUG` and `WP_DEBUG_LOG` are `true` in `wp-config.php`.
+- [ ] The plugin is active.
+- [ ] The browser console is open (F12).
 
-Use this checklist for quick regression testing before releases.
+**1. Turn on and off**
+- [ ] Turn the plugin on. No errors.
+- [ ] Turn it off. No errors.
+- [ ] `debug.log` has no plugin errors.
 
-**Prerequisites:**
-- [ ] WP_DEBUG = true in wp-config.php
-- [ ] WordPress site running
-- [ ] Plugin activated
+**2. Main screen (YAML CF)**
+- [ ] It opens. No errors in the console.
+- [ ] The template list shows.
+- [ ] **Refresh list** works.
+- [ ] Switching **Custom fields** on and off doesn't make the table jump.
 
-#### 1. Plugin Activation/Deactivation
-- [ ] Plugin activates without errors
-- [ ] Plugin deactivates without errors
-- [ ] No PHP errors in debug.log
+**3. Field list (schema)**
+- [ ] The editor opens.
+- [ ] Save works. A green message shows.
+- [ ] Broken YAML shows a red message. Your text is kept.
 
-#### 2. Admin Page Loads
-- [ ] Main page loads: `/wp-admin/admin.php?page=yaml-custom-fields`
-- [ ] No JavaScript errors in console (F12)
-- [ ] Template list displays
-- [ ] Refresh button functional
+**4. Page editor**
+- [ ] The Custom fields box shows, one field per row.
+- [ ] Change a field. The "not saved yet" line shows.
+- [ ] Save. The value is kept.
+- [ ] Shared values and site details show read-only. Their Copy buttons work.
 
-#### 3. Schema Editor
-- [ ] Schema editor loads
-- [ ] Can edit YAML
-- [ ] Save button works
-- [ ] Success message displays (green)
-- [ ] Invalid YAML shows error message (red)
+**5. Collections**
+- [ ] Add a collection.
+- [ ] Add an item. **Save and add another** opens an empty item.
+- [ ] Edit and delete items.
 
-#### 4. Template Form Submission
-- [ ] Edit template/partial data
-- [ ] Unsaved changes warning works
-- [ ] Form saves successfully
-- [ ] No nonce errors
+**6. Export and import**
+- [ ] Export one page. The JSON file downloads.
+- [ ] Export settings.
+- [ ] Import them on another site.
 
-#### 5. Data Objects
-- [ ] Data objects page loads
-- [ ] Can create new data object type
-- [ ] Can add entries
-- [ ] Can edit/delete entries
+**7. Settings**
+- [ ] All three choices save.
 
-#### 6. Export/Import
-- [ ] Single post export works
-- [ ] Settings export works
-- [ ] JSON files download correctly
-- [ ] No nonce security errors
+**8. Delete the plugin**
+- [ ] Untick **Keep the content if the plugin is deleted**.
+- [ ] Delete the plugin.
+- [ ] Nothing is left:
+  ```sql
+  SELECT option_name FROM wp_options WHERE option_name LIKE '%yaml_cf%';
+  SELECT meta_key FROM wp_postmeta WHERE meta_key LIKE '_yaml_cf%';
+  ```
 
-#### 7. Clean Uninstall
-- [ ] Deactivate and delete plugin
-- [ ] Check database for leftover data (should be clean)
-- [ ] Check options table (`SELECT * FROM wp_options WHERE option_name LIKE '%yaml_cf%'`)
-
-### Debug Checks
-
-**Browser Console (F12):**
+**Console check**
 ```javascript
-// Should not throw errors
-typeof yamlCFPageInit !== 'undefined'
-typeof YamlCF !== 'undefined'
+typeof YamlCF !== 'undefined'   // true on plugin screens
 ```
 
-**Debug Log:**
+**Log check**
 ```bash
 tail -100 wp-content/debug.log | grep -i "yaml\|fatal\|warning"
 ```
-
-**Expected:** No fatal errors, no YAML Custom Fields warnings
-
----
-
-## Manual Testing Guide
-
-For comprehensive manual testing, see: **[MANUAL-TESTING.md](MANUAL-TESTING.md)**
-
-The manual testing guide includes:
-- Complete feature testing (675 lines)
-- Browser compatibility matrix
-- Accessibility testing
-- Edge case scenarios
-- Multi-site testing
-- Conflict testing with other plugins
-
-**Recommendation:** Run full manual testing suite before major releases and WordPress.org submissions.
+Nothing from this plugin should show.
 
 ---
 
-**Last Updated:** 2026-09-26
-**Plugin Version:** 2.0.0
-**Test Coverage:** 254 unit and 483 integration tests
+## Full manual test
+
+See **[MANUAL-TESTING.md](MANUAL-TESTING.md)**. It has short, step-by-step checks for every feature, messages, accessibility and deleting the plugin.
+
+Do it before big releases and before sending the plugin to WordPress.org.
+
+---
+
+**Last updated:** 2026-09-28
+**Plugin version:** 2.0.0
+**Tests:** 263 unit, 579 integration
