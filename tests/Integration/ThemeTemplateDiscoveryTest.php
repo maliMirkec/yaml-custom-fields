@@ -95,6 +95,29 @@ class ThemeTemplateDiscoveryTest extends WPTestCase {
 		$this->assertContains('page-about.php', $found);
 	}
 
+	/**
+	 * Themes often keep custom templates in a folder. WordPress stores the path
+	 * with the folder as the page's template, so that is the name it is listed
+	 * under and the name its schema is found by.
+	 */
+	public function testACustomPageTemplateInAFolderIsListed() {
+		$this->useTheme('ycf-parent');
+
+		$this->assertContains('page-templates/full-width.php', $this->files($this->scan()['templates']));
+	}
+
+	public function testAPageOnATemplateInAFolderGetsItsFields() {
+		$this->useTheme('ycf-parent');
+		update_option('yaml_cf_schemas', ['page-templates/full-width.php' => "fields:\n  - name: tagline\n    type: string\n"], false);
+		update_option('yaml_cf_template_settings', ['page-templates/full-width.php' => true], false);
+
+		$page_id = $this->createTestPost(['post_type' => 'page'], ['tagline' => 'Wide']);
+		update_post_meta($page_id, '_wp_page_template', 'page-templates/full-width.php');
+
+		$this->assertSame('page-templates/full-width.php', \YamlCF\Core\Plugin::getInstance()->get('template_resolver')->getTemplateForPost(get_post($page_id)));
+		$this->assertSame('Wide', ycf_get_field('tagline', $page_id));
+	}
+
 	// --------------------------------------------------------- child themes
 
 	/**

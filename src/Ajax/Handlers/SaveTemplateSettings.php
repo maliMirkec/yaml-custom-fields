@@ -17,7 +17,7 @@ class SaveTemplateSettings extends AjaxHandler {
   public function handle() {
     $this->verifyRequest();
 
-    $template = $this->postText('template');
+    $template = $this->postTemplate();
     $enabled = $this->postText('enabled') === 'true';
 
     $settings = (array) get_option('yaml_cf_template_settings', []);

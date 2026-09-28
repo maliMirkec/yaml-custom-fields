@@ -14,11 +14,11 @@ use YamlCF\Helpers\RequestHelper;
  */
 class TemplateGlobalController extends AdminController {
   private $templateCache;
-  private $schemaStorage;
+  private $schemaParser;
 
-  public function __construct($templateCache, $schemaStorage) {
+  public function __construct($templateCache, $schemaParser) {
     $this->templateCache = $templateCache;
-    $this->schemaStorage = $schemaStorage;
+    $this->schemaParser = $schemaParser;
   }
 
   /**
@@ -92,7 +92,7 @@ class TemplateGlobalController extends AdminController {
 
     $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
     $template_global_schema_yaml = isset($template_global_schemas[$template]) ? $template_global_schemas[$template] : '';
-    $template_global_schema = $this->schemaStorage->parseSchema($template_global_schema_yaml);
+    $template_global_schema = $this->schemaParser->parse($template_global_schema_yaml);
 
     if (!$template_global_schema || !isset($template_global_schema['fields'])) {
       wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-template-global-schema&template=' . rawurlencode($template)));

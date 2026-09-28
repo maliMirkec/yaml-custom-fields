@@ -81,7 +81,13 @@ class DataObjectImporter {
         continue;
       }
 
-      $schema_yaml = sanitize_textarea_field($type_data['schema']);
+      if (strlen($type_slug) > \YamlCF\Data\EntryStore::MAX_SLUG_LENGTH) {
+        /* translators: 1: data object type slug, 2: most characters a short name may have */
+        $errors[] = sprintf(__('Skipped the list "%1$s": its short name is longer than %2$d characters.', 'yaml-custom-fields'), $type_slug, \YamlCF\Data\EntryStore::MAX_SLUG_LENGTH);
+        continue;
+      }
+
+      $schema_yaml = \YamlCF\Schema\SchemaParser::sanitizeSource($type_data['schema']);
       // Not strict: a field with a type this version does not know is reported,
       // but the list and its entries still come across.
       $validation_result = $this->validator->validate($schema_yaml, null, false);

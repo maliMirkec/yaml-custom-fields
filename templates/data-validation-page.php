@@ -102,7 +102,7 @@ $yaml_cf_pagination = paginate_links([
       </div>
 
       <?php if ($total_orphaned_fields > 0) : ?>
-        <div class="yaml-cf-orphans-intro notice notice-info inline">
+        <div class="notice notice-info inline">
           <p>
             <?php
             echo esc_html(sprintf(
@@ -124,7 +124,7 @@ $yaml_cf_pagination = paginate_links([
       <?php endif; ?>
 
       <?php if ($posts_without_schema > 0) : ?>
-        <div class="yaml-cf-notice-muted notice notice-info inline">
+        <div class="notice notice-info inline">
           <p>
             <?php
             echo esc_html(sprintf(
@@ -143,11 +143,11 @@ $yaml_cf_pagination = paginate_links([
       <?php endif; ?>
 
       <?php if ($posts_with_issues === 0) : ?>
-        <div class="notice notice-success inline yaml-cf-notice-spaced">
+        <div class="notice notice-success inline">
           <p><strong><?php esc_html_e('All good.', 'yaml-custom-fields'); ?></strong> <?php esc_html_e('Every image and file is in place.', 'yaml-custom-fields'); ?></p>
         </div>
       <?php else : ?>
-        <div class="notice notice-warning inline yaml-cf-notice-spaced">
+        <div class="notice notice-warning inline">
           <p><strong><?php esc_html_e('Some images or files are missing.', 'yaml-custom-fields'); ?></strong> <?php
             echo esc_html(
               sprintf(
@@ -182,7 +182,7 @@ $yaml_cf_pagination = paginate_links([
 
     <!-- Validation Results -->
     <form method="post" action="" class="yaml-cf-validation-form"
-          onsubmit="return confirm('<?php echo esc_js(__('Remove the stored values listed here? This cannot be undone.', 'yaml-custom-fields')); ?>');">
+          data-confirm="<?php esc_attr_e('Remove the stored values listed here? This cannot be undone.', 'yaml-custom-fields'); ?>">
       <?php wp_nonce_field('yaml_cf_remove_orphans', 'yaml_cf_remove_orphans_nonce'); ?>
     <div class="card yaml-cf-card-wide">
       <div class="yaml-cf-card-header">

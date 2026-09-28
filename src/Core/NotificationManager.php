@@ -7,7 +7,6 @@
 
 namespace YamlCF\Core;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -82,21 +81,6 @@ class NotificationManager {
     $notices = $this->peek();
     $this->clear();
     return $notices;
-  }
-
-  /**
-   * Backward compatible alias of pull() (returns the first notice or false)
-   *
-   * @deprecated Use pull()
-   * @return array|false
-   */
-  public function get() {
-    $notices = $this->pull();
-    return empty($notices) ? false : $notices[0];
-  }
-
-  public function has() {
-    return !empty($this->peek());
   }
 
   public function clear() {

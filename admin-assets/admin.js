@@ -13,6 +13,7 @@
     originalMetaBoxData: {},
 
     init: function () {
+      this.initBlockCounters();
       this.bindEvents();
       this.initMediaUploader();
       this.initMetaBoxChangeTracking();
@@ -73,9 +74,15 @@
       // Reset All Data
       $(document).off('click' + ns, '.yaml-cf-reset-data').on('click' + ns, '.yaml-cf-reset-data', this.resetAllData);
 
-      // Import Settings
-      $(document).off('click' + ns, '.yaml-cf-import-settings-trigger').on('click' + ns, '.yaml-cf-import-settings-trigger', this.triggerImport);
-      $(document).off('change' + ns, '#yaml-cf-import-settings-file').on('change' + ns, '#yaml-cf-import-settings-file', this.importSettings);
+      // Forms that ask before doing something that cannot be undone. The text
+      // sits in data-confirm rather than an inline onsubmit, where an apostrophe
+      // in a translation or a collection name broke the script and the form
+      // then went through without asking at all.
+      $(document).off('submit' + ns, 'form[data-confirm]').on('submit' + ns, 'form[data-confirm]', function (e) {
+        if (!window.confirm($(this).attr('data-confirm'))) {
+          e.preventDefault();
+        }
+      });
 
       // Import Post Data
       $(document).off('change' + ns, 'input[name="yaml_cf_import_file_hidden"]').on('change' + ns, 'input[name="yaml_cf_import_file_hidden"]', this.importPostData);
@@ -120,7 +127,7 @@
         data: {
           action: 'yaml_cf_save_template_settings',
           nonce: yamlCF.nonce,
-        admin_nonce: yamlCF.adminNonce,
+          admin_nonce: yamlCF.adminNonce,
           template: template,
           enabled: enabled,
         },
@@ -164,7 +171,7 @@
         data: {
           action: 'yaml_cf_toggle_use_global',
           nonce: yamlCF.nonce,
-        admin_nonce: yamlCF.adminNonce,
+          admin_nonce: yamlCF.adminNonce,
           template: template,
           use_global: useGlobal,
         },
@@ -219,7 +226,7 @@
     /**
      * Add a section, rendered by the server
      *
-     * The markup comes from YAML_Custom_Fields::render_block_item(), the same
+     * The markup comes from YamlCF\Rendering\BlockItemRenderer, the same
      * code that renders the sections already on the page. Building it here in
      * JavaScript meant maintaining every field type twice, and the two drifted:
      * taxonomy, post_type and data_object fields used to come out wrong in a
@@ -232,19 +239,19 @@
       const blockType = $select.val();
 
       if (!blockType) {
-        alert(__('Choose a section type first.', 'yaml-custom-fields'));
+        YamlCF.showMessage(__('Choose a section type first.', 'yaml-custom-fields'), 'warning');
         return;
       }
 
       const source = yamlCF.schemaSource;
       if (!source || !source.source) {
-        alert(__('The schema for this screen could not be found. Reload the page and try again.', 'yaml-custom-fields'));
+        YamlCF.showMessage(__('The schema for this screen could not be found. Reload the page and try again.', 'yaml-custom-fields'), 'error');
         return;
       }
 
       const $blockList = $container.find('.yaml-cf-block-list');
       const fieldName = $container.data('field-name');
-      const index = $blockList.children('.yaml-cf-block-item').length;
+      const index = YamlCF.nextBlockIndex($container);
 
       $button.prop('disabled', true);
 
@@ -260,9 +267,10 @@
       })
         .done(function (response) {
           if (!response || !response.success) {
-            alert(
-              (response && response.data) ||
-                __('The section could not be added.', 'yaml-custom-fields')
+            YamlCF.showMessage(
+              (response && typeof response.data === 'string' && response.data) ||
+                __('The section could not be added.', 'yaml-custom-fields'),
+              'error'
             );
             return;
           }
@@ -270,11 +278,15 @@
           const $item = $(response.data.html);
           $blockList.append($item);
 
+          // The index above only has to be unique on this page; the names are
+          // numbered in order again so the saved list has no gaps
+          YamlCF.reindexBlocks();
+
           // Rich text and galleries need wiring up once they are in the page
           YamlCF.initAddedBlock($item);
         })
         .fail(function () {
-          alert(__('The section could not be added. Try again.', 'yaml-custom-fields'));
+          YamlCF.showMessage(__('The section could not be added. Try again.', 'yaml-custom-fields'), 'error');
         })
         .always(function () {
           $button.prop('disabled', false);
@@ -324,6 +336,41 @@
         __("Section removed. Click Update to save the change.", 'yaml-custom-fields'),
         'warning'
       );
+    },
+
+    /**
+     * Remember, per sections field, how many sections the page was drawn with
+     *
+     * @see nextBlockIndex
+     */
+    initBlockCounters: function () {
+      $('.yaml-cf-block-container').each(function () {
+        const $container = $(this);
+        if ($container.data('yamlCfNextIndex') === undefined) {
+          $container.data('yamlCfNextIndex', $container.find('.yaml-cf-block-list').children('.yaml-cf-block-item').length);
+        }
+      });
+    },
+
+    /**
+     * An index for a new section that no section on this page has used
+     *
+     * The index is part of each field's id, a rich-text editor's included.
+     * Counting the sections left after one was removed handed out an index a
+     * remaining section still had, so two editors shared an id: the new one
+     * did not start, and its content could be saved into the other section.
+     * Ids are not renumbered when sections move, so the count only goes up.
+     *
+     * @param {jQuery} $container The sections field
+     * @return {number}
+     */
+    nextBlockIndex: function ($container) {
+      let next = $container.data('yamlCfNextIndex');
+      if (next === undefined) {
+        next = $container.find('.yaml-cf-block-list').children('.yaml-cf-block-item').length;
+      }
+      $container.data('yamlCfNextIndex', next + 1);
+      return next;
     },
 
     reindexBlocks: function () {
@@ -594,7 +641,7 @@
 
     /**
      * Build one gallery tile, matching the markup of
-     * YAML_Custom_Fields::render_image_list_item()
+     * YamlCF\Rendering\MediaListRenderer::renderImageListItem()
      */
     buildImageListItem: function (fieldName, attachment) {
       const $item = $('<li>', {
@@ -754,7 +801,7 @@
               ? 'yaml_cf_search_terms'
               : 'yaml_cf_search_data_objects',
           nonce: yamlCF.nonce,
-        admin_nonce: yamlCF.adminNonce,
+          admin_nonce: yamlCF.adminNonce,
           taxonomy: $picker.data('key'),
           object_type: $picker.data('key'),
           search: term,
@@ -1040,8 +1087,11 @@
       const $localInputs = $('#yaml-cf-meta-box > .inside > .yaml-cf-fields')
         .find('input, textarea, select')
         .filter(function() {
-          // Exclude inputs that are inside .yaml-cf-template-global-part
-          return $(this).closest('.yaml-cf-template-global-part').length === 0;
+          // Exclude inputs that are inside .yaml-cf-template-global-part, and the
+          // "Use the shared value on this page" ticks: emptying the page's own
+          // values must not switch a field from the shared value to an empty one
+          return $(this).closest('.yaml-cf-template-global-part').length === 0 &&
+            !$(this).hasClass('yaml-cf-use-global-checkbox');
         });
 
       $localInputs.each(function () {
@@ -1101,108 +1151,10 @@
       // Remove all blocks
       $('#yaml-cf-meta-box > .inside > .yaml-cf-fields .yaml-cf-block-item').remove();
 
-      alert(
-        __('All fields on this page are now empty. Click Update to save this change.', 'yaml-custom-fields')
+      YamlCF.showMessage(
+        __('All fields on this page are now empty. Click Update to save this change.', 'yaml-custom-fields'),
+        'warning'
       );
-    },
-
-    triggerImport: function (e) {
-      e.preventDefault();
-      $('#yaml-cf-import-settings-file').click();
-    },
-
-    importSettings: function (e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // Validate file type
-      if (!file.name.endsWith('.json')) {
-        YamlCF.showMessage(__('Choose a .json file exported from YAML Custom Fields.', 'yaml-custom-fields'), 'error');
-        return;
-      }
-
-      // Confirm import
-      const confirmMsg = __('This imports schemas and settings from the file. It can change the current setup.\n\nOK: replace the current settings.\nCancel: add them to the current settings.\n\nContinue?', 'yaml-custom-fields');
-
-      if (!confirm(confirmMsg)) {
-        // User wants to merge
-        const mergeConfirm = confirm(
-          __('Add the imported settings to the current ones?', 'yaml-custom-fields')
-        );
-        if (!mergeConfirm) {
-          e.target.value = ''; // Reset file input
-          return;
-        }
-      }
-
-      const merge = !confirm(
-        __('Replace all current settings with the imported ones? Choose Cancel to add them instead.', 'yaml-custom-fields')
-      );
-
-      const reader = new FileReader();
-      reader.onload = function (evt) {
-        try {
-          const importData = JSON.parse(evt.target.result);
-
-          $.ajax({
-            url: yamlCF.ajax_url,
-            type: 'POST',
-            data: {
-              action: 'yaml_cf_import_settings',
-              nonce: yamlCF.nonce,
-        admin_nonce: yamlCF.adminNonce,
-              data: JSON.stringify(importData),
-              merge: merge,
-            },
-            success: function (response) {
-              if (response.success) {
-                const info = response.data;
-                let message = __('Settings imported.', 'yaml-custom-fields');
-                if (info.errors && info.errors.length > 0) {
-                  message = __('Settings imported, but some parts were skipped:', 'yaml-custom-fields') + '\n- ' + info.errors.join('\n- ');
-                }
-                if (info.imported_from && info.imported_from !== 'unknown') {
-                  message += '\n\n' + __('From website:', 'yaml-custom-fields') + ' ' + info.imported_from;
-                }
-                if (info.exported_at && info.exported_at !== 'unknown') {
-                  message += '\n' + __('Exported on:', 'yaml-custom-fields') + ' ' + info.exported_at;
-                }
-                alert(message);
-                YamlCF.showMessage(
-                  __('Settings imported.', 'yaml-custom-fields'),
-                  'success'
-                );
-
-                // Reload page to show updated settings
-                setTimeout(function () {
-                  window.location.reload();
-                }, 1500);
-              } else {
-                YamlCF.showMessage(
-                  __('The settings could not be imported:', 'yaml-custom-fields') + ' ' +
-                    (response.data || __('Something went wrong.', 'yaml-custom-fields')),
-                  'error'
-                );
-              }
-            },
-            error: function () {
-              YamlCF.showMessage(
-                __('The import did not reach the server. Check the connection and try again.', 'yaml-custom-fields'),
-                'error'
-              );
-            },
-            complete: function () {
-              // Reset file input
-              $('#yaml-cf-import-settings-file').val('');
-            },
-          });
-        } catch (err) {
-          YamlCF.showMessage(__('This file could not be read:', 'yaml-custom-fields') + ' ' + err.message, 'error');
-          $('#yaml-cf-import-settings-file').val('');
-        }
-      };
-
-      reader.readAsText(file);
     },
 
     initFormChangeTracking: function (config) {
@@ -1583,7 +1535,7 @@
 
       if (!file) return;
 
-      if (!confirm('⚠️ ' + __('This replaces all fields on this page with the file\'s content. Continue?', 'yaml-custom-fields'))) {
+      if (!confirm('⚠️ ' + __('This replaces all fields on this page with the file\'s content, and reloads the page: changes you have not saved yet are lost. Continue?', 'yaml-custom-fields'))) {
         $input.val('');
         return;
       }
@@ -1606,7 +1558,7 @@
           window.location.href = window.location.href.split('?')[0] + '?post=' + postId + '&action=edit&yaml_cf_imported=1';
         },
         error: function () {
-          alert(__('The import did not work. Please try again.', 'yaml-custom-fields'));
+          YamlCF.showMessage(__('The import did not work. Please try again.', 'yaml-custom-fields'), 'error');
           $input.val('');
         }
       });
@@ -1622,18 +1574,29 @@
   });
 
   // Remove duplicate nonce fields with the same ID
+  //
+  // Only a repeat inside the same form and under the same name is dropped: that
+  // one is redundant. A list screen prints one small form per row, each with
+  // its own nonce under the same ID, and removing those left every row after
+  // the first unable to submit.
   YamlCF.removeDuplicateNonces = function() {
-    const seenIds = {};
+    const seen = [];
     $('input[type="hidden"]').each(function() {
       const id = $(this).attr('id');
-      if (id && id.includes('nonce')) {
-        if (seenIds[id]) {
-          // Remove duplicate
-          $(this).remove();
-        } else {
-          // Mark as seen
-          seenIds[id] = true;
-        }
+      if (!id || !id.includes('nonce')) {
+        return;
+      }
+
+      const form = this.form;
+      const name = $(this).attr('name');
+      const isRepeat = seen.some(function(entry) {
+        return entry.id === id && entry.form === form && entry.name === name;
+      });
+
+      if (isRepeat) {
+        $(this).remove();
+      } else {
+        seen.push({ id: id, form: form, name: name });
       }
     });
   };

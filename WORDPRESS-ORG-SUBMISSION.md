@@ -1,14 +1,14 @@
 # WordPress.org Plugin Directory Submission Guide
 
 ## Quick Reference
-- **Version:** 1.2.2
+- **Version:** 2.0.0
 - **Text Domain:** yaml-custom-fields
-- **Minimum PHP:** 8.1+ (8.4 not supported - use 8.1, 8.2, or 8.3)
-- **Minimum WordPress:** 5.0+
-- **Tested up to:** 6.9
-- **Test Coverage:** 120 tests, 258 assertions
-- **Security Audit:** ✅ Passed (2025-12-21)
-- **Submission Status:** 80% Ready (~7-8 hours remaining)
+- **Minimum PHP:** 8.1+ (CI covers 8.1, 8.3 and 8.4)
+- **Minimum WordPress:** 6.4+
+- **Tested up to:** 7.1
+- **Test Coverage:** 247 unit tests (557 assertions), 446 integration tests (3,041 assertions)
+- **Security Audit:** ✅ Passed (2026-09-25, 2 informational warnings)
+- **Submission Status:** Ready — assets, `/languages/` and screenshots are all in place
 
 ---
 
@@ -31,7 +31,7 @@
 
 #### Code Quality & Standards
 - [x] **WordPress Coding Standards (PHPCS)** - All PHP code passes PHPCS validation
-- [x] **Comprehensive Testing** - 120 unit tests covering core functionality (258 assertions)
+- [x] **Comprehensive Testing** - 247 unit tests (557 assertions) plus 446 integration tests (3,041 assertions) against a real WordPress
 - [x] **Documentation** - TESTING.md and MANUAL-TESTING.md created
 - [x] **readme.txt** - Comprehensive readme.txt with proper formatting
 - [x] **Proper Namespacing** - All classes use `YamlCF\` namespace
@@ -39,12 +39,12 @@
 - [x] **.distignore** - Excludes development files from distribution
 
 #### Security (Current State)
-- [x] **Data Sanitization** - Using `sanitize_text_field()`, `wp_kses()`, etc. (48 instances)
-- [x] **Output Escaping** - Using `esc_html()`, `esc_attr()`, `esc_url()` (169 instances)
-- [x] **Administrator-only Access** - All admin pages check `manage_options` capability (31 checks)
+- [x] **Data Sanitization** - Using `sanitize_text_field()`, `wp_kses()`, etc. (65 instances)
+- [x] **Output Escaping** - Using `esc_html()`, `esc_attr()`, `esc_url()` (262 instances)
+- [x] **Administrator-only Access** - All admin pages check `manage_options` capability (35 checks)
 - [x] **No External Requests** - Plugin doesn't phone home
 - [x] **GPL License** - GPLv2 compatible
-- [x] **CSRF Protection** - 25 nonce verifications throughout codebase
+- [x] **CSRF Protection** - 12 AJAX nonce verifications, with a separate nonce for administrator-only actions
 - [x] **SQL Injection Prevention** - All queries use prepared statements
 
 #### Plugin Files
@@ -55,64 +55,65 @@
 - [x] **.distignore** - Distribution exclusions
 - [x] **uninstall.php** - Created (cleans all plugin data on deletion)
 
-### ⚠️ Required Before Submission
+### ✅ Assets and i18n (was "Required Before Submission")
 
-#### Critical: File Structure & Assets
+All three items in this section are now done. Verified in the working tree on
+2026-09-25; the sizes below were read off the files themselves.
 
-**1. Create /languages/ Directory** ✅ EASY
-- **Time Required:** 5 minutes
-- **Priority:** REQUIRED for i18n
-- **Action:** Create empty `/languages/` directory
-- **Note:** Plugin header already includes `Domain Path: /languages`
+**1. `/languages/` Directory** ✅ DONE
+- `languages/` exists and holds `yaml-custom-fields.pot` (~49 KB) plus a README
+- Plugin header declares `Domain Path: /languages`
 
-**2. Create Plugin Icon & Banner** 📦 DESIGN WORK
-- **Time Required:** 1-2 hours
-- **Priority:** REQUIRED for professional appearance
+**2. Plugin Icon & Banner** ✅ DONE
 
-**Specifications:**
-- **Icon:** 256x256px PNG (also provide 128x128px version)
-- **Banner:** 1544x500px PNG (also provide 772x250px version)
-- **Format:** PNG with transparency
-- **Style:** Match plugin's branding
+In `/assets/`, each at exactly the size WordPress.org asks for:
 
-**Tools:**
-- Canva (free templates available)
-- Photoshop
-- GIMP (free alternative)
+| File | Size |
+| --- | --- |
+| `icon-256x256.png` | 256 × 256 |
+| `icon-128x128.png` | 128 × 128 |
+| `banner-1544x500.png` | 1544 × 500 |
+| `banner-772x250.png` | 772 × 250 |
 
-**Where to place:**
-- Create `/assets/` directory locally (NOT included in plugin ZIP)
-- Files: `icon-256x256.png`, `icon-128x128.png`, `banner-1544x500.png`, `banner-772x250.png`
-- Upload through WordPress.org web interface after approval
+`/assets/` is for the WordPress.org SVN repository and is **not** shipped in the
+plugin ZIP — `.distignore` keeps it out.
 
-**3. Create Screenshots** 📸 REQUIRED
-- **Time Required:** 30 minutes
-- **Priority:** REQUIRED
+**3. Screenshots** ✅ DONE
 
-**Action:**
-1. Take screenshots of key features (1200x900px recommended)
-2. Save as PNG in `/assets/` directory as:
-   - `screenshot-1.png` - Main settings page
-   - `screenshot-2.png` - Schema editor
-   - `screenshot-3.png` - Post/page editor meta box
-   - `screenshot-4.png` - Import/export page
-   - `screenshot-5.png` - Data objects page
+`screenshot-1.png` through `screenshot-5.png` are in `/assets/`. They are larger
+than the 1200×900 that used to be recommended here (2530 × 1520); WordPress.org
+scales them down, so no re-export is needed.
+
+Each needs a matching caption under `== Screenshots ==` in `readme.txt`, in the
+same order.
 
 ---
 
 ## 2. Security Checklist
 
 ### Security Audit Summary
-**Date:** 2025-12-21
-**Status:** ✅ **EXCELLENT** - Ready for WordPress Plugin Directory
+
+**Date:** 2026-09-25
+**Status:** ✅ **GOOD** - Ready for WordPress Plugin Directory
+
+Figures below are what `bash bin/security-audit.sh` reports, so they can be
+reproduced at any time. They use that script's own scoping; counting by hand over
+`src/` and `templates/` gives higher totals.
 
 **Quick Stats:**
 - ✅ **0 Critical Security Issues**
-- ⚠️ **4 Minor Warnings** (non-blocking)
-- ✅ **25 Nonce Verifications**
-- ✅ **31 Capability Checks**
-- ✅ **169 Output Escaping Instances**
-- ✅ **48 Input Sanitization Instances**
+- ⚠️ **2 Informational Warnings** (non-blocking, see below)
+- ✅ **12 AJAX Nonce Verifications** (plus 5 nonce creations)
+- ✅ **35 Capability Checks**
+- ✅ **262 Output Escaping Instances**
+- ✅ **65 Input Sanitization Instances**
+
+**The two warnings, and why neither blocks submission:**
+- *Direct superglobal access (2 instances)* - both are read through the plugin's
+  own sanitising helpers.
+- *`base64_decode` detected (4 instances)* - this is how code fields are stored
+  and read back. Every call passes `strict: true`, and decoded content is
+  re-sanitised before use.
 
 ### Completed Security Measures
 
@@ -246,7 +247,7 @@ _e('Text to translate', 'yaml-custom-fields')
 Verify `yaml-custom-fields.php` has:
 - [x] Plugin Name
 - [x] Description
-- [x] Version number (1.2.2)
+- [x] Version number (2.0.0)
 - [x] Author name
 - [x] License (GPLv2 or later)
 - [x] Text Domain (yaml-custom-fields)
@@ -261,7 +262,7 @@ Verify `yaml-custom-fields.php` has:
 - [ ] Ensure all sections are properly formatted
 
 **Common issues to check:**
-- "Tested up to" version (currently 6.9 ✓)
+- "Tested up to" version (currently 7.1 ✓)
 - Changelog format
 - Valid markdown in descriptions
 
@@ -271,10 +272,14 @@ Verify `yaml-custom-fields.php` has:
 
 ### ✅ Current Test Coverage
 
-- [x] **120 Unit Tests** covering core functionality
-- [x] **258 Assertions** verifying behavior
-- [x] **WordPress Coding Standards** compliant
-- [x] All tests passing
+- [x] **247 Unit Tests** (557 assertions) - `composer test:unit`, no WordPress needed
+- [x] **446 Integration Tests** (3,041 assertions) - `composer test:integration`, against a real WordPress
+- [x] **WordPress Coding Standards** compliant - `composer lint`, 0 findings
+- [x] All tests passing on PHP 8.1, 8.3 and 8.4 in CI, against WordPress `latest`
+
+Three of the integration tests are smoke tests that run the same fourteen-schema
+matrix across every admin screen, all AJAX handlers and every theme-facing
+function. A PHP warning from the plugin's own code fails the build.
 
 ### Plugin Check Tool
 
@@ -332,8 +337,8 @@ https://wordpress.org/plugins/developers/plugin-check/
 **Test Matrix:**
 
 #### WordPress Versions
-- [ ] WordPress 5.0 (minimum version specified)
-- [ ] WordPress 6.9 (latest version)
+- [ ] WordPress 6.4 (minimum version specified)
+- [ ] WordPress 7.1 (latest version)
 
 #### PHP Versions
 - [ ] PHP 8.1 (minimum version)
@@ -409,7 +414,7 @@ bash package-for-wporg.sh
 
 ### Version Number Checklist
 
-Ensure version 1.2.2 is updated in:
+Ensure version 2.0.0 is updated in:
 - [x] Main plugin file header (`yaml-custom-fields.php`)
 - [x] readme.txt (Stable tag)
 - [x] Changelog in readme.txt
@@ -461,7 +466,7 @@ Once approved, you'll have access to upload plugin assets through your WordPress
 
 ### Updating Your Plugin
 
-**To release a new version (e.g., 1.2.4):**
+**To release a new version (e.g., 2.0.1):**
 
 1. **Update version numbers:**
    - `yaml-custom-fields.php` header
@@ -599,12 +604,12 @@ See "Updating Your Plugin" section above for instructions on releasing new versi
 - [x] All database queries use prepared statements
 
 ### Security
-- [x] All AJAX actions verify nonces (25 verifications)
+- [x] All AJAX actions verify nonces (12 verifications)
 - [x] All form submissions verify nonces
-- [x] All admin pages check capabilities (31 checks)
+- [x] All admin pages check capabilities (35 checks)
 - [x] All file uploads are validated
 - [x] No SQL injection vulnerabilities
-- [x] No XSS vulnerabilities (169 escaping instances)
+- [x] No XSS vulnerabilities (262 escaping instances)
 - [x] No CSRF vulnerabilities
 
 ### Files
@@ -624,7 +629,7 @@ See "Updating Your Plugin" section above for instructions on releasing new versi
 - [ ] Clean uninstall verified
 - [ ] No PHP errors
 - [ ] No JavaScript console errors
-- [x] Works with WordPress 5.0+
+- [x] Works with WordPress 6.4+
 - [x] Works with PHP 8.1+
 - [ ] Works with latest WordPress
 - [ ] Compatible with block editor
@@ -696,9 +701,9 @@ See "Updating Your Plugin" section above for instructions on releasing new versi
 ## Status Summary
 
 ### ✅ What's Complete
-Your plugin is **80% ready** for submission with:
+Your plugin is **ready** for submission with:
 - Excellent code quality (PHPCS compliant)
-- Comprehensive testing (120 tests, 258 assertions)
+- Comprehensive testing (247 unit and 446 integration tests, 3,598 assertions)
 - Outstanding security (0 critical issues)
 - Professional documentation
 - Clean architecture
@@ -717,9 +722,9 @@ Your plugin is **80% ready** for submission with:
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Document Version:** 1.0.0
+**Last Updated:** 2026-09-25
+**Plugin Version:** 2.0.0
+**Document Version:** 1.1.0
 **Prepared By:** YAML Custom Fields Development Team
 
 ---

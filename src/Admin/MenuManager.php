@@ -100,16 +100,6 @@ class MenuManager {
       [$this, 'renderManageTemplateGlobalPage']
     );
 
-    // Data Validation
-    add_submenu_page(
-      'yaml-custom-fields',
-      __('Content Check', 'yaml-custom-fields'),
-      __('Content Check', 'yaml-custom-fields'),
-      'manage_options',
-      'yaml-cf-data-validation',
-      [$this, 'renderDataValidationPage']
-    );
-
     // Data Objects
     add_submenu_page(
       'yaml-custom-fields',
@@ -147,6 +137,17 @@ class MenuManager {
       'manage_options',
       'yaml-cf-export-data',
       [$this, 'renderExportImportPage']
+    );
+
+    // Content Check, kept with the other upkeep pages rather than among the
+    // pages content is filled in on. Submenu order is registration order.
+    add_submenu_page(
+      'yaml-custom-fields',
+      __('Content Check', 'yaml-custom-fields'),
+      __('Content Check', 'yaml-custom-fields'),
+      'manage_options',
+      'yaml-cf-data-validation',
+      [$this, 'renderDataValidationPage']
     );
 
     // Documentation (added last to appear at the bottom)
@@ -282,22 +283,6 @@ class MenuManager {
     }
 
     return $admin_title;
-  }
-
-  /**
-   * Set parent file for menu highlighting
-   */
-  public function setParentFile($parent_file) {
-    // TODO: Phase 14 - Implement parent file logic
-    return $parent_file;
-  }
-
-  /**
-   * Set submenu file for menu highlighting
-   */
-  public function setSubmenuFile($submenu_file) {
-    // TODO: Phase 14 - Implement submenu file logic
-    return $submenu_file;
   }
 
   // Render methods that delegate to controllers

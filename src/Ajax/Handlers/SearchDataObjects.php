@@ -20,11 +20,12 @@ class SearchDataObjects extends AjaxHandler {
   const MAX_LIMIT = 100;
 
   private $repository;
-  private $schemaParser;
 
-  public function __construct($repository, $schemaParser) {
+  /**
+   * @param \YamlCF\Data\Repositories\DataObjectRepository $repository Collections
+   */
+  public function __construct($repository) {
     $this->repository = $repository;
-    $this->schemaParser = $schemaParser;
   }
 
   public function handle() {
@@ -55,35 +56,5 @@ class SearchDataObjects extends AjaxHandler {
       'results' => $results,
       'truncated' => $found['total'] > count($results),
     ]);
-  }
-
-  /**
-   * The collection's first field doubles as the label for its entries
-   *
-   * @param array $type Collection definition
-   * @return string Field name, or '' when the schema has no fields
-   */
-  private function getLabelField($type) {
-    if (empty($type['schema'])) {
-      return '';
-    }
-
-    $schema = $this->schemaParser->parse($type['schema']);
-    return !empty($schema['fields'][0]['name']) ? $schema['fields'][0]['name'] : '';
-  }
-
-  /**
-   * @param array $entry Entry data
-   * @param string $label_field Field to read the label from
-   * @param string $entry_id Fallback when the label is missing or not text
-   * @return string
-   */
-  private function getEntryLabel($entry, $label_field, $entry_id) {
-    if ($label_field === '' || !isset($entry[$label_field])) {
-      return (string) $entry_id;
-    }
-
-    $label = $entry[$label_field];
-    return is_string($label) && $label !== '' ? $label : (string) $entry_id;
   }
 }

@@ -13,7 +13,7 @@ use YamlCF\Ajax\AjaxHandler;
  * Render one empty block item for the "Add section" button.
  *
  * The admin script used to build this markup in JavaScript, duplicating
- * YAML_Custom_Fields::render_block_item(). Rendering it here instead means every
+ * the PHP renderer (YamlCF\Rendering\BlockItemRenderer). Rendering it here instead means every
  * field type behaves the same whether its section came with the page or was
  * added on it.
  *
@@ -33,9 +33,15 @@ class RenderBlockItem extends AjaxHandler {
   const ADMIN_ONLY_SOURCES = ['global', 'template_global', 'partial', 'data_object'];
 
   private $schemaParser;
+  private $fieldRenderer;
 
-  public function __construct($schemaParser) {
+  /**
+   * @param \YamlCF\Schema\SchemaParser $schemaParser Reads the stored schema
+   * @param \YamlCF\Rendering\FieldRenderer|null $fieldRenderer Prints the item
+   */
+  public function __construct($schemaParser, $fieldRenderer = null) {
     $this->schemaParser = $schemaParser;
+    $this->fieldRenderer = $fieldRenderer;
   }
 
   public function handle() {
@@ -62,7 +68,8 @@ class RenderBlockItem extends AjaxHandler {
     $index = absint($this->postText('index', '0'));
 
     ob_start();
-    $rendered = \YAML_Custom_Fields::get_instance()->render_new_block_item(
+    $renderer = $this->fieldRenderer ?: \YamlCF\Core\Plugin::getInstance()->get('field_renderer');
+    $rendered = $renderer->renderNewBlockItem(
       $schema,
       $field_name,
       $block_type,

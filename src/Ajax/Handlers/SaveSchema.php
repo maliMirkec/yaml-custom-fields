@@ -29,7 +29,7 @@ class SaveSchema extends AjaxHandler {
 
     $template = $this->postText('template');
     // Nonce verified in verifyRequest()
-    $schema = isset($_POST['schema']) && is_string($_POST['schema']) ? sanitize_textarea_field(wp_unslash($_POST['schema'])) : '';
+    $schema = \YamlCF\Schema\SchemaParser::sanitizeSource(\YamlCF\Helpers\RequestHelper::postRaw('schema', ''));
 
     if ($schema !== '') {
       $validation_result = $this->validator->validate($schema, $template);

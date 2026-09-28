@@ -3,7 +3,7 @@
  * Integration: adding a section renders it on the server
  *
  * The admin script used to build this markup in JavaScript, in parallel with
- * YAML_Custom_Fields::render_block_item(). The two drifted, which is what made
+ * the PHP that renders sections (now YamlCF\Rendering\BlockItemRenderer). The two drifted, which is what made
  * taxonomy, post_type and data_object fields come out wrong in a section added
  * on the page. These tests pin down that both paths now produce the same fields.
  */

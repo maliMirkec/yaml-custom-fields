@@ -40,6 +40,10 @@ class RestApiTest extends WPTestCase {
 		update_option('yaml_cf_schemas', [self::TEMPLATE => self::SCHEMA], false);
 		update_option('yaml_cf_template_settings', [self::TEMPLATE => true], false);
 
+		// The site details and collection tests below are about what is returned,
+		// so reading is made public for them; the default is tested on its own
+		update_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION, '1', false);
+
 		global $wp_rest_server;
 		$wp_rest_server = new \WP_REST_Server();
 		$this->server = $wp_rest_server;
@@ -124,7 +128,61 @@ class RestApiTest extends WPTestCase {
 		$this->assertStringNotContainsString('Secret', wp_json_encode($response->get_data()));
 	}
 
+	/**
+	 * WordPress blanks a protected post's content for anyone without the
+	 * password. The fields are content too.
+	 */
+	public function testAPasswordProtectedPostHidesItsFields() {
+		wp_set_current_user(0);
+		$post_id = $this->createTestPost(['post_password' => 'open sesame'], ['headline' => 'Behind the password']);
+
+		$data = $this->get('/wp/v2/posts/' . $post_id)->get_data();
+
+		$this->assertSame([], $data['yaml_cf']);
+		$this->assertStringNotContainsString('Behind the password', wp_json_encode($data));
+	}
+
+	public function testTheRightPasswordShowsTheFields() {
+		wp_set_current_user(0);
+		$post_id = $this->createTestPost(['post_password' => 'open sesame'], ['headline' => 'Behind the password']);
+
+		$data = $this->get('/wp/v2/posts/' . $post_id, ['password' => 'open sesame'])->get_data();
+
+		$this->assertSame('Behind the password', $data['yaml_cf']['headline']);
+	}
+
 	// ------------------------------------------------------- writing a post
+
+	/**
+	 * A client that reads a post, changes one field and sends the whole object
+	 * back must not copy site details or shared values into the page, where
+	 * they would stop following later changes.
+	 */
+	public function testSendingBackWhatWasReadDoesNotFreezeInheritedValues() {
+		update_option('yaml_cf_global_schema', "fields:\n  - name: phone\n    type: string\n", false);
+		update_option('yaml_cf_global_data', ['phone' => '555-0100'], false);
+		update_option('yaml_cf_template_settings', [self::TEMPLATE => true, self::TEMPLATE . '_use_global' => true], false);
+		update_option('yaml_cf_template_global_schemas', [self::TEMPLATE => self::SCHEMA], false);
+		update_option('yaml_cf_template_global_data', [self::TEMPLATE => ['body' => 'Shared body']], false);
+
+		wp_set_current_user($this->createTestUser('administrator'));
+		$post_id = $this->createTestPost([], ['headline' => 'Before']);
+
+		$fields = $this->get('/wp/v2/posts/' . $post_id)->get_data()['yaml_cf'];
+		$this->assertSame('555-0100', $fields['phone']);
+		$this->assertSame('Shared body', $fields['body']);
+
+		$fields['headline'] = 'After';
+		$this->assertSame(200, $this->write($post_id, $fields)->get_status());
+
+		$stored = get_post_meta($post_id, '_yaml_cf_data', true);
+		$this->assertSame('After', $stored['headline']);
+		$this->assertArrayNotHasKey('phone', $stored, 'A site detail is not a field of this page.');
+		$this->assertArrayNotHasKey('body', $stored, 'A shared value sent back unchanged is not the page\'s own.');
+
+		update_option('yaml_cf_global_data', ['phone' => '555-0199'], false);
+		$this->assertSame('555-0199', yaml_cf_get_field('phone', $post_id));
+	}
 
 	public function testAnEditorCanWriteFields() {
 		wp_set_current_user($this->createTestUser('administrator'));
@@ -225,9 +283,62 @@ class RestApiTest extends WPTestCase {
 	}
 
 	/**
-	 * Reading is public by default, because this is content the plugin renders
-	 * into public pages. A site that keeps something private can close it.
+	 * Not public until an administrator says so: site details and collections
+	 * can hold things no page shows
 	 */
+	public function testSiteWideRoutesAreClosedByDefault() {
+		delete_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION);
+		update_option('yaml_cf_global_data', ['headline' => 'Site wide'], false);
+		update_option('yaml_cf_data_object_types', ['people' => ['name' => 'People', 'schema' => "fields:\n  - name: name\n    type: string\n"]], false);
+		wp_set_current_user(0);
+
+		$this->assertSame(401, $this->get('/yaml-cf/v1/site-details')->get_status());
+		$this->assertSame(401, $this->get('/yaml-cf/v1/collections/people')->get_status());
+	}
+
+	public function testTheMainScreenChoiceOpensThem() {
+		update_option('yaml_cf_global_data', ['headline' => 'Site wide'], false);
+		wp_set_current_user(0);
+
+		update_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION, '0', false);
+		$this->assertSame(401, $this->get('/yaml-cf/v1/site-details')->get_status());
+
+		update_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION, '1', false);
+		$this->assertSame(200, $this->get('/yaml-cf/v1/site-details')->get_status());
+	}
+
+	/**
+	 * Code wins over the setting, both ways
+	 */
+	public function testTheFilterCanOpenThemWhateverTheSetting() {
+		delete_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION);
+		update_option('yaml_cf_global_data', ['headline' => 'Site wide'], false);
+		add_filter('yaml_cf_rest_public_read', '__return_true');
+		wp_set_current_user(0);
+
+		$this->assertSame(200, $this->get('/yaml-cf/v1/site-details')->get_status());
+	}
+
+	/**
+	 * The box on the main screen saves the choice, both ways
+	 */
+	public function testTheMainScreenFormSavesTheChoice() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$controller = \YamlCF\Core\Plugin::getInstance()->get('template_schema_controller');
+		delete_option(\YamlCF\Rest\RestApi::PUBLIC_READ_OPTION);
+
+		$_POST = ['yaml_cf_rest_access_nonce' => wp_create_nonce('yaml_cf_rest_access'), 'yaml_cf_rest_public_read' => '1'];
+		$this->assertTrue($controller->saveSubmittedChoices());
+		$this->assertTrue(\YamlCF\Rest\RestApi::publicReadEnabled());
+
+		$_POST = ['yaml_cf_rest_access_nonce' => wp_create_nonce('yaml_cf_rest_access')];
+		$controller->saveSubmittedChoices();
+		$this->assertFalse(\YamlCF\Rest\RestApi::publicReadEnabled());
+
+		$_POST = [];
+		\YamlCF\Core\Plugin::getInstance()->get('notification_manager')->clear();
+	}
+
 	public function testTheFilterCanCloseTheSiteWideRoutes() {
 		update_option('yaml_cf_global_data', ['headline' => 'Site wide'], false);
 		add_filter('yaml_cf_rest_public_read', '__return_false');
@@ -272,6 +383,24 @@ class RestApiTest extends WPTestCase {
 		$this->assertSame('120', $response->get_headers()['X-WP-Total']);
 	}
 
+	/**
+	 * Code fields are stored encoded; the API hands out the code, as the
+	 * template functions do
+	 */
+	public function testACollectionsCodeFieldsAreDecoded() {
+		update_option('yaml_cf_data_object_types', [
+			self::COLLECTION => ['name' => 'People', 'schema' => "fields:\n  - name: name\n    type: string\n  - name: embed\n    type: code\n"],
+		], false);
+		(new \YamlCF\Data\Repositories\DataObjectRepository())->saveEntry(self::COLLECTION, 'entry_1', [
+			'name' => 'Ada',
+			'embed' => '__YAMLCF_B64__' . base64_encode('<div>x</div>'),
+		], 'name');
+
+		$data = $this->get('/yaml-cf/v1/collections/' . self::COLLECTION)->get_data();
+
+		$this->assertSame('<div>x</div>', $data['items']['entry_1']['embed']);
+	}
+
 	public function testACollectionCanBeSearched() {
 		$this->givenCollection(30);
 
@@ -279,6 +408,19 @@ class RestApiTest extends WPTestCase {
 
 		$this->assertArrayHasKey('entry_7', $data['items']);
 		$this->assertCount(1, $data['items']);
+	}
+
+	public function testSearchResultsArePaged() {
+		$this->givenCollection(30);
+
+		$response = $this->get('/yaml-cf/v1/collections/' . self::COLLECTION, ['search' => 'Person', 'per_page' => 10, 'page' => 3]);
+		$data = $response->get_data();
+
+		$this->assertCount(10, $data['items']);
+		$this->assertSame(30, $data['total']);
+		$this->assertSame(3, $data['page']);
+		$this->assertSame(3, $data['total_pages']);
+		$this->assertArrayHasKey('entry_21', $data['items']);
 	}
 
 	public function testAskingForACollectionThatDoesNotExistIsA404() {

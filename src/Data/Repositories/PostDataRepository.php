@@ -7,7 +7,6 @@
 
 namespace YamlCF\Data\Repositories;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -44,49 +43,6 @@ class PostDataRepository {
    */
   public function deleteData($post_id) {
     return delete_post_meta($post_id, '_yaml_cf_data');
-  }
-
-  /**
-   * Get use template global flag for a post
-   *
-   * @param int $post_id Post ID
-   * @return bool Whether to use template global
-   */
-  public function getUseTemplateGlobal($post_id) {
-    return (bool) get_post_meta($post_id, '_yaml_cf_use_template_global', true);
-  }
-
-  /**
-   * Set use template global flag for a post
-   *
-   * @param int $post_id Post ID
-   * @param bool $use_global Whether to use template global
-   * @return bool Success
-   */
-  public function setUseTemplateGlobal($post_id, $use_global) {
-    return update_post_meta($post_id, '_yaml_cf_use_template_global', $use_global);
-  }
-
-  /**
-   * Get use template global fields for a post
-   *
-   * @param int $post_id Post ID
-   * @return array Field names to use from template global
-   */
-  public function getUseTemplateGlobalFields($post_id) {
-    $fields = get_post_meta($post_id, '_yaml_cf_use_template_global_fields', true);
-    return is_array($fields) ? $fields : [];
-  }
-
-  /**
-   * Set use template global fields for a post
-   *
-   * @param int $post_id Post ID
-   * @param array $fields Field names to use from template global
-   * @return bool Success
-   */
-  public function setUseTemplateGlobalFields($post_id, $fields) {
-    return update_post_meta($post_id, '_yaml_cf_use_template_global_fields', wp_slash($fields));
   }
 
   /**

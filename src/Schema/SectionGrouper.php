@@ -7,7 +7,6 @@
 
 namespace YamlCF\Schema;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -70,22 +69,6 @@ class SectionGrouper {
     }
 
     return false;
-  }
-
-  /**
-   * Remove section fields from a list, leaving only fields that hold data
-   *
-   * @param array $fields Normalized fields array
-   * @return array Fields without section breaks
-   */
-  public function stripSections($fields) {
-    if (!is_array($fields)) {
-      return [];
-    }
-
-    return array_values(array_filter($fields, function ($field) {
-      return !$this->isSection($field);
-    }));
   }
 
   /**

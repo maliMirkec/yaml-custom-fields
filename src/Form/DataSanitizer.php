@@ -27,6 +27,13 @@ class DataSanitizer {
   const MAX_CSS_CLEANING_PASSES = 10;
 
   /**
+   * Code field languages that are script source rather than markup
+   *
+   * Kept only for users with unfiltered_html; see sanitizeCodeField().
+   */
+  const SCRIPT_LANGUAGES = ['js', 'javascript', 'jsx', 'ts', 'typescript'];
+
+  /**
    * Whether code fields may keep raw markup for users with unfiltered_html
    */
   private $trustCurrentUser;
@@ -95,6 +102,17 @@ class DataSanitizer {
 
     if ($language === 'css') {
       return $this->sanitizeCss($code);
+    }
+
+    // Script source has no markup for wp_kses_post() to take out, so every line
+    // of it would survive, and a theme prints a JavaScript field inside a
+    // <script> element. There is no safe subset of a script to keep.
+    //
+    // An administrator importing a file is not held to this: they could type
+    // the same script in themselves, and emptying it would lose it in a move
+    // between sites.
+    if (in_array(strtolower((string) $language), self::SCRIPT_LANGUAGES, true) && !current_user_can('unfiltered_html')) {
+      return '';
     }
 
     return wp_kses_post($code);

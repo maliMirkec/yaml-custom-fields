@@ -47,13 +47,44 @@ class TemplateResolver {
       return $this->blockTemplateForPost($post);
     }
 
-    // For pages, check if a custom page template is assigned
+    // A template chosen in the editor. Pages have always been resolved by it.
+    $assigned = get_post_meta($post->ID, '_wp_page_template', true);
+    $has_assigned = !empty($assigned) && $assigned !== 'default';
+
     if ($post_type === 'page') {
-      $template = get_post_meta($post->ID, '_wp_page_template', true);
-      if (!empty($template) && $template !== 'default') {
-        return $template;
+      if ($has_assigned) {
+        return $assigned;
       }
-      return 'page.php';
+
+      // page-{slug}.php and page-{id}.php are listed as templates a schema can
+      // be written for, so a page they render has to be able to reach it.
+      $specific = $this->firstTemplateWithSchema([
+        'page-' . $this->decodedSlug($post) . '.php',
+        'page-' . $post->ID . '.php',
+      ]);
+
+      return $specific !== null ? $specific : 'page.php';
+    }
+
+    // Any other post type can offer templates too ("Template Post Type:"). Only
+    // one with a schema of its own is followed, so a post that used to show
+    // single.php's fields keeps showing them.
+    if ($has_assigned && $this->templateHasSchema($assigned)) {
+      return $assigned;
+    }
+
+    if ($post_type === 'attachment') {
+      $specific = $this->firstTemplateWithSchema(['attachment.php']);
+      if ($specific !== null) {
+        return $specific;
+      }
+    }
+
+    $specific = $this->firstTemplateWithSchema([
+      "single-{$post_type}-" . $this->decodedSlug($post) . '.php',
+    ]);
+    if ($specific !== null) {
+      return $specific;
     }
 
     // For posts and custom post types, use the single template
@@ -72,6 +103,54 @@ class TemplateResolver {
     // For custom post types without a specific template, return the expected name
     // This allows the user to create the template and schema
     return $specific_template;
+  }
+
+  /**
+   * The first of these templates that the theme has and that has a schema on
+   *
+   * WordPress would render a more specific template such as page-about.php
+   * whether or not it has a schema. It only takes over the fields here when an
+   * administrator has written it one, so pages that have been showing the
+   * general template's fields keep doing so after an update.
+   *
+   * @param string[] $candidates Template file names, most specific first
+   * @return string|null
+   */
+  private function firstTemplateWithSchema(array $candidates) {
+    foreach ($candidates as $candidate) {
+      if ($this->templateHasSchema($candidate) && $this->themeHasTemplate($candidate)) {
+        return $candidate;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Whether a template is switched on and has a schema
+   *
+   * @param string $template Template file name
+   * @return bool
+   */
+  private function templateHasSchema($template) {
+    $settings = get_option('yaml_cf_template_settings', []);
+    if (!is_array($settings) || empty($settings[$template])) {
+      return false;
+    }
+
+    $schemas = get_option('yaml_cf_schemas', []);
+
+    return is_array($schemas) && isset($schemas[$template]) && is_string($schemas[$template]) && trim($schemas[$template]) !== '';
+  }
+
+  /**
+   * The post's slug as it appears in a template file name
+   *
+   * @param \WP_Post $post Post object
+   * @return string
+   */
+  private function decodedSlug($post) {
+    return urldecode((string) $post->post_name);
   }
 
   /**
@@ -134,12 +213,7 @@ class TemplateResolver {
    */
   private function themeIsBlockTheme() {
     if ($this->is_block_theme === null) {
-      if (function_exists('wp_is_block_theme')) {
-        $this->is_block_theme = (bool) wp_is_block_theme();
-      } else {
-        $theme = wp_get_theme();
-        $this->is_block_theme = method_exists($theme, 'is_block_theme') && $theme->is_block_theme();
-      }
+      $this->is_block_theme = (bool) wp_is_block_theme();
     }
 
     return $this->is_block_theme;

@@ -85,6 +85,26 @@ abstract class AjaxHandler {
   }
 
   /**
+   * The template a settings request is about (ends the request if unusable)
+   *
+   * yaml_cf_template_settings keeps each template's switch under its own name
+   * and its site details switch under "<name>_use_global", in the same array.
+   * An empty name, or one that already ends in _use_global, would write a key
+   * that means something else there.
+   *
+   * @return string Template file name or block template slug
+   */
+  protected function postTemplate() {
+    $template = $this->postText('template');
+
+    if ($template === '' || substr($template, -strlen('_use_global')) === '_use_global') {
+      $this->sendError(__('That template could not be found. Reload the page and try again.', 'yaml-custom-fields'));
+    }
+
+    return $template;
+  }
+
+  /**
    * Decode a JSON string from POST
    *
    * The raw string is decoded first; callers sanitize every value against a schema

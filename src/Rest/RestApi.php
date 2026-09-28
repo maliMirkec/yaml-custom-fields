@@ -25,15 +25,18 @@ if (!defined('ABSPATH')) {
  *   - GET /yaml-cf/v1/site-details, the values filled in under Site details;
  *   - GET /yaml-cf/v1/collections/<slug>, a page of a collection's items.
  *
- * **Reading the last two is public by default**, because both are content this
- * plugin exists to render into public pages: an API stricter than the website
- * itself would be inconsistent, and would defeat the point of having one. A site
- * that keeps something private in them can close them with the
- * `yaml_cf_rest_public_read` filter:
+ * **Reading the last two needs a logged-in user who can edit posts, unless an
+ * administrator makes them public** on the plugin's main screen. That is how
+ * WordPress treats data it did not create itself: custom post types and
+ * registered meta stay out of the API until somebody chooses to publish them.
+ * Not everything in site details or a collection is shown on the website (an
+ * internal email address, a tracking ID in a code field, items no template
+ * lists), and the collections route would hand out every item.
  *
- *     add_filter('yaml_cf_rest_public_read', '__return_false');
+ * Code can decide either way with the `yaml_cf_rest_public_read` filter, which
+ * wins over the setting:
  *
- * which then requires a logged-in user who can edit posts.
+ *     add_filter('yaml_cf_rest_public_read', '__return_true');
  */
 class RestApi {
   const NAMESPACE_V1 = 'yaml-cf/v1';
@@ -44,14 +47,42 @@ class RestApi {
   /** Most items one request may ask for */
   const MAX_PER_PAGE = 100;
 
+  /**
+   * Whether site details and collections can be read without logging in
+   *
+   * Stored as '1' or '0'. Missing means no: publishing is a choice.
+   */
+  const PUBLIC_READ_OPTION = 'yaml_cf_rest_public_read';
+
+  /**
+   * The choice made on the plugin's main screen
+   *
+   * @return bool
+   */
+  public static function publicReadEnabled() {
+    return (string) get_option(self::PUBLIC_READ_OPTION, '0') === '1';
+  }
+
   private $postRepository;
   private $dataObjectRepository;
   private $schemaLocator;
+  private $resolver;
+  private $siteDetails;
 
-  public function __construct($postRepository, $dataObjectRepository, $schemaLocator) {
+  /**
+   * @param \YamlCF\Data\Repositories\PostDataRepository $postRepository Post field storage
+   * @param \YamlCF\Data\Repositories\DataObjectRepository $dataObjectRepository Collections
+   * @param \YamlCF\Schema\PostSchemaLocator $schemaLocator Finds a post's schema
+   * @param \YamlCF\PublicAPI\FieldResolver|null $resolver Works out a post's values
+   * @param \YamlCF\PublicAPI\GlobalFieldAccessor|null $siteDetails Reads site details
+   */
+  public function __construct($postRepository, $dataObjectRepository, $schemaLocator, $resolver = null, $siteDetails = null) {
+    $plugin = \YamlCF\Core\Plugin::getInstance();
     $this->postRepository = $postRepository;
     $this->dataObjectRepository = $dataObjectRepository;
     $this->schemaLocator = $schemaLocator;
+    $this->resolver = $resolver ?: $plugin->get('field_resolver');
+    $this->siteDetails = $siteDetails ?: $plugin->get('global_field_accessor');
   }
 
   /**
@@ -91,17 +122,51 @@ class RestApi {
    * The values of a post, as a theme would see them
    *
    * Readable wherever the post is: WordPress has already decided whether this
-   * request may see the post before a field callback runs.
+   * request may see the post before a field callback runs. A password-protected
+   * post is the exception. WordPress still returns it, with its content blanked,
+   * so the fields are blanked the same way unless the request could see the
+   * content too.
    *
    * @param array $post Post as the REST API represents it
+   * @param string $field_name Name of this field (unused)
+   * @param \WP_REST_Request|null $request The request
    * @return array
    */
-  public function readPostFields($post) {
+  public function readPostFields($post, $field_name = '', $request = null) {
     if (!isset($post['id'])) {
       return [];
     }
 
-    return yaml_cf_resolve_post_fields((int) $post['id']);
+    $wp_post = get_post((int) $post['id']);
+    if ($wp_post && !$this->mayReadProtectedContent($wp_post, $request)) {
+      return [];
+    }
+
+    return $this->resolver->resolvePostFields((int) $post['id']);
+  }
+
+  /**
+   * Whether this request may see what a password protects
+   *
+   * The same rule WordPress's posts endpoint applies to the content: anyone who
+   * can edit the post, or a request that sends the right password.
+   *
+   * @param \WP_Post $post The post
+   * @param \WP_REST_Request|null $request The request
+   * @return bool
+   */
+  private function mayReadProtectedContent($post, $request) {
+    if ((string) $post->post_password === '') {
+      return true;
+    }
+
+    if (current_user_can('edit_post', $post->ID)) {
+      return true;
+    }
+
+    $password = $request instanceof \WP_REST_Request ? $request->get_param('password') : null;
+
+    return is_string($password) && $password !== '' && hash_equals((string) $post->post_password, $password);
   }
 
   /**
@@ -135,8 +200,21 @@ class RestApi {
 
     $schema = $this->schemaLocator->forPost($post);
 
-    $plugin = \YAML_Custom_Fields::get_instance();
-    $sent = $plugin->sanitize_field_data($value, $schema);
+    // What a GET returns is resolved: shared values and site details are mixed
+    // in. A client that edits one field and sends the whole object back would
+    // otherwise copy every one of those into the page, where it would then
+    // shadow later changes to the shared value or the site details. So only
+    // the page's own fields can be written, and a field sent back exactly as a
+    // GET reported it is left as it is.
+    $value = array_intersect_key($value, array_flip($this->writableFieldNames($schema)));
+    $resolved = $this->resolver->resolvePostFields($post->ID);
+    foreach ($value as $name => $sent_value) {
+      if (array_key_exists($name, $resolved) && $resolved[$name] === $sent_value) {
+        unset($value[$name]);
+      }
+    }
+
+    $sent = \YamlCF\Core\Plugin::getInstance()->get('data_sanitizer')->sanitize($value, $schema);
 
     // A request changes the fields it names and leaves the rest alone. The
     // editor's form is different: it renders every field, so it can post every
@@ -156,6 +234,39 @@ class RestApi {
     \YamlCF\Core\Plugin::getInstance()->get('cache_manager')->clearDataCaches($post->ID);
 
     return true;
+  }
+
+  /**
+   * Top-level names a request may write for a post
+   *
+   * Section breaks and info boxes hold no value, and the reserved names are the
+   * plugin's own bookkeeping.
+   *
+   * @param array|null $schema The post's parsed schema
+   * @return string[]
+   */
+  private function writableFieldNames($schema) {
+    if (!is_array($schema) || empty($schema['fields']) || !is_array($schema['fields'])) {
+      return [];
+    }
+
+    $names = [];
+    foreach ($schema['fields'] as $field) {
+      if (!is_array($field) || !isset($field['name']) || !is_scalar($field['name'])) {
+        continue;
+      }
+
+      if (isset($field['type']) && in_array($field['type'], ['section', 'info'], true)) {
+        continue;
+      }
+
+      $name = (string) $field['name'];
+      if (!in_array($name, \YamlCF\Schema\SchemaValidator::RESERVED_NAMES, true)) {
+        $names[] = $name;
+      }
+    }
+
+    return $names;
   }
 
   /**
@@ -210,12 +321,12 @@ class RestApi {
     /**
      * Whether site details and collections can be read without logging in.
      *
-     * Both hold content this plugin renders into public pages, so the default
-     * is true. Return false to require a logged-in user who can edit posts.
+     * Defaults to the choice on the plugin's main screen, which is off. When
+     * reading is not public, it needs a logged-in user who can edit posts.
      *
      * @param bool $public Whether reading is public.
      */
-    if (apply_filters('yaml_cf_rest_public_read', true)) {
+    if (apply_filters('yaml_cf_rest_public_read', self::publicReadEnabled())) {
       return true;
     }
 
@@ -228,7 +339,7 @@ class RestApi {
    * @return \WP_REST_Response
    */
   public function readSiteDetails() {
-    return rest_ensure_response(yaml_cf_get_global_fields());
+    return rest_ensure_response($this->siteDetails->getFields());
   }
 
   /**
@@ -257,17 +368,22 @@ class RestApi {
     if ($search !== '') {
       // Matched against the collection's index of names, so a search reads that
       // and the items it is about rather than the whole collection.
-      $found = $this->dataObjectRepository->searchEntries($slug, $search, $per_page);
+      $found = $this->dataObjectRepository->searchEntries($slug, $search, $per_page, ($page - 1) * $per_page);
       $items = $found['entries'];
       $total = $found['total'];
-      $total_pages = 1;
-      $page = 1;
+      $total_pages = max(1, (int) ceil($total / $per_page));
     } else {
       $result = $this->dataObjectRepository->getEntryPage($slug, $page, $per_page);
       $items = $result['entries'];
       $total = $result['total'];
       $total_pages = $result['total_pages'];
       $page = $result['paged'];
+    }
+
+    // Decoded the way the template functions decode them
+    $accessor = \YamlCF\Core\Plugin::getInstance()->get('data_object_accessor');
+    foreach ($items as $entry_id => $entry) {
+      $items[$entry_id] = $accessor->decodeEntry($slug, $entry);
     }
 
     $response = rest_ensure_response([

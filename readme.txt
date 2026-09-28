@@ -1,8 +1,8 @@
 === YAML Custom Fields ===
 Contributors: starbist
 Tags: custom fields, fields, content, yaml, schema
-Requires at least: 5.0
-Tested up to: 7.0
+Requires at least: 6.4
+Tested up to: 7.1
 Requires PHP: 8.1
 Stable tag: 2.0.0
 License: GPLv2 or later
@@ -77,7 +77,7 @@ For a ZIP file, use **Plugins → Add New → Upload Plugin** instead.
 
 = Requirements =
 
-* WordPress 5.0 or newer
+* WordPress 6.4 or newer
 * PHP 8.1 or newer
 
 Everything else the plugin needs is included.
@@ -137,6 +137,7 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 == Changelog ==
 
 = 2.0.0 =
+* **CHANGED: Needs WordPress 6.4 or Newer** - It used to say 5.0, but only current versions were tested, and supporting older ones meant keeping code that could lose an option if an update was interrupted. WordPress will not offer this update to a site on an older version
 * **NEW: Works in the Block Editor** - The fields are now a real meta box, so they appear in the block editor as well as the classic one. The Classic Editor plugin is no longer needed. In the classic editor they stay directly under the title, where they have always been; in the block editor they sit below the content, because the space above it belongs to the blocks
 * **NEW: Galleries** - Image fields support `list: true`: pick many images in one trip to the media library, see them as a grid of thumbnails, and reorder them by dragging or with the keyboard
 * **NEW: Search Instead of Endless Lists** - A taxonomy or collection field with more than 50 choices becomes a search box, so a page with thousands of tags or collection items no longer carries every one of them. The cut-off can be changed with the `yaml_cf_picker_threshold` filter
@@ -174,8 +175,9 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 * **NEW: Content Check Finds Content Left Behind** - Values belonging to fields that are no longer in a schema are listed under "Values with no field", with a button to remove them when they really are not wanted. Pages whose template has no schema are reported as unchecked rather than treated as entirely stranded
 * **FIXED: Schema Editors That Said Nothing** - Saving the site details schema or a shared fields schema never mentioned dropped fields, so content quietly stopped showing. Both now say which fields lost their place, as the template schema editor always has
 * **IMPROVED: Collections Scale** - Every item of a collection used to share one database row, read and written whole: showing one item, searching for one, or saving one meant loading all of them, on every keystroke in the picker. Each item now has a row of its own beside a small index of names, so searching reads the names and then only the handful of items being shown. The item list is paged fifty at a time. An existing site is moved across once, automatically, and works either way in the meantime
-* **NEW: REST API** - Field content was invisible to anything but a PHP theme, so a front end built in something else, a mobile app or another plugin could not read a single value. Every page and post now carries its resolved values as `yaml_cf`, and there are routes for the site details and for a collection. Sending values back saves them, changing only the fields named in the request, with the same permission check and the same cleaning as the editor. Site details and collections read publicly, since they hold content the plugin renders into public pages; the `yaml_cf_rest_public_read` filter closes them
+* **NEW: REST API** - Field content was invisible to anything but a PHP theme, so a front end built in something else, a mobile app or another plugin could not read a single value. Every page and post now carries its resolved values as `yaml_cf`, and there are routes for the site details and for a collection. Sending values back saves them, changing only the fields named in the request, with the same permission check and the same cleaning as the editor. Site details and collections need a logged-in user who can edit posts, until an administrator makes them public with the REST API setting on the plugin's main screen: not everything in them is shown on the website, and the collections route hands out every item
 * **NEW: Show a Field Without Editing the Theme** - `[ycf field="headline"]` puts a field on the page from a Shortcode block, a widget or the content, so a block theme can display field content at last. It handles each kind of field properly: formatting is kept, an image becomes a picture, a file becomes a link, and a code field prints as it stands
+* **UPDATED: WordPress 7.1 Compatibility** - Confirmed against 7.1 and updated "Tested up to"
 
 = 1.2.9 =
 * **UPDATED: WordPress 7.0 Compatibility** - Confirmed compatibility and updated "Tested up to"
@@ -272,7 +274,7 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Helpful de
 == Upgrade Notice ==
 
 = 2.0.0 =
-Read this before updating. Two things change what the website shows. Pages where "Use the shared value on this page" is ticked now really do show the shared value through `ycf_get_fields()`, which used to ignore the tick. Where a page field and a site detail share a name, the page's own value now wins. Schemas with a mistake in them - an unknown field type, or the same field name twice - are refused when saved from now on; schemas already saved keep working, and the editor says what is wrong. The update tidies the database once, by itself, the first time an administrator opens a page: it stops the plugin's options being read on every page view, removes a copy of the schema it used to keep in every post, and repairs site parts of a child theme that were filed under their full path. Back up before updating, as with any update.
+Read this before updating. This version needs WordPress 6.4 or newer. Two things change what the website shows. Pages where "Use the shared value on this page" is ticked now really do show the shared value through `ycf_get_fields()`, which used to ignore the tick. Where a page field and a site detail share a name, the page's own value now wins. Schemas with a mistake in them - an unknown field type, or the same field name twice - are refused when saved from now on; schemas already saved keep working, and the editor says what is wrong. The update tidies the database once, by itself, the first time an administrator opens a page: it stops the plugin's options being read on every page view, removes a copy of the schema it used to keep in every post, repairs site parts of a child theme that were filed under their full path, and gives every item of a collection a database row of its own instead of one row shared by all of them. A collection is read correctly either way while that is pending, so nothing depends on when it happens. Field content is also readable over the REST API from now on. Each page's fields are readable wherever the page itself is. Site details and collections are not public until you tick the REST API setting on the plugin's main screen. Back up before updating, as with any update.
 
 = 1.2.6 =
 Important fix for code fields. HTML/JavaScript/CSS code is now properly preserved using base64 encoding. Re-save any code fields that previously had content stripped.

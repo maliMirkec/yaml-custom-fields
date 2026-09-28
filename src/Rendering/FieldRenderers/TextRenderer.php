@@ -1,37 +1,47 @@
 <?php
 
 /**
- * Text Field Renderer
- * Renders textarea fields
+ * Text Renderer
+ * A multi-line text box
  */
 
 namespace YamlCF\Rendering\FieldRenderers;
-
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
+
 use YamlCF\Rendering\BaseFieldRenderer;
+use YamlCF\Rendering\BlockFieldRendererInterface;
 
-class TextRenderer extends BaseFieldRenderer {
-  public function render($field, $value, $context) {
-    $field_id = $this->getFieldId($field['name'], $context);
-
-    $this->renderLabel($field, $context);
-
+class TextRenderer extends BaseFieldRenderer implements BlockFieldRendererInterface {
+  public function render($field, $value, $state) {
     $options = isset($field['options']) ? $field['options'] : [];
     $attrs = [
-      'name' => $this->getInputName($field['name'], $context),
-      'id' => $field_id,
+      'name' => 'yaml_cf[' . $state['field_name'] . ']',
+      'id' => $state['field_id'],
       'rows' => 5,
       'class' => 'large-text',
     ];
-
     if (isset($options['maxlength'])) {
       $attrs['maxlength'] = intval($options['maxlength']);
     }
+    echo '<textarea';
+    $this->outputAttrs($attrs);
+    echo '>' . esc_textarea($value) . '</textarea>';
+  }
 
+  public function renderInBlock($field, $value, $state) {
+    $attrs = [
+      'name' => $this->blockInputName($state),
+      'id' => $state['field_id'],
+      'rows' => 5,
+      'class' => 'large-text',
+    ];
+    if ($state['readonly']) {
+      $attrs['disabled'] = 'disabled';
+    }
     echo '<textarea';
     $this->outputAttrs($attrs);
     echo '>' . esc_textarea($value) . '</textarea>';

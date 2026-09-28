@@ -14,11 +14,11 @@ use YamlCF\Helpers\RequestHelper;
  */
 class PartialController extends AdminController {
   private $templateCache;
-  private $schemaStorage;
+  private $schemaParser;
 
-  public function __construct($templateCache, $schemaStorage) {
+  public function __construct($templateCache, $schemaParser) {
     $this->templateCache = $templateCache;
-    $this->schemaStorage = $schemaStorage;
+    $this->schemaParser = $schemaParser;
   }
 
   public function render() {
@@ -40,7 +40,7 @@ class PartialController extends AdminController {
     }
 
     $schema_yaml = $schemas[$template];
-    $schema = $this->schemaStorage->parseSchema($schema_yaml);
+    $schema = $this->schemaParser->parse($schema_yaml);
 
     if (!$schema || !isset($schema['fields'])) {
       wp_die(esc_html__('The schema for this template has a mistake. Fix the schema first.', 'yaml-custom-fields'));

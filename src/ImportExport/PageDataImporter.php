@@ -59,12 +59,19 @@ class PageDataImporter {
     if (isset($data['type']) && $data['type'] === 'single-post' && isset($data['post'])) {
       $entry = $data['post'];
     } elseif (isset($data['posts']) && is_array($data['posts'])) {
+      // Matched the way the file says it was made to be matched, as importMany()
+      // does. Accepting either used to let an ID from another site, where it
+      // belongs to some other page, win over the entry with the right address.
+      $match_by = isset($data['match_by']) && $data['match_by'] === 'id' ? 'id' : 'slug';
+
       foreach ($data['posts'] as $candidate) {
-        if (!is_array($candidate)) {
+        if (!is_array($candidate) || !$this->typeMatches($candidate, $post)) {
           continue;
         }
-        if ((isset($candidate['id']) && (int) $candidate['id'] === (int) $post->ID)
-          || (isset($candidate['slug']) && $candidate['slug'] === $post->post_name)) {
+        $matches = $match_by === 'id'
+          ? isset($candidate['id']) && (int) $candidate['id'] === (int) $post->ID
+          : $this->addressMatches($candidate, $post);
+        if ($matches) {
           $entry = $candidate;
           break;
         }
@@ -109,6 +116,18 @@ class PageDataImporter {
     // update_post_meta() unslashes its value; slash first so backslashes in field values survive
     $data_updated = update_post_meta($post->ID, '_yaml_cf_data', wp_slash($data));
     update_post_meta($post->ID, '_yaml_cf_imported', true);
+
+    // "Use the shared value on this page", for files that carry it. A file from
+    // an older version says nothing either way, so what is here is kept.
+    if (isset($entry['use_shared']) && is_array($entry['use_shared'])) {
+      $use_shared = [];
+      foreach ($entry['use_shared'] as $name => $ticked) {
+        if ($ticked === '1' || $ticked === 1 || $ticked === true) {
+          $use_shared[sanitize_text_field((string) $name)] = '1';
+        }
+      }
+      update_post_meta($post->ID, '_yaml_cf_use_template_global_fields', wp_slash($use_shared));
+    }
 
     \YamlCF\Cache\PostTracker::track($post->ID);
     $this->cacheManager->clearDataCaches($post->ID);
@@ -157,10 +176,25 @@ class PageDataImporter {
 
       $source_id = isset($entry['id']) ? absint($entry['id']) : 0;
       $source_slug = isset($entry['slug']) && is_string($entry['slug']) ? sanitize_title($entry['slug']) : '';
-      $source_type = isset($entry['type']) && is_string($entry['type']) ? sanitize_key($entry['type']) : 'post';
+      // '' when the file does not say, as files from older versions do not
+      $source_type = isset($entry['type']) && is_string($entry['type']) ? sanitize_key($entry['type']) : '';
       $source_title = isset($entry['title']) && is_string($entry['title']) ? sanitize_text_field($entry['title']) : '';
+      $source_path = isset($entry['path']) && is_string($entry['path']) ? $this->sanitizePath($entry['path']) : '';
 
-      $target_post = $this->findTargetPost($match_by, $source_id, $source_slug, $source_type);
+      $target_post = $this->findTargetPost($match_by, $source_id, $source_slug, $source_type, $source_path);
+
+      if ($target_post === false) {
+        $skipped++;
+        /* translators: 1: post title, 2: post slug */
+        $errors[] = sprintf(__('Skipped "%1$s": more than one page has the web address "%2$s". Export the file again with this version of the plugin, which records the full address.', 'yaml-custom-fields'), $source_title, $source_slug);
+        $debug[] = [
+          'action' => 'skipped',
+          'reason' => 'ambiguous_slug',
+          'search_by' => $match_by,
+          'search_value' => $source_slug,
+        ];
+        continue;
+      }
 
       if (!$target_post || !current_user_can('edit_post', $target_post->ID)) {
         $skipped++;
@@ -189,7 +223,8 @@ class PageDataImporter {
       $imported++;
     }
 
-    $this->cacheManager->clearDataCaches();
+    // Each imported post has had its own caches cleared already. Clearing every
+    // tracked post again here cost one pass over the whole site per import.
 
     return [
       'success' => true,
@@ -221,6 +256,20 @@ class PageDataImporter {
   }
 
   /**
+   * Whether an entry is for this kind of post
+   *
+   * Entries without a type come from files written before it was recorded, and
+   * are taken as they are.
+   *
+   * @param array $entry Entry from the file
+   * @param \WP_Post $post Post being imported into
+   * @return bool
+   */
+  private function typeMatches($entry, $post) {
+    return !isset($entry['type']) || !is_string($entry['type']) || sanitize_key($entry['type']) === $post->post_type;
+  }
+
+  /**
    * Check an import entry has a data array
    *
    * @param mixed $entry Import entry
@@ -231,27 +280,88 @@ class PageDataImporter {
   }
 
   /**
+   * Whether a file entry names this post by its address
+   *
+   * The full path is compared when the file has one, so that an entry for
+   * /careers/team is not taken for /about/team.
+   *
+   * @param array $entry Entry from the file
+   * @param \WP_Post $post Post being imported into
+   * @return bool
+   */
+  private function addressMatches($entry, $post) {
+    if (isset($entry['path']) && is_string($entry['path']) && $entry['path'] !== '' && is_post_type_hierarchical($post->post_type)) {
+      return $this->sanitizePath($entry['path']) === get_page_uri($post);
+    }
+
+    return isset($entry['slug']) && is_string($entry['slug']) && $entry['slug'] !== '' && $entry['slug'] === $post->post_name;
+  }
+
+  /**
+   * Clean a page path from a file: slugs joined by slashes
+   *
+   * @param string $path Path as written in the file
+   * @return string
+   */
+  private function sanitizePath($path) {
+    $parts = array_filter(array_map('sanitize_title', explode('/', $path)), 'strlen');
+
+    return implode('/', $parts);
+  }
+
+  /**
    * Find the post an import entry refers to
    *
    * @param string $match_by 'id' or 'slug'
    * @param int $source_id Post ID from the file
    * @param string $source_slug Post slug from the file
    * @param string $source_type Post type from the file
-   * @return \WP_Post|null Target post
+   * @param string $source_path Full path of a hierarchical post, when the file has one
+   * @return \WP_Post|null|false Target post, null when there is none, false when the
+   *                              slug fits more than one post and nothing tells them apart
    */
-  private function findTargetPost($match_by, $source_id, $source_slug, $source_type) {
+  private function findTargetPost($match_by, $source_id, $source_slug, $source_type, $source_path = '') {
     if ($match_by === 'id') {
-      return $source_id ? get_post($source_id) : null;
+      $post = $source_id ? get_post($source_id) : null;
+
+      // An ID means nothing on its own in a file from another site: here it can
+      // be a menu item, an attachment or a revision. Only a post of the type the
+      // file names, and one that can hold fields at all, is written to.
+      if (!$post || ($source_type !== '' && $post->post_type !== $source_type)) {
+        return null;
+      }
+
+      $supported = (new \YamlCF\Data\Repositories\PostDataRepository())->getSupportedPostTypes();
+
+      return in_array($post->post_type, $supported, true) ? $post : null;
     }
+    if ($source_path !== '' && $source_type !== '' && is_post_type_hierarchical($source_type)) {
+      $post = get_page_by_path($source_path, OBJECT, $source_type);
+
+      return $post instanceof \WP_Post ? $post : null;
+    }
+
     if ($source_slug === '') {
       return null;
     }
+
+    $supported = (new \YamlCF\Data\Repositories\PostDataRepository())->getSupportedPostTypes();
+
+    // Files from before the type was recorded say nothing about it, and those
+    // came from pages as often as from posts, so every type that can hold
+    // fields is searched.
     $posts = get_posts([
       'name' => $source_slug,
-      'post_type' => $source_type,
+      'post_type' => $source_type !== '' ? $source_type : $supported,
       'post_status' => 'any',
-      'posts_per_page' => 1,
+      'posts_per_page' => 2,
+      'no_found_rows' => true,
     ]);
+
+    if (count($posts) > 1) {
+      return false;
+    }
+
     return !empty($posts) ? $posts[0] : null;
   }
 }

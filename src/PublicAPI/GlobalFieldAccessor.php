@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Global Field Accessor
+ * yaml_cf_get_global_field(), yaml_cf_get_global_fields() and yaml_cf_has_global_field()
+ */
+
 namespace YamlCF\PublicAPI;
 
 // Prevent direct access
@@ -8,45 +13,55 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Accessor for global custom fields
+ * Site details: values that are the same on every page, read from anywhere,
+ * header.php and footer.php included.
  */
 class GlobalFieldAccessor {
-  use UnimplementedAccessor;
+  /** @var FieldResolver */
+  private $resolver;
 
-  private $globalDataRepository;
-  private $schemaStorage;
-
-  public function __construct($globalDataRepository, $schemaStorage) {
-    $this->globalDataRepository = $globalDataRepository;
-    $this->schemaStorage = $schemaStorage;
+  /**
+   * @param FieldResolver $resolver Decodes code fields against the schema
+   */
+  public function __construct(FieldResolver $resolver) {
+    $this->resolver = $resolver;
   }
 
   /**
-   * Get a global field value
+   * One of the site details
    *
-   * @param string $field_name Field name
-   * @return mixed Field value
+   * @param string $field_name The field's name
+   * @return mixed The value, or null when it has none
    */
   public function getField($field_name) {
-    $this->notImplemented('getField');
+    $global_data = get_option('yaml_cf_global_data', []);
+
+    if (is_array($global_data) && isset($global_data[$field_name])) {
+      return $this->resolver->autoDecodeIfCodeField($global_data[$field_name], get_option('yaml_cf_global_schema', ''), $field_name);
+    }
+
+    return null;
   }
 
   /**
-   * Get all global fields
+   * All of the site details
    *
-   * @return array All global field values
+   * @return array Values keyed by field name
    */
   public function getFields() {
-    $this->notImplemented('getFields');
+    $global_data = get_option('yaml_cf_global_data', []);
+    $data = is_array($global_data) ? $global_data : [];
+
+    return $this->resolver->decodeAll($data, get_option('yaml_cf_global_schema', ''));
   }
 
   /**
-   * Check if a global field exists
+   * Whether one of the site details has a value
    *
-   * @param string $field_name Field name
-   * @return bool True if field exists
+   * @param string $field_name The field's name
+   * @return bool
    */
   public function hasField($field_name) {
-    $this->notImplemented('hasField');
+    return $this->getField($field_name) !== null;
   }
 }

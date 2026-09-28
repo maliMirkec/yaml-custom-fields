@@ -17,15 +17,15 @@ class DataObjectController extends AdminController {
   /** Items shown on one page of a collection */
   const ENTRIES_PER_PAGE = 50;
 
-  private $schemaStorage;
+  private $schemaParser;
   private $savedTypeSlug = null;
   private $schemaValidator;
   private $submittedType = null;
 
   private $notifications;
 
-  public function __construct($schemaStorage, $schemaValidator = null, $notifications = null) {
-    $this->schemaStorage = $schemaStorage;
+  public function __construct($schemaParser, $schemaValidator = null, $notifications = null) {
+    $this->schemaParser = $schemaParser;
     $this->schemaValidator = $schemaValidator ? $schemaValidator : new \YamlCF\Schema\SchemaValidator();
     $this->notifications = $notifications ? $notifications : new \YamlCF\Core\NotificationManager();
   }
@@ -106,10 +106,10 @@ class DataObjectController extends AdminController {
 
       // Same lookup as the entry handlers; older imports may have stored slugs that sanitize_key() would alter
       $type_id = RequestHelper::getParam('type_id', '');
-      $type_name = \YAML_Custom_Fields::post_sanitized('type_name', '', 'sanitize_text_field');
-      $new_type_slug = \YAML_Custom_Fields::post_sanitized('type_slug', '', 'sanitize_key');
+      $type_name = RequestHelper::postSanitized('type_name', '', 'sanitize_text_field');
+      $new_type_slug = RequestHelper::postSanitized('type_slug', '', 'sanitize_key');
       // Sanitized like the other schema editors and the data object import
-      $schema_yaml = \YAML_Custom_Fields::post_sanitized('schema', '', 'sanitize_textarea_field');
+      $schema_yaml = \YamlCF\Schema\SchemaParser::sanitizeSource(RequestHelper::postRaw('schema', ''));
 
       if (empty($type_name) || empty($new_type_slug)) {
         $this->notifications->error(__('Enter a name and a short name.', 'yaml-custom-fields'), ['title' => __('The list was not saved.', 'yaml-custom-fields')]);
@@ -129,6 +129,35 @@ class DataObjectController extends AdminController {
       }
 
       $data_object_types = get_option('yaml_cf_data_object_types', []);
+      if (!is_array($data_object_types)) {
+        $data_object_types = [];
+      }
+
+      if ($type_id !== '' && isset($data_object_types[$type_id])) {
+        // Editing: the short name is fixed once a collection exists. The field is
+        // read-only in the form, but only the form says so; entries and every
+        // schema that points at the collection are keyed by it.
+        $new_type_slug = $type_id;
+      } elseif (strlen($new_type_slug) > \YamlCF\Data\EntryStore::MAX_SLUG_LENGTH) {
+        $this->notifications->error(
+          /* translators: %d: most characters a short name may have */
+          sprintf(__('The short name is too long. Use at most %d characters.', 'yaml-custom-fields'), \YamlCF\Data\EntryStore::MAX_SLUG_LENGTH),
+          ['title' => __('The list was not saved.', 'yaml-custom-fields')]
+        );
+        $this->submittedType = ['slug' => $new_type_slug, 'name' => $type_name, 'schema' => $schema_yaml];
+        return;
+      } elseif (isset($data_object_types[$new_type_slug])) {
+        // Creating, under a name already taken: saving would replace that
+        // collection's name and schema with this one's.
+        $this->notifications->error(
+          /* translators: %s: collection short name */
+          sprintf(__('There is already a collection with the short name "%s". Choose another short name.', 'yaml-custom-fields'), $new_type_slug),
+          ['title' => __('The list was not saved.', 'yaml-custom-fields')]
+        );
+        $this->submittedType = ['slug' => $new_type_slug, 'name' => $type_name, 'schema' => $schema_yaml];
+        return;
+      }
+
       $data_object_types[$new_type_slug] = [
         'name' => $type_name,
         'schema' => $schema_yaml,
@@ -171,27 +200,24 @@ class DataObjectController extends AdminController {
       }
 
       $schema_yaml = $data_object_types[$type_id]['schema'];
-      $schema = $this->schemaStorage->parseSchema($schema_yaml);
+      $schema = $this->schemaParser->parse($schema_yaml);
 
       // Get entry ID from form, or generate new one
-      $entry_id_from_form = \YAML_Custom_Fields::post_raw('entry_id', '');
+      $entry_id_from_form = RequestHelper::postRaw('entry_id', '');
       if (!empty($entry_id_from_form)) {
         $entry_id_to_save = sanitize_text_field($entry_id_from_form);
       } else {
         $entry_id_to_save = uniqid('entry_');
       }
 
-      // Sanitize entry data using the plugin instance
-      $plugin = \YAML_Custom_Fields::get_instance();
-
       // Get raw form data; it is sanitized per field type against the schema below
       // (a sanitize_text_field() pre-pass would strip rich-text HTML and code newlines)
-      $raw_form_data = \YAML_Custom_Fields::post_raw('yaml_cf', []);
+      $raw_form_data = RequestHelper::postRaw('yaml_cf', []);
       if (!is_array($raw_form_data)) {
         $raw_form_data = [];
       }
 
-      $entry_data = $plugin->sanitize_field_data($raw_form_data, $schema);
+      $entry_data = \YamlCF\Core\Plugin::getInstance()->get('data_sanitizer')->sanitize($raw_form_data, $schema);
 
       $repository = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository');
       $stored_entry = $repository->getEntry($type_id, $entry_id_to_save);
@@ -312,8 +338,8 @@ class DataObjectController extends AdminController {
     $type_name = $data_object_types[$type_id]['name'];
     $schema_yaml = $data_object_types[$type_id]['schema'];
 
-    // Parse schema using schemaStorage
-    $schema = $this->schemaStorage->parseSchema($schema_yaml);
+    // Parse the schema
+    $schema = $this->schemaParser->parse($schema_yaml);
 
     // One page of items. A collection of thousands used to be read in full to
     // show fifty of them.

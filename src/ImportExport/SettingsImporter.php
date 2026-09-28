@@ -91,7 +91,7 @@ class SettingsImporter {
     }
 
     if (isset($settings['global_schema']) && is_string($settings['global_schema'])) {
-      $global_schema = sanitize_textarea_field($settings['global_schema']);
+      $global_schema = \YamlCF\Schema\SchemaParser::sanitizeSource($settings['global_schema']);
       $validation_result = $global_schema === '' ? ['valid' => true] : $this->validator->validate($global_schema, null, false);
       if ($validation_result['valid']) {
         update_option('yaml_cf_global_schema', $global_schema, false);
@@ -169,14 +169,16 @@ class SettingsImporter {
    */
   private function importSchemaMap($schemas, $option, $merge, &$errors) {
     $result = [];
+    $skipped = [];
     foreach ($schemas as $template => $yaml) {
       $template = sanitize_text_field($template);
       if (!is_string($yaml)) {
         /* translators: %s: template file name */
         $errors[] = sprintf(__('Skipped the schema for %s: it is not valid text.', 'yaml-custom-fields'), $template);
+        $skipped[] = $template;
         continue;
       }
-      $yaml = sanitize_textarea_field($yaml);
+      $yaml = \YamlCF\Schema\SchemaParser::sanitizeSource($yaml);
       if ($yaml !== '') {
         // Not strict: a field with a type this version does not know is worth
         // saying out loud, but dropping the whole template over it would lose
@@ -185,6 +187,7 @@ class SettingsImporter {
         if (!$validation_result['valid']) {
           /* translators: 1: template file name, 2: schema validation error */
           $errors[] = sprintf(__('Skipped the schema for %1$s: %2$s', 'yaml-custom-fields'), $template, $validation_result['message']);
+          $skipped[] = $template;
           continue;
         }
         foreach ($this->warningsOf($validation_result) as $warning) {
@@ -195,8 +198,17 @@ class SettingsImporter {
       $result[$template] = $yaml;
     }
     $written = count($result);
+    $existing = (array) get_option($option, []);
     if ($merge) {
-      $result = array_merge((array) get_option($option, []), $result);
+      $result = array_merge($existing, $result);
+    } else {
+      // Replacing still leaves a skipped template as it was. Without this, a
+      // schema the file got wrong deleted the one this site had for it.
+      foreach ($skipped as $template) {
+        if (array_key_exists($template, $existing)) {
+          $result[$template] = $existing[$template];
+        }
+      }
     }
     update_option($option, $result, false);
 

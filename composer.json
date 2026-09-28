@@ -38,10 +38,10 @@
     "check:release": [
       "@lint:syntax",
       "@lint",
+      "bash build-scoped.sh",
       "@test:unit",
       "bash bin/security-audit.sh",
-      "bash bin/code-quality-check.sh",
-      "bash build-scoped.sh"
+      "bash bin/code-quality-check.sh"
     ]
   },
   "scripts-descriptions": {
@@ -51,7 +51,7 @@
     "lint:report": "Show remaining findings grouped by sniff, most frequent first",
     "lint:syntax": "php -l over src/ and templates/",
     "check": "Before every commit: syntax, coding standards, unit tests",
-    "check:release": "Before a release: check, plus the audit scripts and the scoped build"
+    "check:release": "Before a release: check, plus the audit scripts and the scoped build. The build runs before the tests on purpose - the shipped autoloader is classmap-authoritative, so the tests have to run against the build that is about to ship, not the one left over from last time"
   },
   "config": {
     "platform-check": false,

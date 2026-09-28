@@ -7,7 +7,6 @@
 
 namespace YamlCF\Core;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -47,16 +46,6 @@ class ServiceContainer {
 
     $this->services[$name] = call_user_func($this->factories[$name], $this);
     return $this->services[$name];
-  }
-
-  /**
-   * Check if service is registered
-   *
-   * @param string $name Service name
-   * @return bool
-   */
-  public function has($name) {
-    return isset($this->factories[$name]);
   }
 
   /**

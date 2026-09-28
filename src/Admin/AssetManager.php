@@ -14,12 +14,12 @@ use YamlCF\Helpers\RequestHelper;
  */
 class AssetManager {
   private $templateResolver;
-  private $schemaParser;
-  private $page_config = [];
 
-  public function __construct($templateResolver, $schemaParser) {
+  /**
+   * @param \YamlCF\Template\TemplateResolver $templateResolver Which template a post uses
+   */
+  public function __construct($templateResolver) {
     $this->templateResolver = $templateResolver;
-    $this->schemaParser = $schemaParser;
   }
 
   /**
@@ -32,14 +32,7 @@ class AssetManager {
    * @return bool
    */
   private function postScreenHasFields() {
-    $post_id = RequestHelper::getParamInt('post', 0);
-
-    // A brand new post has no template assigned yet, so assume it may need them
-    if (!$post_id) {
-      return true;
-    }
-
-    $post = get_post($post_id);
+    $post = $this->postBeingEdited();
     if (!$post) {
       return true;
     }
@@ -57,12 +50,72 @@ class AssetManager {
   }
 
   /**
-   * Set page-specific configuration for JavaScript
+   * The post the editor is open on
    *
-   * @param array $config Configuration data to pass to JavaScript
+   * A new post has no ?post= yet, but WordPress has already made its draft
+   * (post-new.php) and put it in $post before any script is enqueued.
+   *
+   * @return \WP_Post|null
    */
-  public function setPageConfig($config) {
-    $this->page_config = $config;
+  private function postBeingEdited() {
+    $post_id = RequestHelper::getParamInt('post', 0);
+    if ($post_id) {
+      $post = get_post($post_id);
+      return $post instanceof \WP_Post ? $post : null;
+    }
+
+    return isset($GLOBALS['post']) && $GLOBALS['post'] instanceof \WP_Post ? $GLOBALS['post'] : null;
+  }
+
+  /**
+   * Which stored schema the fields on this screen come from
+   *
+   * The "Add section" button sends this to the server, which renders the new
+   * section from that schema. Without it the button only said the schema could
+   * not be found, which it did on the shared content screen (looked for under
+   * a page name that does not exist), on the collection item screen (never
+   * looked for) and on a new post (no post ID in the address yet).
+   *
+   * @param bool $is_post_edit Whether this is the post editor
+   * @param string $page The plugin screen (?page=), or '' elsewhere
+   * @return array|null ['source' => string, 'key' => string], or null
+   */
+  public function schemaSource($is_post_edit, $page) {
+    if ($is_post_edit) {
+      $post = $this->postBeingEdited();
+      if (!$post) {
+        return null;
+      }
+
+      $template = $this->templateResolver->resolveForPost($post);
+      $schemas = get_option('yaml_cf_schemas', []);
+
+      return !empty($schemas[$template]) ? ['source' => 'template', 'key' => $template] : null;
+    }
+
+    if ($page === 'yaml-cf-manage-global-data') {
+      return get_option('yaml_cf_global_schema', '') !== '' ? ['source' => 'global', 'key' => ''] : null;
+    }
+
+    $template = RequestHelper::getParam('template');
+
+    if ($page === 'yaml-cf-manage-template-global') {
+      $schemas = get_option('yaml_cf_template_global_schemas', []);
+      return $template !== '' && !empty($schemas[$template]) ? ['source' => 'template_global', 'key' => $template] : null;
+    }
+
+    if ($page === 'yaml-cf-edit-partial') {
+      $schemas = get_option('yaml_cf_schemas', []);
+      return $template !== '' && !empty($schemas[$template]) ? ['source' => 'partial', 'key' => $template] : null;
+    }
+
+    if ($page === 'yaml-cf-manage-data-object-entries') {
+      $type_id = RequestHelper::getParam('type_id');
+      $types = get_option('yaml_cf_data_object_types', []);
+      return $type_id !== '' && !empty($types[$type_id]['schema']) ? ['source' => 'data_object', 'key' => $type_id] : null;
+    }
+
+    return null;
   }
 
   /**
@@ -112,61 +165,9 @@ class AssetManager {
     );
     $this->setScriptTranslations('yaml-cf-admin-page-init');
 
-    // Get current template and schema for post edit screens
-    $schema_data = null;
     // Which schema this screen is editing, so that adding a section can ask the
     // server to render it (see YamlCF\Ajax\Handlers\RenderBlockItem)
-    $schema_source = null;
-    $post_id = RequestHelper::getParamInt('post', 0);
-
-    if ($is_post_edit && $post_id) {
-      $post = get_post($post_id);
-
-      if ($post) {
-        $template = $this->templateResolver->resolveForPost($post);
-
-        $schemas = get_option('yaml_cf_schemas', []);
-
-        if (isset($schemas[$template]) && !empty($schemas[$template])) {
-          $schema_source = ['source' => 'template', 'key' => $template];
-          $schema_data = $this->schemaParser->parse($schemas[$template]);
-        }
-      }
-    }
-
-    // The plugin's own screens render fields too, each from a different schema
-    if ($is_plugin_page && $schema_source === null) {
-      $current_page = RequestHelper::getParam('page');
-
-      // Get schema based on which admin page we're on
-      $admin_schema = null;
-
-      if ($current_page === 'yaml-cf-manage-global-data') {
-        $global_schema_yaml = get_option('yaml_cf_global_schema', '');
-        if (!empty($global_schema_yaml)) {
-          $admin_schema = $this->schemaParser->parse($global_schema_yaml);
-          $schema_source = ['source' => 'global', 'key' => ''];
-        }
-      } elseif ($current_page === 'yaml-cf-manage-template-global-data') {
-        $template = RequestHelper::getParam('template');
-        if ($template) {
-          $template_global_schemas = get_option('yaml_cf_template_global_schemas', []);
-          if (isset($template_global_schemas[$template])) {
-            $admin_schema = $this->schemaParser->parse($template_global_schemas[$template]);
-            $schema_source = ['source' => 'template_global', 'key' => $template];
-          }
-        }
-      } elseif ($current_page === 'yaml-cf-edit-partial') {
-        $template = RequestHelper::getParam('template');
-        if ($template) {
-          $schemas = get_option('yaml_cf_schemas', []);
-          if (isset($schemas[$template])) {
-            $admin_schema = $this->schemaParser->parse($schemas[$template]);
-            $schema_source = ['source' => 'partial', 'key' => $template];
-          }
-        }
-      }
-    }
+    $schema_source = $this->schemaSource($is_post_edit, RequestHelper::getParam('page'));
 
     wp_localize_script('yaml-cf-admin', 'yamlCF', [
       'ajax_url' => admin_url('admin-ajax.php'),
@@ -174,7 +175,6 @@ class AssetManager {
       'nonce' => wp_create_nonce('yaml_cf_nonce'),
       // Only an administrator is handed the token for administrator-only actions
       'adminNonce' => current_user_can('manage_options') ? wp_create_nonce('yaml_cf_admin_nonce') : '',
-      'schema' => $schema_data,
       'schemaSource' => $schema_source,
     ]);
 
@@ -201,11 +201,6 @@ class AssetManager {
         true
       );
       $this->setScriptTranslations('yaml-cf-export-import');
-    }
-
-    // Localize page config if set by controller
-    if (!empty($this->page_config)) {
-      wp_localize_script('yaml-cf-admin-page-init', 'yamlCFPageInit', $this->page_config);
     }
   }
 

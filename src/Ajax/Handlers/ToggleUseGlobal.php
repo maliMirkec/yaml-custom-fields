@@ -17,7 +17,7 @@ class ToggleUseGlobal extends AjaxHandler {
   public function handle() {
     $this->verifyRequest();
 
-    $template = $this->postText('template');
+    $template = $this->postTemplate();
     $use_global = $this->postText('use_global') === 'true';
 
     $settings = (array) get_option('yaml_cf_template_settings', []);

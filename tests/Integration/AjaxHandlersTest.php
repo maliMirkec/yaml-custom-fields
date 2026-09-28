@@ -84,6 +84,26 @@ class AjaxHandlersTest extends WP_Ajax_UnitTestCase {
 		$this->assertTrue(get_option('yaml_cf_template_settings')['single.php']);
 	}
 
+	/**
+	 * Template switches and site details switches share one option, keyed by
+	 * template name and "<name>_use_global". A name that is empty, or already
+	 * ends in _use_global, would write a key that means something else.
+	 */
+	public function testTemplateTogglesRefuseUnusableNames() {
+		$this->_setRole('administrator');
+		$before = get_option('yaml_cf_template_settings', []);
+
+		foreach (['', 'single.php_use_global'] as $template) {
+			$save = $this->callAjax('yaml_cf_save_template_settings', ['template' => $template, 'enabled' => 'true']);
+			$toggle = $this->callAjax('yaml_cf_toggle_use_global', ['template' => $template, 'use_global' => 'true']);
+
+			$this->assertFalse($save['success'], 'Saved a switch for "' . $template . '"');
+			$this->assertFalse($toggle['success'], 'Saved a site details switch for "' . $template . '"');
+		}
+
+		$this->assertSame($before, get_option('yaml_cf_template_settings', []));
+	}
+
 	public function testImportPageDataSanitizesAgainstSiteSchema() {
 		$this->_setRole('administrator');
 		$post_id = self::factory()->post->create();

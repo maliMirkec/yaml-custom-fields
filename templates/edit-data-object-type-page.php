@@ -17,6 +17,12 @@ if (!defined('ABSPATH')) {
 // - $error_message: Error message to display (if any)
 
 $yaml_cf_type_slug = $type_id;
+// The slug doubles as a PHP variable name in the snippets below. A short name
+// may hold hyphens or start with a digit, and neither makes a valid variable.
+$yaml_cf_snippet_var = str_replace('-', '_', (string) $yaml_cf_type_slug);
+if ($yaml_cf_snippet_var === '' || ctype_digit($yaml_cf_snippet_var[0])) {
+  $yaml_cf_snippet_var = 'item_' . $yaml_cf_snippet_var;
+}
 $yaml_cf_is_editing = $is_editing;
 $yaml_cf_type_name = $type_name;
 $yaml_cf_schema_yaml = $schema_yaml;
@@ -75,7 +81,7 @@ $yaml_cf_schema_yaml = $schema_yaml;
               <label for="type_slug"><?php esc_html_e('Short name', 'yaml-custom-fields'); ?></label>
             </th>
             <td>
-              <input type="text" name="type_slug" id="type_slug" value="<?php echo esc_attr($yaml_cf_type_slug); ?>" class="regular-text" <?php echo $yaml_cf_is_editing ? 'readonly' : ''; ?> required />
+              <input type="text" name="type_slug" id="type_slug" value="<?php echo esc_attr($yaml_cf_type_slug); ?>" class="regular-text" maxlength="<?php echo esc_attr(\YamlCF\Data\EntryStore::MAX_SLUG_LENGTH); ?>" <?php echo $yaml_cf_is_editing ? 'readonly' : ''; ?> required />
               <p class="description"><?php esc_html_e('Used in the schema and the theme. Lowercase letters and dashes only, like team-members. It cannot be changed later.', 'yaml-custom-fields'); ?></p>
             </td>
           </tr>
@@ -150,15 +156,15 @@ YAML;
 
       <h3 class="yaml-cf-spaced-top"><?php esc_html_e('Show the chosen item', 'yaml-custom-fields'); ?></h3>
       <div class="yaml-cf-relative">
-        <button type="button" class="yaml-cf-copy-snippet button button-small yaml-cf-copy-corner" data-snippet="&lt;?php&#10;$<?php echo esc_attr($yaml_cf_type_slug); ?> = ycf_get_data_object('<?php echo esc_attr($yaml_cf_type_slug); ?>');&#10;if ($<?php echo esc_attr($yaml_cf_type_slug); ?>) {&#10;  echo '&lt;h2&gt;' . esc_html($<?php echo esc_attr($yaml_cf_type_slug); ?>['name']) . '&lt;/h2&gt;';&#10;  // Access other fields: $<?php echo esc_attr($yaml_cf_type_slug); ?>['field_name']&#10;}&#10;?&gt;">
+        <button type="button" class="yaml-cf-copy-snippet button button-small yaml-cf-copy-corner" data-snippet="&lt;?php&#10;$<?php echo esc_attr($yaml_cf_snippet_var); ?> = ycf_get_data_object('<?php echo esc_attr($yaml_cf_type_slug); ?>');&#10;if ($<?php echo esc_attr($yaml_cf_snippet_var); ?>) {&#10;  echo '&lt;h2&gt;' . esc_html($<?php echo esc_attr($yaml_cf_snippet_var); ?>['name']) . '&lt;/h2&gt;';&#10;  // Access other fields: $<?php echo esc_attr($yaml_cf_snippet_var); ?>['field_name']&#10;}&#10;?&gt;">
           <span class="dashicons dashicons-editor-code"></span>
           <?php esc_html_e('Copy', 'yaml-custom-fields'); ?>
         </button>
         <pre>&lt;?php
-$<?php echo esc_html($yaml_cf_type_slug); ?> = ycf_get_data_object('<?php echo esc_html($yaml_cf_type_slug); ?>');
-if ($<?php echo esc_html($yaml_cf_type_slug); ?>) {
-  echo '&lt;h2&gt;' . esc_html($<?php echo esc_html($yaml_cf_type_slug); ?>['name']) . '&lt;/h2&gt;';
-  // Access other fields: $<?php echo esc_html($yaml_cf_type_slug); ?>['field_name']
+$<?php echo esc_html($yaml_cf_snippet_var); ?> = ycf_get_data_object('<?php echo esc_html($yaml_cf_type_slug); ?>');
+if ($<?php echo esc_html($yaml_cf_snippet_var); ?>) {
+  echo '&lt;h2&gt;' . esc_html($<?php echo esc_html($yaml_cf_snippet_var); ?>['name']) . '&lt;/h2&gt;';
+  // Access other fields: $<?php echo esc_html($yaml_cf_snippet_var); ?>['field_name']
 }
 ?&gt;</pre>
       </div>

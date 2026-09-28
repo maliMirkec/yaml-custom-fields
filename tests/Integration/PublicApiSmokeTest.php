@@ -274,4 +274,80 @@ class PublicApiSmokeTest extends WPTestCase {
 			$this->assertStringNotContainsString(\YAML_Custom_Fields::CODE_FIELD_MARKER, (string) $all['a_code']);
 		}
 	}
+
+	/**
+	 * Every function the Documentation page and the readme tell a theme to call
+	 * has to exist. Two of them did not, so following the docs was a fatal error.
+	 */
+	public function testEveryDocumentedFunctionExists() {
+		$docs = file_get_contents(YAML_CF_PLUGIN_DIR . 'templates/docs-content.php')
+			. file_get_contents(YAML_CF_PLUGIN_DIR . 'readme.txt');
+
+		preg_match_all('/\\b((?:ycf|yaml_cf)_(?:get|has)_[a-z_]+)\\s*\\(/', $docs, $matches);
+		$documented = array_unique($matches[1]);
+
+		$this->assertNotEmpty($documented);
+		foreach ($documented as $function) {
+			$this->assertTrue(function_exists($function), $function . '() is documented but does not exist.');
+		}
+	}
+
+	public function testTheShortSiteDetailsFunctionsReadSiteDetails() {
+		update_option('yaml_cf_global_schema', "fields:\n  - name: phone\n    type: string\n", false);
+		update_option('yaml_cf_global_data', ['phone' => '555-0100'], false);
+
+		$this->assertSame('555-0100', ycf_get_global_field('phone'));
+		$this->assertSame(['phone' => '555-0100'], ycf_get_global_fields());
+		$this->assertTrue(ycf_has_global_field('phone'));
+		$this->assertFalse(ycf_has_global_field('fax'));
+	}
+
+	/**
+	 * The "Copy code" button on the Site details screen hands out code that
+	 * reads a site detail wherever it is pasted, header.php included.
+	 */
+	public function testTheSiteDetailsScreenOffersTheSiteDetailsFunction() {
+		wp_set_current_user($this->createTestUser('administrator'));
+
+		ob_start();
+		\YAML_Custom_Fields::get_instance()->render_schema_fields(
+			[['name' => 'phone', 'label' => 'Phone', 'type' => 'string'], ['name' => 'logo', 'label' => 'Logo', 'type' => 'image']],
+			[],
+			'',
+			['type' => 'global']
+		);
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString('ycf_get_global_field(&#039;phone&#039;)', $html);
+		$this->assertStringContainsString('wp_get_attachment_image(ycf_get_global_field(&#039;logo&#039;)', $html);
+		$this->assertStringNotContainsString('ycf_get_field(&#039;phone&#039;', $html);
+	}
+
+	/**
+	 * A file whose attachment is still in the media library but whose file is
+	 * gone from disk (an import from another site, a cleaned-up uploads folder)
+	 * used to print a filesize() warning onto the page.
+	 */
+	public function testAFileMissingFromDiskIsDescribedWithoutAWarning() {
+		$file_id = self::factory()->post->create(['post_type' => 'attachment', 'post_mime_type' => 'application/pdf', 'post_title' => 'gone']);
+		update_post_meta($file_id, '_wp_attached_file', '2026/09/not-on-disk.pdf');
+
+		$file = yaml_cf_get_file('doc', null, ['doc' => (string) $file_id]);
+
+		$this->assertSame('not-on-disk.pdf', $file['filename']);
+		$this->assertFalse($file['filesize']);
+	}
+
+	/**
+	 * The template functions and the services behind them are one and the same
+	 */
+	public function testTheFunctionsAndTheServicesAgree() {
+		$post_id = $this->createTestPost([], ['a_string' => 'Same either way']);
+		$plugin = \YamlCF\Core\Plugin::getInstance();
+
+		$this->assertSame(yaml_cf_get_field('a_string', $post_id), $plugin->get('field_accessor')->getField('a_string', $post_id));
+		$this->assertSame(yaml_cf_get_fields($post_id), $plugin->get('field_resolver')->resolvePostFields($post_id));
+		$this->assertSame($plugin->get('field_resolver'), $plugin->get('field_resolver'), 'One resolver, so one cache, per request');
+	}
 }
+

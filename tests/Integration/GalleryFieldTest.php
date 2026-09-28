@@ -132,11 +132,22 @@ YAML;
 		update_post_meta($post_id, '_yaml_cf_data', ['gallery' => [$real, '999999']]);
 
 		$gallery = yaml_cf_get_image('gallery', $post_id);
-		$this->assertCount(2, $gallery);
+		$this->assertCount(1, $gallery);
 		$this->assertSame($real, $gallery[0]['id']);
-		$this->assertFalse($gallery[1]['url']);
 
 		$html = $this->render($post_id);
 		$this->assertStringContainsString('Image 999999 is missing', $html);
+	}
+
+	/**
+	 * An ID that is not an attachment is not an image: its title and content
+	 * must not come back as the image's
+	 */
+	public function testAnIdOfAnotherPostIsNotAnImage() {
+		$draft = $this->createTestPost(['post_status' => 'draft', 'post_title' => 'Secret draft', 'post_content' => 'Unpublished']);
+		$post_id = $this->createTestPost();
+		update_post_meta($post_id, '_yaml_cf_data', ['hero' => (string) $draft]);
+
+		$this->assertNull(yaml_cf_get_image('hero', $post_id));
 	}
 }

@@ -236,4 +236,29 @@ class FieldResolutionTest extends WPTestCase {
 
 		$this->assertNull($this->assertAccessorsAgree('nothing_here', $post_id));
 	}
+
+	/**
+	 * Switching theme changes which template every post uses, so every value
+	 * worked out so far is forgotten. The hook used to pass the new theme's
+	 * name on as a post ID, which forgot "post 0" and nothing else.
+	 */
+	public function testSwitchingThemeForgetsEveryResolvedValue() {
+		$post_id = $this->createTestPost([], ['nothing_here' => 'Before']);
+		$this->assertSame('Before', yaml_cf_get_field('nothing_here', $post_id));
+
+		// Written with the meta hooks switched off, so only the theme switch can flush
+		global $wp_filter;
+		$saved = isset($wp_filter['updated_post_meta']) ? $wp_filter['updated_post_meta'] : null;
+		unset($wp_filter['updated_post_meta']);
+		update_post_meta($post_id, '_yaml_cf_data', ['nothing_here' => 'After']);
+		if ($saved !== null) {
+			$wp_filter['updated_post_meta'] = $saved;
+		}
+		$this->assertSame('Before', yaml_cf_get_field('nothing_here', $post_id), 'Still the memo, as expected');
+
+		do_action('switch_theme', 'Some Theme', null, null);
+
+		$this->assertSame('After', yaml_cf_get_field('nothing_here', $post_id));
+	}
 }
+

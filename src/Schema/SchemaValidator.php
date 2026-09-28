@@ -17,17 +17,6 @@ use YamlCF\Vendor\Symfony\Component\Yaml\Exception\ParseException;
 
 class SchemaValidator {
   /**
-   * Every field type the editor can render.
-   *
-   * This is the same list as the switch in YAML_Custom_Fields::render_fields_flat().
-   * A type outside it renders no input at all, so the field would look present in
-   * the schema and be missing from the editor; validating here turns that into a
-   * message at the moment the schema is saved.
-   *
-   * 'break' is left out on purpose: FieldNormalizer turns it into 'section'
-   * before validation runs.
-   */
-  /**
    * The longest schema that will be accepted, in bytes.
    *
    * A schema is a short list of fields written by hand; a megabyte of it is
@@ -45,6 +34,17 @@ class SchemaValidator {
    */
   const RESERVED_NAMES = ['_template_global_override'];
 
+  /**
+   * Every field type the editor can render.
+   *
+   * This is the same list as the renderers in YamlCF\Rendering\FieldRenderer.
+   * A type outside it renders no input at all, so the field would look present in
+   * the schema and be missing from the editor; validating here turns that into a
+   * message at the moment the schema is saved.
+   *
+   * 'break' is left out on purpose: FieldNormalizer turns it into 'section'
+   * before validation runs.
+   */
   const FIELD_TYPES = [
     'block',
     'boolean',
@@ -65,7 +65,6 @@ class SchemaValidator {
     'text',
   ];
 
-  private $parser;
   private $normalizer;
 
   /**
@@ -76,7 +75,6 @@ class SchemaValidator {
   private $warnings = [];
 
   public function __construct() {
-    $this->parser = new SchemaParser();
     $this->normalizer = new FieldNormalizer();
   }
 
@@ -367,7 +365,7 @@ class SchemaValidator {
     $basename = basename($template);
 
     // Partial/Archive patterns that should NOT have info fields
-    // These match the partial_patterns from get_theme_templates()
+    // These match the partial patterns in TemplateScanner::scanPhpTemplates()
     $disallowed_patterns = [
       // Traditional partials
       'header.php',

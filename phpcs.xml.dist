@@ -158,13 +158,18 @@
 				<element value="yaml_cf"/>
 				<element value="YAML_CF"/>
 				<element value="ycf"/>
+				<element value="ycf_get"/>
+				<element value="ycf_has"/>
 				<element value="YAML_Custom_Fields"/>
 				<element value="YamlCF"/>
 			</property>
 		</properties>
 		<!-- "ycf" is three characters, one short of the four this sniff wants. It is the
 		     documented short alias for the template API (ycf_get_field() and friends) and is
-		     part of the public surface, so it cannot be lengthened without breaking themes. -->
+		     part of the public surface, so it cannot be lengthened without breaking themes.
+		     The sniff drops a prefix that short, so "ycf_get" and "ycf_has" are listed too:
+		     they cover every short alias, and the site details ones are not @deprecated
+		     (which is the only other way past this sniff). -->
 		<exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
 	</rule>
 
@@ -183,14 +188,14 @@
 		cannot follow that indirection and reports the $_POST reads instead. This is the same
 		reasoning as the RequestHelper exclusion further down.
 
-		yaml-custom-fields.php is listed for should_skip_admin_init(), a read-only guard that
+		src/Form/FormHandler.php is listed for FormHandler::shouldSkip(), a read-only guard that
 		inspects $_GET['action']/$_POST['action'] only to decide whether to bail out of its own
 		admin_init processing. It runs on every admin request, outside any form, and takes no
 		action of its own, so there is no nonce for it to verify.
 	-->
 	<rule ref="WordPress.Security.NonceVerification">
 		<exclude-pattern>src/Ajax/*</exclude-pattern>
-		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+		<exclude-pattern>src/Form/FormHandler.php</exclude-pattern>
 		<exclude-pattern>src/Admin/Controllers/DataObjectController.php</exclude-pattern>
 	</rule>
 
@@ -200,17 +205,12 @@
 		src/Core/Plugin.php registers container factories as function($c) closures; a factory
 		that needs no other service still has to accept the container.
 
-		src/PublicAPI holds the accessor interfaces for the not-yet-finished template API. Their
-		parameters are the contract those methods will honour, so the signatures stay even
-		though the bodies currently only refuse (see UnimplementedAccessor).
-
 		src/Admin/MenuManager.php has customizeAdminTitle($admin_title, $title), the callback
 		for WordPress's admin_title filter, which passes both arguments whether or not a
 		callback reads them.
 	-->
 	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
 		<exclude-pattern>src/Core/Plugin.php</exclude-pattern>
-		<exclude-pattern>src/PublicAPI/*</exclude-pattern>
 		<exclude-pattern>src/Admin/MenuManager.php</exclude-pattern>
 	</rule>
 
@@ -226,16 +226,18 @@
 	     against an ID from the database (an int): term IDs, select option values and data
 	     object entry IDs. Making these strict would stop selected checkboxes rendering as
 	     checked. The comparisons are between a known-scalar pair, never user-controlled types. -->
+	<!-- These comparisons live in the field type renderers since the renderer moved out of
+	     yaml-custom-fields.php into src/Rendering. -->
 	<rule ref="Universal.Operators.StrictComparisons">
-		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+		<exclude-pattern>src/Rendering/FieldRenderers/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.PHP.StrictInArray">
-		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
+		<exclude-pattern>src/Rendering/FieldRenderers/*</exclude-pattern>
 	</rule>
 
 	<!-- Code fields are stored base64-encoded behind a marker prefix so that WordPress's own
 	     sanitization cannot strip the HTML, JavaScript or CSS an editor typed in. See
-	     YAML_Custom_Fields::CODE_FIELD_MARKER and decode_code_field(). -->
+	     YamlCF\Form\DataSanitizer::CODE_FIELD_MARKER and YamlCF\Helpers\CodeFieldCodec. -->
 	<rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode">
 		<severity>0</severity>
 	</rule>
@@ -256,12 +258,6 @@
 		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
 	</rule>
 
-	<!-- One nested if inside an else, in the middle of the field-rendering switch. Rewriting
-	     control flow there for a style rule is more risk than the readability is worth. -->
-	<rule ref="Universal.ControlStructures.DisallowLonelyIf">
-		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
-	</rule>
-
 	<!-- Text domain declared in the plugin header, required for the i18n checks to work -->
 	<rule ref="WordPress.WP.I18n">
 		<properties>
@@ -271,20 +267,19 @@
 		</properties>
 	</rule>
 
-	<!-- uninstall.php uses direct SQL for bulk deletion - this is the documented exception -->
+	<!-- Direct SQL, the two documented exceptions to rule 5 of .claude-rules.md:
+	     uninstall.php deletes options by name prefix, and CollectionLock creates and
+	     releases a collection's lock row, which the options API cannot do atomically
+	     (add_option() checks first and writes second). -->
 	<rule ref="WordPress.DB.DirectDatabaseQuery">
 		<exclude-pattern>uninstall.php</exclude-pattern>
+		<exclude-pattern>src/Data/CollectionLock.php</exclude-pattern>
 	</rule>
 
 	<!-- Posts with YAML CF data are found with a paginated meta_key EXISTS query (indexed column);
 	     the alternative is loading every post and filtering in PHP -->
 	<rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_query">
 		<exclude-pattern>src/Data/Repositories/PostDataRepository.php</exclude-pattern>
-	</rule>
-
-	<!-- File uploads: tmp_name is PHP's temporary path, checked with is_uploaded_file() before it is read -->
-	<rule ref="WordPress.Security.ValidatedSanitizedInput.InputNotSanitized">
-		<exclude-pattern>yaml-custom-fields.php</exclude-pattern>
 	</rule>
 
 	<!-- RequestHelper is the single place that reads request superglobals. Callers verify the nonce
@@ -304,7 +299,7 @@
 
 	<!-- Oldest supported WordPress version. Must match readme.txt "Requires at least".
 	     WPCS 3.x renamed this setting from minimum_supported_wp_version. -->
-	<config name="minimum_wp_version" value="5.0"/>
+	<config name="minimum_wp_version" value="6.4"/>
 
 	<!--
 		No testVersion / PHPCompatibility standard is configured on purpose. The only stable

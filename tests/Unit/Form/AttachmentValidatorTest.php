@@ -259,13 +259,29 @@ class AttachmentValidatorTest extends TestCase {
 	}
 
 	/**
-	 * Test without a schema every numeric value pointing to a missing post is cleared
+	 * A sections field without list: true holds one section, typed by its own key
 	 */
-	public function testValidateAndCleanWithoutSchemaChecksAllNumbers() {
+	public function testValidateAttachmentsReportsMissingImageInASingleSection() {
 		$GLOBALS['yaml_cf_test_missing_posts'] = [999];
+		$fields = [
+			['name' => 'hero', 'type' => 'block', 'blocks' => [
+				['name' => 'banner', 'fields' => [['name' => 'photo', 'type' => 'image']]],
+			]],
+		];
 
-		$result = $this->validator->validateAndClean(['a' => '999', 'b' => 'text', 'c' => '7']);
+		$missing = $this->validator->validateAttachments(['hero' => ['type' => 'banner', 'photo' => '999']], '', $fields);
 
-		$this->assertSame(['a' => '', 'b' => 'text', 'c' => '7'], $result);
+		$this->assertSame([['field' => 'hero > photo', 'id' => 999]], $missing);
+	}
+
+	/**
+	 * Without a schema there is no telling an attachment ID from a price or a
+	 * phone number, so nothing is cleared
+	 */
+	public function testValidateAndCleanWithoutSchemaClearsNothing() {
+		$GLOBALS['yaml_cf_test_missing_posts'] = [999, 385911234567];
+		$data = ['price' => '999', 'b' => 'text', 'phone' => '385911234567', 'nested' => ['year' => 999]];
+
+		$this->assertSame($data, $this->validator->validateAndClean($data));
 	}
 }

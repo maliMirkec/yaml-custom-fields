@@ -72,16 +72,16 @@ class PostSchemaLocatorTest extends WPTestCase {
 	public function testTheSchemaIsFoundFromThePostsTemplate() {
 		$post_id = $this->createTestPost();
 
-		$fields = $this->locator()->fieldsForPost(get_post($post_id));
+		$schema = $this->locator()->forPost(get_post($post_id));
 
-		$this->assertSame('hero', $fields[0]['name']);
+		$this->assertSame('hero', $schema['fields'][0]['name']);
 	}
 
 	public function testAPostWhoseTemplateHasNoSchemaGetsNothing() {
 		delete_option('yaml_cf_schemas');
 		$post_id = $this->createTestPost();
 
-		$this->assertNull($this->locator()->fieldsForPost(get_post($post_id)));
+		$this->assertNull($this->locator()->forPost(get_post($post_id)));
 	}
 
 	/**
@@ -92,11 +92,11 @@ class PostSchemaLocatorTest extends WPTestCase {
 	public function testEditingASchemaTakesEffectWithoutResavingThePost() {
 		$post_id = $this->createTestPost();
 
-		$this->assertCount(1, $this->locator()->fieldsForPost(get_post($post_id)));
+		$this->assertCount(1, $this->locator()->forPost(get_post($post_id))['fields']);
 
 		update_option('yaml_cf_schemas', ['single.php' => self::SCHEMA_WITH_SECOND_IMAGE], false);
 
-		$this->assertCount(2, $this->locator()->fieldsForPost(get_post($post_id)), 'An edited schema should be seen straight away.');
+		$this->assertCount(2, $this->locator()->forPost(get_post($post_id))['fields'], 'An edited schema should be seen straight away.');
 	}
 
 	/**
@@ -108,7 +108,7 @@ class PostSchemaLocatorTest extends WPTestCase {
 		$post_id = $this->createTestPost();
 		update_post_meta($post_id, '_yaml_cf_schema', ['fields' => [['name' => 'legacy', 'type' => 'image']]]);
 
-		$fields = $this->locator()->fieldsForPost(get_post($post_id));
+		$fields = $this->locator()->forPost(get_post($post_id))['fields'];
 
 		$this->assertSame('legacy', $fields[0]['name']);
 	}

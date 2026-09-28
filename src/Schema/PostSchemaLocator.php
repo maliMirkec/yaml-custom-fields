@@ -72,20 +72,6 @@ class PostSchemaLocator {
   }
 
   /**
-   * The field list that applies to a post
-   *
-   * @param \WP_Post $post Post to look at
-   * @return array|null The schema's fields, or null when there is no schema
-   */
-  public function fieldsForPost($post) {
-    $schema = $this->forPost($post);
-
-    return is_array($schema) && isset($schema['fields']) && is_array($schema['fields'])
-      ? $schema['fields']
-      : null;
-  }
-
-  /**
    * The parsed schema stored for a template
    *
    * @param string $template Template file name or block template slug

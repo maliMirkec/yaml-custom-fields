@@ -49,11 +49,11 @@ if (!defined('ABSPATH')) {
       <div class="yaml-cf-fields yaml-cf-surface">
         <?php
         if (!empty($template_global_schema['fields'])) {
-          $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
+          $yaml_cf_renderer = \YamlCF\Core\Plugin::getInstance()->get('field_renderer');
           // Add template-specific ID suffix to prevent browser autocomplete conflicts between templates
           $yaml_cf_template_id_suffix = '_' . sanitize_title($template);
           $yaml_cf_context = ['type' => 'template_global', 'template' => $template, 'id_suffix' => $yaml_cf_template_id_suffix];
-          $yaml_cf_plugin->render_schema_fields($template_global_schema['fields'], $template_global_data, '', $yaml_cf_context);
+          $yaml_cf_renderer->renderFields($template_global_schema['fields'], $template_global_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('There are no shared fields yet. Create the schema first.', 'yaml-custom-fields') . '</p>';
         }

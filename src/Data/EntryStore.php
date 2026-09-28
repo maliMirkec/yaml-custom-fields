@@ -38,6 +38,15 @@ class EntryStore {
   const LEGACY_PREFIX = 'yaml_cf_data_object_entries_';
 
   /**
+   * Longest short name a collection may have
+   *
+   * An item is stored as ENTRY_PREFIX . slug . '_' . 12 hex characters, and
+   * option names hold 191 characters. MySQL truncates or rejects a longer name,
+   * and truncating cuts off the part that tells two items apart.
+   */
+  const MAX_SLUG_LENGTH = 64;
+
+  /**
    * The id => label index for a collection
    *
    * @param string $type_slug Collection slug
@@ -130,19 +139,26 @@ class EntryStore {
    * @param string $type_slug Collection slug
    * @param string $search Text to look for; empty matches everything
    * @param int $limit Most ids to return
+   * @param int $offset How many matches to skip first, for the pages after the first
    * @return array{ids: string[], total: int} Matching ids, and how many matched in all
    */
-  public function search($type_slug, $search, $limit) {
+  public function search($type_slug, $search, $limit, $offset = 0) {
     $matched = [];
 
+    // mb_ so that "želj" finds "Željko": stripos() folds ASCII letters only.
+    // WordPress does not polyfill mb_stripos(), so a host without mbstring
+    // keeps the ASCII-only match rather than failing.
+    $has_mb = function_exists('mb_stripos');
+
     foreach ($this->index($type_slug) as $entry_id => $label) {
-      if ($search === '' || stripos((string) $label, $search) !== false) {
+      $found = $has_mb ? mb_stripos((string) $label, $search, 0, 'UTF-8') : stripos((string) $label, $search);
+      if ($search === '' || $found !== false) {
         $matched[] = (string) $entry_id;
       }
     }
 
     return [
-      'ids' => $limit > 0 ? array_slice($matched, 0, $limit) : $matched,
+      'ids' => array_slice($matched, max(0, (int) $offset), $limit > 0 ? $limit : null),
       'total' => count($matched),
     ];
   }
@@ -157,14 +173,17 @@ class EntryStore {
    * @return bool
    */
   public function save($type_slug, $entry_id, $data, $label_field = '') {
-    $this->ensureMoved($type_slug);
+    return CollectionLock::run($type_slug, function () use ($type_slug, $entry_id, $data, $label_field) {
+      $this->forgetCachedIndex($type_slug);
+      $this->ensureMoved($type_slug);
 
-    update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $data, false);
+      update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $data, false);
 
-    $index = $this->index($type_slug);
-    $index[(string) $entry_id] = $this->labelFor($data, (string) $entry_id, $label_field);
+      $index = $this->index($type_slug);
+      $index[(string) $entry_id] = $this->labelFor($data, (string) $entry_id, $label_field);
 
-    return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+      return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+    });
   }
 
   /**
@@ -175,14 +194,17 @@ class EntryStore {
    * @return bool
    */
   public function delete($type_slug, $entry_id) {
-    $this->ensureMoved($type_slug);
+    return CollectionLock::run($type_slug, function () use ($type_slug, $entry_id) {
+      $this->forgetCachedIndex($type_slug);
+      $this->ensureMoved($type_slug);
 
-    delete_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id));
+      delete_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id));
 
-    $index = $this->index($type_slug);
-    unset($index[(string) $entry_id]);
+      $index = $this->index($type_slug);
+      unset($index[(string) $entry_id]);
 
-    return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+      return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+    });
   }
 
   /**
@@ -195,14 +217,18 @@ class EntryStore {
    * @return bool
    */
   public function deleteAll($type_slug) {
-    foreach (array_keys($this->index($type_slug)) as $entry_id) {
-      delete_option(self::ENTRY_PREFIX . $this->key($type_slug, (string) $entry_id));
-    }
+    return CollectionLock::run($type_slug, function () use ($type_slug) {
+      $this->forgetCachedIndex($type_slug);
 
-    delete_option(self::INDEX_PREFIX . $type_slug);
-    delete_option(self::LEGACY_PREFIX . $type_slug);
+      foreach (array_keys($this->index($type_slug)) as $entry_id) {
+        delete_option(self::ENTRY_PREFIX . $this->key($type_slug, (string) $entry_id));
+      }
 
-    return true;
+      delete_option(self::INDEX_PREFIX . $type_slug);
+      delete_option(self::LEGACY_PREFIX . $type_slug);
+
+      return true;
+    });
   }
 
   /**
@@ -214,16 +240,18 @@ class EntryStore {
    * @return bool
    */
   public function replaceAll($type_slug, array $entries, $label_field = '') {
-    $this->deleteAll($type_slug);
+    return CollectionLock::run($type_slug, function () use ($type_slug, $entries, $label_field) {
+      $this->deleteAll($type_slug);
 
-    $index = [];
-    foreach ($entries as $entry_id => $entry) {
-      $entry_id = (string) $entry_id;
-      update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $entry, false);
-      $index[$entry_id] = $this->labelFor($entry, $entry_id, $label_field);
-    }
+      $index = [];
+      foreach ($entries as $entry_id => $entry) {
+        $entry_id = (string) $entry_id;
+        update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $entry, false);
+        $index[$entry_id] = $this->labelFor($entry, $entry_id, $label_field);
+      }
 
-    return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+      return update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+    });
   }
 
   /**
@@ -236,23 +264,59 @@ class EntryStore {
    * @return int How many items were moved
    */
   public function ensureMoved($type_slug, $label_field = '') {
-    if (is_array(get_option(self::INDEX_PREFIX . $type_slug, null))) {
-      return 0;
+    return CollectionLock::run($type_slug, function () use ($type_slug, $label_field) {
+      $this->forgetCachedIndex($type_slug);
+
+      if (is_array(get_option(self::INDEX_PREFIX . $type_slug, null))) {
+        return 0;
+      }
+
+      $legacy = $this->legacyEntries($type_slug);
+
+      $index = [];
+      foreach ($legacy as $entry_id => $entry) {
+        $entry_id = (string) $entry_id;
+        update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $entry, false);
+        $index[$entry_id] = $this->labelFor($entry, $entry_id, $label_field);
+      }
+
+      update_option(self::INDEX_PREFIX . $type_slug, $index, false);
+      delete_option(self::LEGACY_PREFIX . $type_slug);
+
+      return count($index);
+    });
+  }
+
+  /**
+   * Forget this request's copy of a collection's index
+   *
+   * Called with the lock held, so that the list read next is the one the last
+   * save wrote, not one this request read before that save finished.
+   *
+   * @param string $type_slug Collection slug
+   * @return void
+   */
+  private function forgetCachedIndex($type_slug) {
+    $names = [self::INDEX_PREFIX . $type_slug, self::LEGACY_PREFIX . $type_slug];
+
+    foreach ($names as $name) {
+      wp_cache_delete($name, 'options');
     }
 
-    $legacy = $this->legacyEntries($type_slug);
-
-    $index = [];
-    foreach ($legacy as $entry_id => $entry) {
-      $entry_id = (string) $entry_id;
-      update_option(self::ENTRY_PREFIX . $this->key($type_slug, $entry_id), $entry, false);
-      $index[$entry_id] = $this->labelFor($entry, $entry_id, $label_field);
+    // WordPress also remembers which options it found missing
+    $notoptions = wp_cache_get('notoptions', 'options');
+    if (is_array($notoptions)) {
+      $changed = false;
+      foreach ($names as $name) {
+        if (isset($notoptions[$name])) {
+          unset($notoptions[$name]);
+          $changed = true;
+        }
+      }
+      if ($changed) {
+        wp_cache_set('notoptions', $notoptions, 'options');
+      }
     }
-
-    update_option(self::INDEX_PREFIX . $type_slug, $index, false);
-    delete_option(self::LEGACY_PREFIX . $type_slug);
-
-    return count($index);
   }
 
   /**

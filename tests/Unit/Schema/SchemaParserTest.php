@@ -92,50 +92,6 @@ class SchemaParserTest extends TestCase {
 	}
 
 	/**
-	 * Test parseWithError returns success for valid YAML
-	 */
-	public function testParseWithErrorReturnsSuccessForValidYaml() {
-		$yaml = "fields:\n" .
-			"  - name: title\n" .
-			"    type: string\n";
-
-		$result = $this->parser->parseWithError($yaml);
-
-		$this->assertIsArray($result);
-		$this->assertTrue($result['success']);
-		$this->assertIsArray($result['data']);
-		$this->assertNull($result['error']);
-	}
-
-	/**
-	 * Test parseWithError returns error for invalid YAML
-	 */
-	public function testParseWithErrorReturnsErrorForInvalidYaml() {
-		$yaml = "invalid:\n\tyaml:\nstructure";
-
-		$result = $this->parser->parseWithError($yaml);
-
-		$this->assertIsArray($result);
-		$this->assertFalse($result['success']);
-		$this->assertNull($result['data']);
-		$this->assertIsString($result['error']);
-		$this->assertNotEmpty($result['error']);
-	}
-
-	/**
-	 * Test parseWithError structure
-	 */
-	public function testParseWithErrorHasCorrectStructure() {
-		$yaml = "test: value";
-
-		$result = $this->parser->parseWithError($yaml);
-
-		$this->assertArrayHasKey('success', $result);
-		$this->assertArrayHasKey('data', $result);
-		$this->assertArrayHasKey('error', $result);
-	}
-
-	/**
 	 * Test parsing YAML with arrays
 	 */
 	public function testParsesArrayValues() {

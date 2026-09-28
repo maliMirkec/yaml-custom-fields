@@ -131,23 +131,6 @@ class SectionGrouperTest extends TestCase {
 	}
 
 	/**
-	 * Test stripSections leaves only fields that hold data
-	 */
-	public function testStripSections() {
-		$fields = $this->normalizer->normalizeAll([
-			['name' => 'title', 'type' => 'string'],
-			['section' => 'Contact details'],
-			['name' => 'email', 'type' => 'string'],
-		]);
-
-		$stripped = $this->grouper->stripSections($fields);
-
-		$this->assertCount(2, $stripped);
-		$this->assertEquals('title', $stripped[0]['name']);
-		$this->assertEquals('email', $stripped[1]['name']);
-	}
-
-	/**
 	 * Test an empty field list groups into nothing
 	 */
 	public function testEmptyFieldsProduceNoGroups() {

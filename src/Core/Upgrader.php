@@ -19,6 +19,11 @@ class Upgrader {
   const VERSION_OPTION = 'yaml_cf_db_version';
 
   /**
+   * Set while an upgrade runs, so a second page load does not start another
+   */
+  const RUNNING_TRANSIENT = 'yaml_cf_upgrading';
+
+  /**
    * The version the current code expects.
    *
    * 1: everything up to 1.2.9.
@@ -60,6 +65,13 @@ class Upgrader {
       return;
     }
 
+    // Another page load is already doing it: two administrators, or two tabs.
+    // Every step is safe to repeat, so this only saves doing it twice at once.
+    if (get_transient(self::RUNNING_TRANSIENT)) {
+      return;
+    }
+    set_transient(self::RUNNING_TRANSIENT, 1, 10 * MINUTE_IN_SECONDS);
+
     if ($installed < 2) {
       $this->stopAutoloadingOptions();
     }
@@ -77,6 +89,7 @@ class Upgrader {
     }
 
     update_option(self::VERSION_OPTION, self::CURRENT_VERSION, false);
+    delete_transient(self::RUNNING_TRANSIENT);
   }
 
   /**
@@ -244,46 +257,9 @@ class Upgrader {
       return;
     }
 
-    // WordPress 6.4 and newer can set them all in one go
-    if (function_exists('wp_set_option_autoload_values')) {
-      wp_set_option_autoload_values(array_fill_keys($existing, false));
-      return;
-    }
-
-    foreach ($existing as $option) {
-      $this->stopAutoloadingOption($option);
-    }
-  }
-
-  /**
-   * Stop one option being autoloaded, on WordPress versions with no API for it
-   *
-   * Writing to the options table directly is not allowed in this plugin, so the
-   * value is read, removed and put back with autoloading switched off. It is
-   * read back afterwards, and put back as it was if anything went wrong, so a
-   * failure cannot leave the option missing.
-   *
-   * @param string $option Option name
-   * @return void
-   */
-  private function stopAutoloadingOption($option) {
-    if (function_exists('wp_set_option_autoload')) {
-      wp_set_option_autoload($option, false);
-      return;
-    }
-
-    $value = get_option($option, null);
-    if ($value === null) {
-      return;
-    }
-
-    if (!delete_option($option)) {
-      return;
-    }
-
-    if (!add_option($option, $value, '', false)) {
-      // Put it back rather than lose it
-      add_option($option, $value);
-    }
+    // In one go, with the API WordPress 6.4 added. Earlier versions needed
+    // each option deleted and added back, which lost the option if the
+    // request died in between.
+    wp_set_option_autoload_values(array_fill_keys($existing, false));
   }
 }

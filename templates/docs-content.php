@@ -162,7 +162,7 @@ if (!defined('ABSPATH')) {
   type: code
   options:
     language: html</code></pre>
-<p>Scripts are kept only when an administrator saves the page. For everyone else, unsafe code is removed on save. See <a href="#safety">Safety</a>.</p>
+<p>Scripts are kept only when an administrator saves the page. For everyone else, unsafe code is removed on save, and a field with <code>language: js</code> is emptied, because none of a script can be kept safely. See <a href="#safety">Safety</a>.</p>
 
 <h3>Yes or no: <code>boolean</code></h3>
 <p>A tick box.</p>
@@ -492,7 +492,12 @@ if (!defined('ABSPATH')) {
   &lt;p&gt;&lt;?php echo esc_html($speaker['name']); ?&gt;&lt;/p&gt;
 &lt;?php endif; ?&gt;
 
-&lt;?php // Every item in a list ?&gt;
+&lt;?php // A field with list: true returns the chosen items, in order ?&gt;
+&lt;?php foreach ((array) ycf_get_data_object('speakers') as $speaker) : ?&gt;
+  &lt;li&gt;&lt;?php echo esc_html($speaker['name']); ?&gt;&lt;/li&gt;
+&lt;?php endforeach; ?&gt;
+
+&lt;?php // Every item in a collection ?&gt;
 &lt;?php foreach (ycf_get_data_objects('team-members') as $member) : ?&gt;
   &lt;li&gt;&lt;?php echo esc_html($member['name']); ?&gt;&lt;/li&gt;
 &lt;?php endforeach; ?&gt;</code></pre>
@@ -523,7 +528,7 @@ if (!defined('ABSPATH')) {
     <tr><td><code>ycf_get_file('name')</code></td><td>A file with its link, name and size</td></tr>
     <tr><td><code>ycf_get_term('name')</code></td><td>The chosen category or tag</td></tr>
     <tr><td><code>ycf_get_post_type('name')</code></td><td>The chosen kind of content</td></tr>
-    <tr><td><code>ycf_get_data_object('name')</code></td><td>The chosen item from a collection</td></tr>
+    <tr><td><code>ycf_get_data_object('name')</code></td><td>The chosen item from a collection, or a list of items when the field has <code>list: true</code></td></tr>
     <tr><td><code>ycf_get_data_objects('short-name')</code></td><td>Every item in a collection</td></tr>
     <tr><td><code>ycf_get_global_field('name')</code></td><td>One of the site details</td></tr>
     <tr><td><code>ycf_get_global_fields()</code></td><td>All site details</td></tr>
@@ -598,7 +603,7 @@ if (!defined('ABSPATH')) {
 
   <h3>Requirements</h3>
   <ul>
-    <li>WordPress 5.0 or newer</li>
+    <li>WordPress 6.4 or newer</li>
     <li>PHP 8.1 or newer</li>
     <li>Includes the Symfony YAML component 6.4 (MIT license), scoped to avoid conflicts</li>
   </ul>
@@ -610,7 +615,7 @@ if (!defined('ABSPATH')) {
     <li>Site parts: option <code>yaml_cf_partial_data</code>.</li>
     <li>Shared fields: options <code>yaml_cf_template_global_schemas</code> and <code>yaml_cf_template_global_data</code>.</li>
     <li>Site details: options <code>yaml_cf_global_schema</code> and <code>yaml_cf_global_data</code>.</li>
-    <li>Collections: option <code>yaml_cf_data_object_types</code>, items in <code>yaml_cf_data_object_entries_{short-name}</code>.</li>
+    <li>Collections: option <code>yaml_cf_data_object_types</code>, each item in its own <code>yaml_cf_do_entry_{short-name}_{hash}</code>, with a list of items in <code>yaml_cf_do_index_{short-name}</code>. Read them with <code>yaml_cf_get_data_objects()</code> rather than from the options.</li>
   </ul>
   <p>Image and file fields store attachment IDs. Code fields are stored base64-encoded and decoded by the functions above.</p>
   <p>None of these options are loaded on every page view. They are read when something asks for them.</p>
@@ -628,8 +633,8 @@ if (!defined('ABSPATH')) {
   </ul>
   <p>Sending a <code>yaml_cf</code> object back to a page saves it. Only the fields named in the request change; the rest are left alone. Whoever sends it has to be allowed to edit that page, and what they send is cleaned exactly as the editor cleans it.</p>
   <p>A page that is not published is not readable without permission, and neither are its fields.</p>
-  <p>Site details and collections can be read without logging in, because they hold content this plugin puts into public pages. To require a logged-in editor instead:</p>
-  <pre><code>add_filter('yaml_cf_rest_public_read', '__return_false');</code></pre>
+  <p>Site details and collections need a logged-in user who can edit posts. To let anyone read them, tick <strong>Let anyone read the site details and collections</strong> under REST API on the plugin's main screen. Leave it unticked if any site detail or collection item should stay private: every item becomes readable, including ones no page shows. Code can decide instead, and wins over the setting:</p>
+  <pre><code>add_filter('yaml_cf_rest_public_read', '__return_true');</code></pre>
 
   <h3>Function signatures</h3>
   <pre><code>ycf_get_field($field_name, $post_id = null, $context_data = null)

@@ -18,12 +18,12 @@ if (!defined('ABSPATH')) {
 // - $entries_paged: Which page is being shown
 
 $yaml_cf_type_slug = $type_id;
-$yaml_cf_entry_id = YAML_Custom_Fields::get_param('entry', ''); // Use get_param to preserve periods in entry IDs
-$yaml_cf_action = YAML_Custom_Fields::get_param_key('action', 'list');
+$yaml_cf_entry_id = \YamlCF\Helpers\RequestHelper::getParam('entry', ''); // getParam() rather than getParamKey(): entry IDs can contain periods
+$yaml_cf_action = \YamlCF\Helpers\RequestHelper::getParamKey('action', 'list');
 $yaml_cf_type_name = $type_name;
 $yaml_cf_schema = $schema;
 $yaml_cf_entries = $entries;
-$yaml_cf_plugin = YAML_Custom_Fields::get_instance();
+$yaml_cf_renderer = \YamlCF\Core\Plugin::getInstance()->get('field_renderer');
 
 // The list is paged, so every link away from it and back carries the page being
 // worked on. Without this, editing or cancelling on page seven lands on page one.
@@ -140,8 +140,9 @@ if ($yaml_cf_action === 'edit') {
                   <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . '&action=edit&entry=' . rawurlencode($yaml_cf_entry_id) . $yaml_cf_paged_arg)); ?>" class="button">
                     <?php esc_html_e('Edit', 'yaml-custom-fields'); ?>
                   </a>
-                  <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php esc_attr_e('Delete this item? This cannot be undone.', 'yaml-custom-fields'); ?>');">
-                    <?php wp_nonce_field('yaml_cf_delete_entry', 'yaml_cf_delete_entry_nonce'); ?>
+                  <form method="post" class="yaml-cf-inline-form" data-confirm="<?php esc_attr_e('Delete this item? This cannot be undone.', 'yaml-custom-fields'); ?>">
+                    <?php // One form per row: printed without wp_nonce_field()'s id, which would repeat on every row ?>
+                    <input type="hidden" name="yaml_cf_delete_entry_nonce" value="<?php echo esc_attr(wp_create_nonce('yaml_cf_delete_entry')); ?>" />
                     <input type="hidden" name="entry_id" value="<?php echo esc_attr($yaml_cf_entry_id); ?>" />
                     <button type="submit" class="button button-link-delete"><?php esc_html_e('Delete', 'yaml-custom-fields'); ?></button>
                   </form>
@@ -194,7 +195,7 @@ if ($yaml_cf_action === 'edit') {
           <?php
           if (!empty($yaml_cf_schema['fields'])) {
             $yaml_cf_context = ['type' => 'data_object', 'object_type' => $yaml_cf_type_slug];
-            $yaml_cf_plugin->render_schema_fields($yaml_cf_schema['fields'], $yaml_cf_entry_data, '', $yaml_cf_context);
+            $yaml_cf_renderer->renderFields($yaml_cf_schema['fields'], $yaml_cf_entry_data, '', $yaml_cf_context);
           } else {
             echo '<p>' . esc_html__('This schema has no fields yet. Add fields to the schema first.', 'yaml-custom-fields') . '</p>';
           }

@@ -29,7 +29,7 @@ This guide provides comprehensive manual testing procedures for the admin JavaSc
 ## Pre-Testing Setup
 
 ### Required Environment
-- [ ] WordPress 5.0+ installed
+- [ ] WordPress 6.4+ installed
 - [ ] Plugin activated
 - [ ] At least one theme template with YAML schema defined
 - [ ] Test post/page created

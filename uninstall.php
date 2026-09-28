@@ -44,18 +44,22 @@ function yaml_cf_uninstall_site() {
     'yaml_cf_tracked_posts',
     'yaml_cf_db_version',
     'yaml_cf_keep_data_on_uninstall',
+    'yaml_cf_clear_post_caches_on_site_save',
+    'yaml_cf_rest_public_read',
   );
   foreach ( $yaml_cf_options as $yaml_cf_option ) {
     delete_option( $yaml_cf_option );
   }
 
   // Collection items: one option per item since 2.0.0, plus the index beside
-  // them, plus the single option each collection used to keep them all in.
+  // them, plus the single option each collection used to keep them all in, plus
+  // any lock row a save that died never released.
   // Direct SQL is required to find dynamic option names (documented exception in Rule #5)
   $yaml_cf_entry_prefixes = array(
     'yaml_cf_do_entry_',
     'yaml_cf_do_index_',
     'yaml_cf_data_object_entries_',
+    'yaml_cf_do_lock_',
   );
   foreach ( $yaml_cf_entry_prefixes as $yaml_cf_prefix ) {
     $yaml_cf_entry_options = $wpdb->get_col(

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 // - $show_getting_started : bool - Show first-run guidance
 // - $theme_kind : array - name, is_block, is_child, parent of the active theme
 // - $keep_data_on_uninstall : bool - Whether deleting the plugin keeps the content
+// - $rest_public_read : bool - Whether site details and collections are public over the REST API
 
 $yaml_cf_admin_url = function ($page, $template = null) {
   $args = ['page' => $page];
@@ -347,6 +348,66 @@ $yaml_cf_empty_reason = function ($kind, $what) {
           </tbody>
         </table>
       <?php endif; ?>
+    </section>
+
+    <!-- Page caches after site-wide content is saved -->
+    <section class="yaml-cf-card yaml-cf-uninstall-card" aria-labelledby="yaml-cf-caches-title">
+      <div class="yaml-cf-card-title-row">
+        <h2 id="yaml-cf-caches-title">
+          <span class="dashicons dashicons-update" aria-hidden="true"></span>
+          <?php esc_html_e('Page caches', 'yaml-custom-fields'); ?>
+        </h2>
+      </div>
+      <div class="yaml-cf-card-body">
+        <p>
+          <?php esc_html_e('Site details, shared content and site parts show on many pages at once. When they are saved, the plugin can clear the cache of every page that has fields, so a caching plugin shows the new content straight away.', 'yaml-custom-fields'); ?>
+        </p>
+        <form method="post" action="">
+          <?php wp_nonce_field('yaml_cf_clear_caches', 'yaml_cf_clear_caches_nonce'); ?>
+          <p>
+            <label>
+              <input type="checkbox" name="yaml_cf_clear_caches" value="1" <?php checked($clear_post_caches); ?> />
+              <?php esc_html_e('Clear the cache of every page with fields when site-wide content is saved', 'yaml-custom-fields'); ?>
+            </label>
+          </p>
+          <p class="yaml-cf-hint">
+            <?php esc_html_e('On a site with thousands of pages this makes each save slower. Untick it if saving is slow and the caching plugin is purged some other way.', 'yaml-custom-fields'); ?>
+          </p>
+          <p>
+            <button type="submit" class="button"><?php esc_html_e('Save this choice', 'yaml-custom-fields'); ?></button>
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <!-- Who can read site-wide content over the REST API -->
+    <section class="yaml-cf-card yaml-cf-rest-card" aria-labelledby="yaml-cf-rest-title">
+      <div class="yaml-cf-card-title-row">
+        <h2 id="yaml-cf-rest-title">
+          <span class="dashicons dashicons-rest-api" aria-hidden="true"></span>
+          <?php esc_html_e('REST API', 'yaml-custom-fields'); ?>
+        </h2>
+      </div>
+      <div class="yaml-cf-card-body">
+        <p>
+          <?php esc_html_e('Other software, such as a front end built in JavaScript or a mobile app, can read the site details and collections over the WordPress REST API. Each page\'s fields are readable wherever the page itself is.', 'yaml-custom-fields'); ?>
+        </p>
+        <form method="post" action="">
+          <?php wp_nonce_field('yaml_cf_rest_access', 'yaml_cf_rest_access_nonce'); ?>
+          <p>
+            <label>
+              <input type="checkbox" name="yaml_cf_rest_public_read" value="1" <?php checked($rest_public_read); ?> />
+              <?php esc_html_e('Let anyone read the site details and collections, without logging in', 'yaml-custom-fields'); ?>
+            </label>
+          </p>
+          <p class="yaml-cf-hint">
+            <?php esc_html_e('Every item of every collection becomes readable, including items no page shows, and every site detail, including ones no page shows. Leave it unticked if any of them should stay private. Unticked, reading them needs a logged-in user who can edit posts.', 'yaml-custom-fields'); ?>
+          </p>
+          <p>
+            <button type="submit" class="button"><?php esc_html_e('Save this choice', 'yaml-custom-fields'); ?></button>
+          </p>
+        </form>
+      </div>
     </section>
 
     <!-- What happens if the plugin is deleted -->

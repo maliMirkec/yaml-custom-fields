@@ -1,48 +1,40 @@
 <?php
 
+/**
+ * Code Renderer
+ * A monospaced text box for HTML, CSS or script
+ */
+
 namespace YamlCF\Rendering\FieldRenderers;
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use YamlCF\Helpers\CodeFieldCodec;
 use YamlCF\Rendering\BaseFieldRenderer;
+use YamlCF\Rendering\BlockFieldRendererInterface;
 
-class CodeRenderer extends BaseFieldRenderer {
-  public function render($field, $value, $context) {
-    $field_id = $this->getFieldId($field['name'], $context);
-    $this->renderLabel($field, $context);
-    $options = isset($field['options']) ? $field['options'] : [];
-    $language = isset($options['language']) ? $options['language'] : 'html';
+class CodeRenderer extends BaseFieldRenderer implements BlockFieldRendererInterface {
+  public function render($field, $value, $state) {
+    // Stored base64-encoded; the writer edits the code itself
+    $value = CodeFieldCodec::decode($value);
+    echo '<textarea name="yaml_cf[' . esc_attr($state['field_name']) . ']" id="' . esc_attr($state['field_id']) . '" rows="10" class="large-text code" data-language="' . esc_attr($this->language($field)) . '">' . esc_textarea($value) . '</textarea>';
+  }
 
-    // Decode base64 encoded code field value for display
-    $value = $this->decodeCodeField($value);
-
-    echo '<textarea name="' . esc_attr($this->getInputName($field['name'], $context)) . '" id="' . esc_attr($field_id) . '" rows="10" class="large-text code" data-language="' . esc_attr($language) . '">' . esc_textarea($value) . '</textarea>';
+  public function renderInBlock($field, $value, $state) {
+    // Stored encoded inside a block as well; this used to show the encoded form
+    $value = CodeFieldCodec::decode($value);
+    echo '<textarea name="' . esc_attr($this->blockInputName($state)) . '" id="' . esc_attr($state['field_id']) . '" rows="10" class="large-text code" data-language="' . esc_attr($this->language($field)) . '"' . disabled($state['readonly'], true, false) . '>' . esc_textarea($value) . '</textarea>';
   }
 
   /**
-   * Decode a code field value that may be base64 encoded.
-   *
-   * @param string $value The value to decode.
-   * @return string The decoded value.
+   * @param array $field Field definition
+   * @return string The language named in the schema, html by default
    */
-  private function decodeCodeField($value) {
-    if (empty($value) || !is_string($value)) {
-      return '';
-    }
-
-    // Check for marker prefix
-    $marker = '__YAMLCF_B64__';
-    if (strpos($value, $marker) === 0) {
-      $encoded = substr($value, strlen($marker));
-      $decoded = base64_decode($encoded, true);
-      if ($decoded !== false) {
-        return $decoded;
-      }
-    }
-
-    // Return as-is if not encoded (legacy data)
-    return $value;
+  private function language($field) {
+    $options = isset($field['options']) ? $field['options'] : [];
+    return isset($options['language']) ? $options['language'] : 'html';
   }
 }

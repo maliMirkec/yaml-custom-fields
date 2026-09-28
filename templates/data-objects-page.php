@@ -52,8 +52,9 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
       <tbody>
         <?php foreach ($yaml_cf_data_object_types as $yaml_cf_slug => $yaml_cf_type) : ?>
           <?php
-          $yaml_cf_entries = get_option('yaml_cf_data_object_entries_' . $yaml_cf_slug, []);
-          $yaml_cf_entry_count = count($yaml_cf_entries);
+          // Counted from the collection's index. The option read here before held
+          // every item until 2.0.0 split them apart, so it now reads as empty.
+          $yaml_cf_entry_count = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->countEntries((string) $yaml_cf_slug);
           $yaml_cf_has_schema = !empty($yaml_cf_type['schema']);
           ?>
           <tr>
@@ -75,15 +76,21 @@ $yaml_cf_data_object_types = get_option('yaml_cf_data_object_types', []);
               <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_slug))); ?>" class="button">
                 <?php esc_html_e('Edit items', 'yaml-custom-fields'); ?>
               </a>
-              <form method="post" class="yaml-cf-inline-form" onsubmit="return confirm('<?php
+              <form method="post" class="yaml-cf-inline-form" data-confirm="<?php
                 echo esc_attr(sprintf(
                   /* translators: %1$s: collection name, %2$d: number of entries */
-                  __('Delete the collection "%1$s" and all %2$d items? This cannot be undone.', 'yaml-custom-fields'),
+                  _n(
+                    'Delete the collection "%1$s" and its %2$d item? This cannot be undone.',
+                    'Delete the collection "%1$s" and all %2$d items? This cannot be undone.',
+                    $yaml_cf_entry_count,
+                    'yaml-custom-fields'
+                  ),
                   $yaml_cf_type['name'],
                   $yaml_cf_entry_count
                 ));
-              ?>');">
-                <?php wp_nonce_field('yaml_cf_delete_type', 'yaml_cf_delete_type_nonce'); ?>
+              ?>">
+                <?php // One form per row: printed without wp_nonce_field()'s id, which would repeat on every row ?>
+                <input type="hidden" name="yaml_cf_delete_type_nonce" value="<?php echo esc_attr(wp_create_nonce('yaml_cf_delete_type')); ?>" />
                 <input type="hidden" name="type_slug" value="<?php echo esc_attr($yaml_cf_slug); ?>" />
                 <button type="submit" class="button button-link-delete"><?php esc_html_e('Delete', 'yaml-custom-fields'); ?></button>
               </form>

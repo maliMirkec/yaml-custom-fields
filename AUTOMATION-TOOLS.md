@@ -78,12 +78,7 @@ php composer.phar test:unit
 vendor/bin/phpunit tests/Unit/Helpers/MarkdownParserTest.php
 ```
 
-**Coverage:**
-- 120 tests
-- 258 assertions
-- Helpers (40 tests)
-- Schema components (45 tests)
-- Form/Security (35 tests)
+**Coverage:** 254 unit tests (`composer test`, no WordPress needed) and 483 integration tests (`composer test:integration`, against a real WordPress). See `tests/Integration/README.md` for running the integration suite.
 
 ---
 
@@ -381,6 +376,6 @@ jobs:
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Test Coverage:** 120 tests, 258 assertions
+**Last Updated:** 2026-09-26
+**Plugin Version:** 2.0.0
+**Test Coverage:** 254 unit and 483 integration tests

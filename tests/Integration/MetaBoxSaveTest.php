@@ -147,6 +147,52 @@ YAML;
 		$this->assertSame('Current banner', ycf_get_fields($post_id)['banner']);
 	}
 
+	/**
+	 * The classic editor saves through wp_update_post() with the form still in
+	 * $_POST, so save_post fires again for the revision WordPress creates after
+	 * the post. That pass must not touch the post's fields.
+	 */
+	public function testSavingWithARevisionKeepsRichTextAndRemovedFields() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$post_id = $this->createTestPost(['post_content' => 'Before']);
+		update_post_meta($post_id, '_yaml_cf_data', ['dropped_field' => 'Still here']);
+
+		$_POST = wp_slash([
+			'yaml_cf_meta_box_nonce' => wp_create_nonce('yaml_cf_meta_box'),
+			'yaml_cf' => ['title' => 'Hello', 'body' => '<p><strong>Bold</strong></p>'],
+		]);
+		wp_update_post(['ID' => $post_id, 'post_content' => 'After']);
+
+		$this->assertNotEmpty(wp_get_post_revisions($post_id), 'The update created a revision.');
+		$stored = get_post_meta($post_id, '_yaml_cf_data', true);
+		$this->assertSame('<p><strong>Bold</strong></p>', $stored['body']);
+		$this->assertSame('Still here', $stored['dropped_field'] ?? null);
+		$this->assertSame([$post_id], array_values(get_option('yaml_cf_tracked_posts', [])), 'Only the post is tracked, not its revision.');
+	}
+
+	/**
+	 * Choosing another template and saving in one go posts the old template's
+	 * fields. Those the new schema lacks keep their formatting; those it has
+	 * still follow the new schema.
+	 */
+	public function testSwitchingTemplateKeepsTheOldTemplatesRichText() {
+		update_option('yaml_cf_schemas', [
+			'single.php' => self::SCHEMA,
+			'template-old.php' => "fields:\n  - name: intro\n    type: rich-text\n  - name: title\n    type: rich-text\n",
+		]);
+		$this->actingAs($this->createTestUser('administrator'));
+		$post_id = $this->createTestPost();
+
+		$this->submit($post_id, [
+			'intro' => '<p><em>Kept</em></p>',
+			'title' => '<b>Plain now</b>',
+		], ['yaml_cf_rendered_template' => 'template-old.php']);
+
+		$stored = get_post_meta($post_id, '_yaml_cf_data', true);
+		$this->assertSame('<p><em>Kept</em></p>', $stored['intro']);
+		$this->assertSame('Plain now', $stored['title'], 'A field the new schema has follows the new schema.');
+	}
+
 	public function testInvalidNonceSavesNothing() {
 		$this->actingAs($this->createTestUser('administrator'));
 		$post_id = $this->createTestPost();

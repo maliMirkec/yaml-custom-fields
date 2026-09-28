@@ -13,17 +13,17 @@ use YamlCF\Helpers\RequestHelper;
  * Controller for managing global data
  */
 class GlobalDataController extends AdminController {
-  private $schemaStorage;
+  private $schemaParser;
 
-  public function __construct($schemaStorage) {
-    $this->schemaStorage = $schemaStorage;
+  public function __construct($schemaParser) {
+    $this->schemaParser = $schemaParser;
   }
 
   public function render() {
     $this->checkPermission();
 
     $global_schema_yaml = get_option('yaml_cf_global_schema', '');
-    $global_schema = $this->schemaStorage->parseSchema($global_schema_yaml);
+    $global_schema = $this->schemaParser->parse($global_schema_yaml);
 
     if (!$global_schema || !isset($global_schema['fields'])) {
       wp_safe_redirect(admin_url('admin.php?page=yaml-cf-edit-global-schema'));

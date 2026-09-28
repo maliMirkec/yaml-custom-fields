@@ -7,7 +7,6 @@
 
 namespace YamlCF\Core;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -35,6 +34,15 @@ class HookManager {
     // Bring stored data up to date before any screen reads it
     add_action('admin_init', [$this, 'maybeUpgrade'], 1);
 
+    // The admin screens' forms and download links, before anything is printed
+    $this->registerFormHooks();
+
+    // The "Custom fields" box in the post editor
+    $this->registerPostEditorHooks();
+
+    // Values worked out for this request, forgotten when what they are built from changes
+    $this->registerResolvedFieldHooks();
+
     // Field content over the REST API, for front ends and other software
     add_action('rest_api_init', [$this, 'registerRestApi']);
 
@@ -44,12 +52,16 @@ class HookManager {
     // Admin menu and assets
     add_action('admin_menu', [$this, 'registerAdminMenu']);
     add_action('admin_init', [$this, 'hideSubmenuItems']);
+
+    // Content Check: remove values before any notice is printed
+    add_action('admin_init', [$this, 'handleValidationSubmissions']);
+
+    // Choices on the main screen, saved before any notice is printed
+    add_action('admin_init', [$this, 'handleMainScreenSubmissions']);
     add_action('admin_enqueue_scripts', [$this, 'enqueueAdminAssets']);
 
     // Menu customization
     add_filter('admin_title', [$this, 'customizeAdminTitle'], 10, 2);
-    add_filter('parent_file', [$this, 'setParentFile']);
-    add_filter('submenu_file', [$this, 'setSubmenuFile']);
 
     // AJAX handlers
     $this->registerAjaxHandlers();
@@ -68,6 +80,98 @@ class HookManager {
   }
 
   /**
+   * The admin screens' forms and download links
+   *
+   * Each handler ignores any request that is not its own form's, so running
+   * them all on every admin request costs a few isset() checks.
+   *
+   * @return void
+   */
+  private function registerFormHooks() {
+    $forms = function () {
+      return $this->plugin->get('form_handler');
+    };
+
+    add_action('admin_init', function () use ($forms) {
+      $forms()->handleSubmissions();
+    });
+    add_action('admin_init', function () use ($forms) {
+      $forms()->exports()->singlePost();
+    });
+    add_action('admin_init', function () use ($forms) {
+      $forms()->exports()->settings();
+    });
+    add_action('admin_init', function () use ($forms) {
+      $forms()->exports()->pageData();
+    });
+    add_action('admin_init', function () use ($forms) {
+      $forms()->exports()->dataObjects();
+    });
+    add_action('admin_init', function () use ($forms) {
+      $forms()->handleDataObjectSubmissions();
+    });
+  }
+
+  /**
+   * Show the custom fields box, and save it with the post
+   *
+   * The block editor gets a real meta box (add_meta_boxes); the classic editor
+   * prints the same box above the content (edit_form_after_title), which the
+   * block editor never fires. Either way the box posts yaml_cf[...] with the
+   * post and is saved on save_post.
+   *
+   * @return void
+   */
+  private function registerPostEditorHooks() {
+    add_action('add_meta_boxes', function ($post_type, $post = null) {
+      $this->plugin->get('meta_box')->register($post_type, $post);
+    }, 10, 2);
+
+    add_action('edit_form_after_title', function ($post) {
+      $this->plugin->get('meta_box')->renderAfterTitle($post);
+    });
+
+    add_action('save_post', function ($post_id) {
+      $this->plugin->get('meta_box_saver')->save($post_id);
+    });
+
+    // A deleted post no longer needs its caches cleared
+    add_action('delete_post', function ($post_id) {
+      \YamlCF\Cache\PostTracker::untrack($post_id);
+    });
+  }
+
+  /**
+   * Keep the per-request memo of field values honest
+   *
+   * Any code that writes the meta or options values are built from, an
+   * importer or another plugin included, makes the next read start afresh.
+   *
+   * @return void
+   */
+  private function registerResolvedFieldHooks() {
+    $flush_for_meta = function ($meta_id, $object_id, $meta_key) {
+      $this->plugin->get('field_resolver')->flushForMeta($meta_id, $object_id, $meta_key);
+    };
+    add_action('added_post_meta', $flush_for_meta, 10, 3);
+    add_action('updated_post_meta', $flush_for_meta, 10, 3);
+    add_action('deleted_post_meta', $flush_for_meta, 10, 3);
+
+    $flush_for_option = function ($option) {
+      $this->plugin->get('field_resolver')->flushForOption($option);
+    };
+    add_action('updated_option', $flush_for_option);
+    add_action('added_option', $flush_for_option);
+    add_action('deleted_option', $flush_for_option);
+
+    // A new theme has other templates, so every post's values may change. This
+    // used to pass the theme's name on as a post ID, which forgot "post 0" only.
+    add_action('switch_theme', function () {
+      $this->plugin->get('field_resolver')->flush();
+    });
+  }
+
+  /**
    * Add the [ycf] shortcode
    */
   public function registerShortcode() {
@@ -82,9 +186,18 @@ class HookManager {
   }
 
   /**
-   * Run any pending data upgrade
+   * Run any pending data upgrade, on an administrator's page load
+   *
+   * admin_init also fires for every admin-ajax.php request, logged out ones
+   * included, and front-end plugins make those all the time. The one-off
+   * upgrade used to run in whichever came first, so a visitor's request could
+   * end up moving every collection item, and several at once could start it.
    */
   public function maybeUpgrade() {
+    if (wp_doing_ajax() || !current_user_can('manage_options')) {
+      return;
+    }
+
     $this->plugin->get('upgrader')->maybeUpgrade();
   }
 
@@ -120,6 +233,29 @@ class HookManager {
   }
 
   /**
+   * Handle the forms on the plugin's main screen
+   */
+  public function handleMainScreenSubmissions() {
+    if (\YamlCF\Helpers\RequestHelper::getParam('page') !== 'yaml-custom-fields') {
+      return;
+    }
+
+    $this->plugin->get('template_schema_controller')->handleFormSubmissions();
+  }
+
+  /**
+   * Handle the Content Check removal form
+   */
+  public function handleValidationSubmissions() {
+    // Checked here so other admin screens never build the controller
+    if (\YamlCF\Helpers\RequestHelper::getParam('page') !== 'yaml-cf-data-validation') {
+      return;
+    }
+
+    $this->plugin->get('validation_controller')->handleFormSubmissions();
+  }
+
+  /**
    * Enqueue admin assets
    */
   public function enqueueAdminAssets($hook) {
@@ -133,22 +269,6 @@ class HookManager {
   public function customizeAdminTitle($admin_title, $title) {
     $menuManager = $this->plugin->get('menu_manager');
     return $menuManager->customizeAdminTitle($admin_title, $title);
-  }
-
-  /**
-   * Set parent file
-   */
-  public function setParentFile($parent_file) {
-    $menuManager = $this->plugin->get('menu_manager');
-    return $menuManager->setParentFile($parent_file);
-  }
-
-  /**
-   * Set submenu file
-   */
-  public function setSubmenuFile($submenu_file) {
-    $menuManager = $this->plugin->get('menu_manager');
-    return $menuManager->setSubmenuFile($submenu_file);
   }
 
   /**

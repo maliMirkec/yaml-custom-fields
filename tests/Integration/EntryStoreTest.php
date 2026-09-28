@@ -241,6 +241,14 @@ class EntryStoreTest extends WPTestCase {
 		$this->assertSame(['entry_1', 'entry_3'], array_keys($found['labels']));
 	}
 
+	public function testSearchingIgnoresCaseBeyondAscii() {
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Željko Šimić'], 'name');
+		$this->store->save(self::COLLECTION, 'entry_2', ['name' => 'Ana'], 'name');
+
+		$this->assertSame(['entry_1'], $this->store->search(self::COLLECTION, 'želj', 10)['ids']);
+		$this->assertSame(['entry_1'], $this->store->search(self::COLLECTION, 'ŠIMIĆ', 10)['ids']);
+	}
+
 	public function testSearchingRespectsTheLimit() {
 		for ($i = 1; $i <= 40; $i++) {
 			$this->store->save(self::COLLECTION, 'entry_' . $i, ['name' => 'Person ' . $i], 'name');
@@ -250,6 +258,70 @@ class EntryStoreTest extends WPTestCase {
 
 		$this->assertCount(10, $found['labels']);
 		$this->assertSame(40, $found['total'], 'The total counts everything that matched, not what was returned.');
+	}
+
+	// ------------------------------------------------ saves at the same moment
+
+	/**
+	 * Two saves at once both read the list and the second write replaced the
+	 * first, so an item vanished from the list. With the lock held, a save reads
+	 * the list the other save just wrote, even when this request read an older
+	 * copy before that save finished.
+	 */
+	public function testASaveBuildsOnTheListAnotherRequestJustWrote() {
+		global $wpdb;
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada'], 'name');
+
+		// This request reads the list, so it holds a copy with entry_1 only
+		$this->assertSame(['entry_1'], array_keys($this->store->index(self::COLLECTION)));
+
+		// Meanwhile another request adds entry_2, straight to the database
+		$wpdb->update(
+			$wpdb->options,
+			['option_value' => maybe_serialize(['entry_1' => 'Ada', 'entry_2' => 'Grace'])],
+			['option_name' => EntryStore::INDEX_PREFIX . self::COLLECTION]
+		);
+
+		$this->store->save(self::COLLECTION, 'entry_3', ['name' => 'Katherine'], 'name');
+
+		$this->assertSame(['entry_1', 'entry_2', 'entry_3'], array_keys($this->store->index(self::COLLECTION)));
+	}
+
+	public function testTheLockIsGivenBackAfterEachChange() {
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada'], 'name');
+		$this->store->delete(self::COLLECTION, 'entry_1');
+		$this->store->replaceAll(self::COLLECTION, ['entry_2' => ['name' => 'Grace']], 'name');
+
+		$this->assertFalse($this->lockRowExists());
+	}
+
+	/**
+	 * A request that dies while saving leaves its lock behind. After a few
+	 * seconds it is taken over, so the collection does not stay locked.
+	 */
+	public function testALockLeftBehindIsTakenOver() {
+		global $wpdb;
+		$wpdb->insert($wpdb->options, [
+			'option_name' => \YamlCF\Data\CollectionLock::PREFIX . self::COLLECTION,
+			'option_value' => (string) (time() - 60),
+			'autoload' => 'no',
+		]);
+
+		$started = microtime(true);
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada'], 'name');
+
+		$this->assertLessThan(2, microtime(true) - $started, 'A stale lock is taken over at once, not waited out.');
+		$this->assertSame(['entry_1'], array_keys($this->store->index(self::COLLECTION)));
+		$this->assertFalse($this->lockRowExists());
+	}
+
+	private function lockRowExists() {
+		global $wpdb;
+
+		return null !== $wpdb->get_var($wpdb->prepare(
+			"SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+			\YamlCF\Data\CollectionLock::PREFIX . self::COLLECTION
+		));
 	}
 
 	// ------------------------------------------------------- the public API
@@ -262,6 +334,36 @@ class EntryStoreTest extends WPTestCase {
 
 		$this->assertCount(2, $all);
 		$this->assertSame('Ada', $all['entry_1']['name']);
+	}
+
+	/**
+	 * A data_object field with list: true holds several item IDs. The template
+	 * function returns those items in the order they were chosen, skipping any
+	 * that have since been deleted.
+	 */
+	public function testAListFieldReturnsTheChosenItemsInOrder() {
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada'], 'name');
+		$this->store->save(self::COLLECTION, 'entry_2', ['name' => 'Grace'], 'name');
+		$post_id = $this->createTestPost([], ['speakers' => ['entry_2', 'gone', 'entry_1']]);
+
+		$speakers = yaml_cf_get_data_object('speakers', $post_id);
+
+		$this->assertSame(['Grace', 'Ada'], array_column($speakers, 'name'));
+	}
+
+	/**
+	 * Code fields are stored encoded. A theme reading an item gets the code,
+	 * as it does from a page's fields.
+	 */
+	public function testTheTemplateFunctionsDecodeCodeFields() {
+		update_option('yaml_cf_data_object_types', [
+			self::COLLECTION => ['name' => 'People', 'schema' => self::SCHEMA . "  - name: embed\n    label: Embed\n    type: code\n"],
+		], false);
+		$this->store->save(self::COLLECTION, 'entry_1', ['name' => 'Ada', 'embed' => '__YAMLCF_B64__' . base64_encode('<div>x</div>')], 'name');
+		$post_id = $this->createTestPost([], ['speaker' => 'entry_1']);
+
+		$this->assertSame('<div>x</div>', yaml_cf_get_data_objects(self::COLLECTION)['entry_1']['embed']);
+		$this->assertSame('<div>x</div>', yaml_cf_get_data_object('speaker', $post_id)['embed']);
 	}
 
 	public function testAskingForACollectionThatDoesNotExistIsEmpty() {

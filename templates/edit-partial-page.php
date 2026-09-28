@@ -47,9 +47,9 @@ if (!defined('ABSPATH')) {
       <div class="yaml-cf-fields yaml-cf-surface">
         <?php
         if (!empty($schema['fields'])) {
-          $yaml_cf_plugin = YAML_Custom_Fields::get_instance();
+          $yaml_cf_renderer = \YamlCF\Core\Plugin::getInstance()->get('field_renderer');
           $yaml_cf_context = ['type' => 'partial', 'template' => $template];
-          $yaml_cf_plugin->render_schema_fields($schema['fields'], $template_data, '', $yaml_cf_context);
+          $yaml_cf_renderer->renderFields($schema['fields'], $template_data, '', $yaml_cf_context);
         } else {
           echo '<p>' . esc_html__('This schema has no fields yet. Add fields to the schema first.', 'yaml-custom-fields') . '</p>';
         }

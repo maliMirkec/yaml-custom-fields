@@ -47,6 +47,19 @@ class PageDataExporter {
       'data' => $data,
     ];
 
+    // A child page's slug is only unique under its parent: /about/team and
+    // /careers/team are both "team". The full path is what tells them apart.
+    if (is_post_type_hierarchical($post->post_type)) {
+      $entry['path'] = get_page_uri($post);
+    }
+
+    // Which fields show the shared value on this page. Without it an imported
+    // page falls back to its own copy of those fields, which may be years old.
+    $use_shared = get_post_meta($post->ID, '_yaml_cf_use_template_global_fields', true);
+    if (is_array($use_shared) && !empty($use_shared)) {
+      $entry['use_shared'] = $use_shared;
+    }
+
     // The schema the post's template uses now, rather than a copy frozen into
     // the post when it was last saved
     $schema = $this->schemaLocator->forPost($post);

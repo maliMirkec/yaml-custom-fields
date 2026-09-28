@@ -7,7 +7,6 @@
 
 namespace YamlCF\Core;
 
-
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
@@ -50,20 +49,8 @@ class Plugin {
       return new \YamlCF\Data\Repositories\PostDataRepository();
     });
 
-    $this->container->register('global_data_repository', function($c) {
-      return new \YamlCF\Data\Repositories\GlobalDataRepository();
-    });
-
-    $this->container->register('partial_data_repository', function($c) {
-      return new \YamlCF\Data\Repositories\PartialDataRepository();
-    });
-
     $this->container->register('data_object_repository', function($c) {
       return new \YamlCF\Data\Repositories\DataObjectRepository();
-    });
-
-    $this->container->register('template_settings_repository', function($c) {
-      return new \YamlCF\Data\Repositories\TemplateSettingsRepository();
     });
 
     // Schema Management
@@ -87,22 +74,24 @@ class Plugin {
       return new \YamlCF\Schema\SectionGrouper();
     });
 
-    $this->container->register('schema_storage', function($c) {
-      return new \YamlCF\Schema\SchemaStorage(
-        $c->get('schema_parser')
-      );
-    });
-
     // Template Management
     $this->container->register('shortcode', function($c) {
-      return new \YamlCF\Rendering\Shortcode($c->get('post_schema_locator'));
+      return new \YamlCF\Rendering\Shortcode(
+        $c->get('post_schema_locator'),
+        $c->get('field_accessor'),
+        $c->get('global_field_accessor'),
+        $c->get('field_resolver'),
+        $c->get('template_resolver')
+      );
     });
 
     $this->container->register('rest_api', function($c) {
       return new \YamlCF\Rest\RestApi(
         $c->get('post_data_repository'),
         $c->get('data_object_repository'),
-        $c->get('post_schema_locator')
+        $c->get('post_schema_locator'),
+        $c->get('field_resolver'),
+        $c->get('global_field_accessor')
       );
     });
 
@@ -138,14 +127,15 @@ class Plugin {
 
     // Field Rendering
     $this->container->register('field_renderer', function($c) {
-      return new \YamlCF\Rendering\FieldRenderer();
+      return new \YamlCF\Rendering\FieldRenderer(
+        $c->get('field_normalizer'),
+        $c->get('section_grouper'),
+        $c->get('schema_parser'),
+        $c->get('data_object_repository')
+      );
     });
 
     // Form Handling
-    $this->container->register('nonce_verifier', function($c) {
-      return new \YamlCF\Form\NonceVerifier();
-    });
-
     $this->container->register('data_sanitizer', function($c) {
       return new \YamlCF\Form\DataSanitizer();
     });
@@ -154,21 +144,68 @@ class Plugin {
       return new \YamlCF\Form\AttachmentValidator();
     });
 
+    // The admin screens' forms, handled on admin_init
     $this->container->register('form_handler', function($c) {
       return new \YamlCF\Form\FormHandler(
-        $c->get('nonce_verifier'),
+        $c->get('post_import_handler'),
+        $c->get('schema_form_handler'),
+        $c->get('content_form_handler'),
+        $c->get('export_request_handler'),
+        $c->get('data_object_controller')
+      );
+    });
+
+    $this->container->register('post_import_handler', function($c) {
+      return new \YamlCF\Form\PostImportHandler($c->get('notification_manager'));
+    });
+
+    $this->container->register('schema_form_handler', function($c) {
+      return new \YamlCF\Form\SchemaFormHandler(
+        $c->get('notification_manager'),
+        $c->get('schema_validator'),
+        $c->get('schema_diff'),
+        $c->get('field_resolver')
+      );
+    });
+
+    $this->container->register('content_form_handler', function($c) {
+      return new \YamlCF\Form\ContentFormHandler(
+        $c->get('notification_manager'),
+        $c->get('schema_parser'),
         $c->get('data_sanitizer'),
-        $c->get('attachment_validator')
+        $c->get('schema_diff'),
+        $c->get('cache_manager')
+      );
+    });
+
+    $this->container->register('export_request_handler', function($c) {
+      return new \YamlCF\Form\ExportRequestHandler();
+    });
+
+    // The "Custom fields" box in the post editor
+    $this->container->register('meta_box', function($c) {
+      return new \YamlCF\PostEditor\MetaBox(
+        $c->get('field_renderer'),
+        $c->get('template_resolver'),
+        $c->get('schema_parser'),
+        $c->get('field_normalizer'),
+        $c->get('section_grouper')
+      );
+    });
+
+    $this->container->register('meta_box_saver', function($c) {
+      return new \YamlCF\PostEditor\MetaBoxSaver(
+        $c->get('data_sanitizer'),
+        $c->get('template_resolver'),
+        $c->get('schema_parser'),
+        $c->get('schema_diff'),
+        $c->get('cache_manager')
       );
     });
 
     // Cache Management
     $this->container->register('cache_manager', function($c) {
       return new \YamlCF\Cache\CacheManager();
-    });
-
-    $this->container->register('transient_manager', function($c) {
-      return new \YamlCF\Cache\TransientManager();
     });
 
     // Notification Management
@@ -327,7 +364,7 @@ class Plugin {
     });
 
     $this->container->register('ajax_render_block_item', function($c) {
-      return new \YamlCF\Ajax\Handlers\RenderBlockItem($c->get('schema_parser'));
+      return new \YamlCF\Ajax\Handlers\RenderBlockItem($c->get('schema_parser'), $c->get('field_renderer'));
     });
 
     // Search behind the taxonomy and data_object pickers
@@ -336,10 +373,7 @@ class Plugin {
     });
 
     $this->container->register('ajax_search_data_objects', function($c) {
-      return new \YamlCF\Ajax\Handlers\SearchDataObjects(
-        $c->get('data_object_repository'),
-        $c->get('schema_parser')
-      );
+      return new \YamlCF\Ajax\Handlers\SearchDataObjects($c->get('data_object_repository'));
     });
 
     // Admin Management
@@ -351,17 +385,14 @@ class Plugin {
     });
 
     $this->container->register('asset_manager', function($c) {
-      return new \YamlCF\Admin\AssetManager(
-        $c->get('template_resolver'),
-        $c->get('schema_parser')
-      );
+      return new \YamlCF\Admin\AssetManager($c->get('template_resolver'));
     });
 
     // Admin Controllers
     $this->container->register('template_schema_controller', function($c) {
       return new \YamlCF\Admin\Controllers\TemplateSchemaController(
         $c->get('template_cache'),
-        $c->get('schema_storage'),
+        $c->get('schema_parser'),
         $c->get('notification_manager'),
         new \YamlCF\Template\TemplateSorter()
       );
@@ -370,7 +401,7 @@ class Plugin {
     $this->container->register('partial_controller', function($c) {
       return new \YamlCF\Admin\Controllers\PartialController(
         $c->get('template_cache'),
-        $c->get('schema_storage')
+        $c->get('schema_parser')
       );
     });
 
@@ -386,20 +417,20 @@ class Plugin {
 
     $this->container->register('global_data_controller', function($c) {
       return new \YamlCF\Admin\Controllers\GlobalDataController(
-        $c->get('schema_storage')
+        $c->get('schema_parser')
       );
     });
 
     $this->container->register('template_global_controller', function($c) {
       return new \YamlCF\Admin\Controllers\TemplateGlobalController(
         $c->get('template_cache'),
-        $c->get('schema_storage')
+        $c->get('schema_parser')
       );
     });
 
     $this->container->register('data_object_controller', function($c) {
       return new \YamlCF\Admin\Controllers\DataObjectController(
-        $c->get('schema_storage'),
+        $c->get('schema_parser'),
         $c->get('schema_validator'),
         $c->get('notification_manager')
       );
@@ -423,44 +454,44 @@ class Plugin {
       return new \YamlCF\Admin\Controllers\DocsController();
     });
 
-    // Public API Accessors
-    $this->container->register('field_accessor', function($c) {
-      return new \YamlCF\PublicAPI\FieldAccessor(
-        $c->get('post_data_repository'),
+    // Template API: what yaml_cf_get_field() and the other theme functions call
+    $this->container->register('field_resolver', function($c) {
+      return new \YamlCF\PublicAPI\FieldResolver(
         $c->get('template_resolver'),
-        $c->get('schema_storage')
+        $c->get('schema_parser'),
+        $c->get('data_sanitizer')
       );
+    });
+
+    $this->container->register('field_accessor', function($c) {
+      return new \YamlCF\PublicAPI\FieldAccessor($c->get('field_resolver'));
     });
 
     $this->container->register('global_field_accessor', function($c) {
-      return new \YamlCF\PublicAPI\GlobalFieldAccessor(
-        $c->get('global_data_repository'),
-        $c->get('schema_storage')
-      );
+      return new \YamlCF\PublicAPI\GlobalFieldAccessor($c->get('field_resolver'));
     });
 
     $this->container->register('image_accessor', function($c) {
-      return new \YamlCF\PublicAPI\ImageAccessor(
-        $c->get('field_accessor')
-      );
+      return new \YamlCF\PublicAPI\ImageAccessor($c->get('field_accessor'));
     });
 
     $this->container->register('file_accessor', function($c) {
-      return new \YamlCF\PublicAPI\FileAccessor(
-        $c->get('field_accessor')
-      );
+      return new \YamlCF\PublicAPI\FileAccessor($c->get('field_accessor'));
     });
 
     $this->container->register('taxonomy_accessor', function($c) {
-      return new \YamlCF\PublicAPI\TaxonomyAccessor(
-        $c->get('field_accessor')
-      );
+      return new \YamlCF\PublicAPI\TaxonomyAccessor($c->get('field_accessor'));
+    });
+
+    $this->container->register('post_type_accessor', function($c) {
+      return new \YamlCF\PublicAPI\PostTypeAccessor($c->get('field_accessor'));
     });
 
     $this->container->register('data_object_accessor', function($c) {
       return new \YamlCF\PublicAPI\DataObjectAccessor(
         $c->get('field_accessor'),
-        $c->get('data_object_repository')
+        $c->get('data_object_repository'),
+        $c->get('field_resolver')
       );
     });
   }
@@ -482,38 +513,5 @@ class Plugin {
    */
   public function get($name) {
     return $this->container->get($name);
-  }
-
-  /**
-   * Uninstall plugin (clean up all data)
-   *
-   * @return void
-   */
-  public function uninstall() {
-    // Delete all plugin options
-    delete_option('yaml_cf_template_settings');
-    delete_option('yaml_cf_schemas');
-    delete_option('yaml_cf_partial_data');
-    delete_option('yaml_cf_global_schema');
-    delete_option('yaml_cf_global_data');
-    delete_option('yaml_cf_template_global_data');
-    delete_option('yaml_cf_tracked_posts');
-
-    // Delete all post meta for this plugin
-    delete_post_meta_by_key('_yaml_cf_data');
-    delete_post_meta_by_key('_yaml_cf_use_template_global');
-    delete_post_meta_by_key('_yaml_cf_use_template_global_fields');
-
-    // Delete data object types and their entries
-    $data_object_types = get_option('yaml_cf_data_object_types', []);
-    if (!empty($data_object_types)) {
-      foreach ($data_object_types as $type_slug => $type_data) {
-        (new \YamlCF\Data\Repositories\DataObjectRepository())->deleteAllEntries($type_slug);
-      }
-    }
-    delete_option('yaml_cf_data_object_types');
-
-    // Clear template cache
-    delete_transient('yaml_cf_theme_templates');
   }
 }

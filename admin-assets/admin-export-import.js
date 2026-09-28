@@ -150,7 +150,7 @@ jQuery(document).ready(function ($) {
 
   $('#yaml-cf-step1-next').on('click', function () {
     if (chosenItems().length === 0 && !wantsPosts()) {
-      window.alert(__('Choose at least one thing to export.', 'yaml-custom-fields'));
+      window.YamlCF.showMessage(__('Choose at least one thing to export.', 'yaml-custom-fields'), 'warning');
       return;
     }
 
@@ -413,7 +413,7 @@ jQuery(document).ready(function ($) {
         data: {
           action: 'yaml_cf_inspect_bundle',
           nonce: yamlCF.nonce,
-        admin_nonce: yamlCF.adminNonce,
+          admin_nonce: yamlCF.adminNonce,
           data: JSON.stringify(parsed)
         },
         success: function (response) {

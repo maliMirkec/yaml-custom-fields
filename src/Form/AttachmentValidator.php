@@ -17,7 +17,11 @@ class AttachmentValidator {
    * Validate and clean attachment data
    *
    * Numeric values in image/file fields that no longer point to an existing post are
-   * replaced with ''. Without a schema every numeric value is checked (conservative).
+   * replaced with ''. Without a schema nothing is cleared: there is no telling an
+   * attachment ID from a price, a year or a phone number, and those used to be
+   * wiped whenever no post happened to have that ID. A stale attachment ID left in
+   * place is harmless, since yaml_cf_get_image() and yaml_cf_get_file() return
+   * null for it.
    *
    * @param mixed $data Data to validate
    * @param array|null $schema Parsed schema with a 'fields' array
@@ -29,10 +33,14 @@ class AttachmentValidator {
       return $data;
     }
 
-    $has_schema = is_array($schema) && isset($schema['fields']) && is_array($schema['fields']);
+    if (!is_array($schema) || !isset($schema['fields']) || !is_array($schema['fields'])) {
+      return $data;
+    }
+
     $attachment_fields = [];
-    if ($has_schema) {
-      $this->buildAttachmentFieldMap($schema['fields'], $attachment_fields);
+    $this->buildAttachmentFieldMap($schema['fields'], $attachment_fields);
+    if (empty($attachment_fields)) {
+      return $data;
     }
 
     foreach ($data as $key => $value) {
@@ -41,8 +49,7 @@ class AttachmentValidator {
       if (is_array($value)) {
         $data[$key] = $this->validateAndClean($value, $schema, $field_path);
       } elseif (is_numeric($value) && intval($value) > 0) {
-        // If a schema is available but has no image/file fields, nothing is cleared
-        $is_attachment_field = !$has_schema || in_array((string) $key, $attachment_fields, true) || in_array($field_path, $attachment_fields, true);
+        $is_attachment_field = in_array((string) $key, $attachment_fields, true) || in_array($field_path, $attachment_fields, true);
 
         // Keep IDs of existing posts (attachments or otherwise); clear IDs that no longer exist
         if ($is_attachment_field && !get_post(intval($value))) {
@@ -150,10 +157,12 @@ class AttachmentValidator {
             }
           }
         } else {
-          // Regular nested object, pass the nested schema
+          // A group, or a single section: pass the fields that describe it
           $nested_schema = null;
           if ($field_schema && isset($field_schema['fields'])) {
             $nested_schema = $field_schema['fields'];
+          } elseif ($field_schema && isset($field_schema['blocks']) && is_array($field_schema['blocks'])) {
+            $nested_schema = $this->blockFields($field_schema, $value);
           }
           $nested_missing = $this->validateAttachments($value, $current_path, $nested_schema);
           $missing = array_merge($missing, $nested_missing);
@@ -173,6 +182,28 @@ class AttachmentValidator {
     }
 
     return $missing;
+  }
+
+  /**
+   * The fields of the section type a single section value holds
+   *
+   * @param array $field_schema Sections field definition
+   * @param array $value The section's value
+   * @return array|null
+   */
+  private function blockFields($field_schema, $value) {
+    $block_key = isset($field_schema['blockKey']) ? $field_schema['blockKey'] : 'type';
+    if (!isset($value[$block_key]) || !is_scalar($value[$block_key])) {
+      return null;
+    }
+
+    foreach ($field_schema['blocks'] as $block) {
+      if (is_array($block) && isset($block['name']) && $block['name'] === $value[$block_key]) {
+        return isset($block['fields']) && is_array($block['fields']) ? $block['fields'] : null;
+      }
+    }
+
+    return null;
   }
 
   /**

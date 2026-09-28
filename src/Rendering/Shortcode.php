@@ -32,9 +32,25 @@ class Shortcode {
   const TAG = 'ycf';
 
   private $schemaLocator;
+  private $fields;
+  private $siteDetails;
+  private $resolver;
+  private $templateResolver;
 
-  public function __construct($schemaLocator) {
+  /**
+   * @param \YamlCF\Schema\PostSchemaLocator $schemaLocator Finds a post's schema
+   * @param \YamlCF\PublicAPI\FieldAccessor|null $fields Reads a post's fields
+   * @param \YamlCF\PublicAPI\GlobalFieldAccessor|null $siteDetails Reads site details
+   * @param \YamlCF\PublicAPI\FieldResolver|null $resolver Parses the shared and site details schemas
+   * @param \YamlCF\Template\TemplateResolver|null $templateResolver Which template a post uses
+   */
+  public function __construct($schemaLocator, $fields = null, $siteDetails = null, $resolver = null, $templateResolver = null) {
+    $plugin = \YamlCF\Core\Plugin::getInstance();
     $this->schemaLocator = $schemaLocator;
+    $this->fields = $fields ?: $plugin->get('field_accessor');
+    $this->siteDetails = $siteDetails ?: $plugin->get('global_field_accessor');
+    $this->resolver = $resolver ?: $plugin->get('field_resolver');
+    $this->templateResolver = $templateResolver ?: $plugin->get('template_resolver');
   }
 
   /**
@@ -65,7 +81,7 @@ class Shortcode {
     }
 
     if ($atts['source'] === 'site') {
-      $value = yaml_cf_get_global_field($field);
+      $value = $this->siteDetails->getField($field);
       $definition = $this->siteFieldDefinition($field);
 
       return $this->present($value, $definition, $atts);
@@ -76,9 +92,9 @@ class Shortcode {
       return '';
     }
 
-    $value = yaml_cf_get_field($field, $post_id);
+    $value = $this->fields->getField($field, $post_id);
     $post = get_post($post_id);
-    $definition = $post ? $this->fieldDefinition($this->schemaLocator->forPost($post), $field) : null;
+    $definition = $post ? $this->postFieldDefinition($post, $field) : null;
 
     return $this->present($value, $definition, $atts);
   }
@@ -99,11 +115,17 @@ class Shortcode {
     if ($requested === '') {
       $current = get_the_ID();
 
-      return $current ? (int) $current : null;
+      return $current && !$this->isLockedByPassword((int) $current) ? (int) $current : null;
     }
 
     $post_id = (int) $requested;
     if ($post_id <= 0 || !get_post($post_id)) {
+      return null;
+    }
+
+    // Published and public, but behind a password this visitor has not entered:
+    // WordPress hides its content, so its fields stay hidden as well.
+    if ($this->isLockedByPassword($post_id)) {
       return null;
     }
 
@@ -121,23 +143,29 @@ class Shortcode {
   }
 
   /**
+   * Whether a post's password is still standing between this visitor and it
+   *
+   * post_password_required() reads the visitor's password cookie, so somebody
+   * who has entered the password sees the fields as they see the content.
+   *
+   * @param int $post_id Post to check
+   * @return bool
+   */
+  private function isLockedByPassword($post_id) {
+    return post_password_required($post_id) && !current_user_can('edit_post', $post_id);
+  }
+
+  /**
    * Whether a post can be seen by anybody, logged in or not
    *
-   * is_post_publicly_viewable() arrived in WordPress 5.7 and this plugin still
-   * supports 5.0, where the check has to be made from the two parts it is built
-   * out of. Falling back to read_post instead would refuse every logged-out
-   * visitor, which is the case the post attribute mostly exists for.
+   * Not read_post: a logged-out visitor holds no capabilities, so that would
+   * refuse every visitor, which is the case the post attribute mostly exists for.
    *
    * @param int $post_id Post to check
    * @return bool
    */
   private function isPubliclyViewable($post_id) {
-    if (function_exists('is_post_publicly_viewable')) {
-      return (bool) is_post_publicly_viewable($post_id);
-    }
-
-    return get_post_status($post_id) === 'publish'
-      && is_post_type_viewable(get_post_type($post_id));
+    return (bool) is_post_publicly_viewable($post_id);
   }
 
   /**
@@ -162,6 +190,42 @@ class Shortcode {
   }
 
   /**
+   * The definition of a field as a post sees it
+   *
+   * A post's value can come from its own schema, from the shared schema of
+   * its template, or from site details (see YamlCF\PublicAPI\FieldResolver).
+   * The definition is looked up in the same places, so a shared image prints
+   * as an image rather than as its attachment ID.
+   *
+   * @param \WP_Post $post Post the value was read from
+   * @param string $field Field name
+   * @return array|null
+   */
+  private function postFieldDefinition($post, $field) {
+    $definition = $this->fieldDefinition($this->schemaLocator->forPost($post), $field);
+    if ($definition !== null) {
+      return $definition;
+    }
+
+    $template = $this->templateResolver->getTemplateForPost($post);
+
+    $shared_yaml = $this->resolver->templateGlobalSchema($template);
+    if (trim($shared_yaml) !== '') {
+      $definition = $this->fieldDefinition($this->resolver->parseSchemaCached($shared_yaml), $field);
+      if ($definition !== null) {
+        return $definition;
+      }
+    }
+
+    $settings = get_option('yaml_cf_template_settings', []);
+    if (is_array($settings) && !empty($settings[$template . '_use_global'])) {
+      return $this->siteFieldDefinition($field);
+    }
+
+    return null;
+  }
+
+  /**
    * The definition of a site details field
    *
    * @param string $field Field name
@@ -173,7 +237,7 @@ class Shortcode {
       return null;
     }
 
-    return $this->fieldDefinition(yaml_cf_parse_schema_cached($yaml), $field);
+    return $this->fieldDefinition($this->resolver->parseSchemaCached($yaml), $field);
   }
 
   /**
@@ -213,6 +277,9 @@ class Shortcode {
 
       case 'taxonomy':
         return $this->terms($value);
+
+      case 'data_object':
+        return $this->collectionItems($value, $definition);
 
       case 'object':
       case 'block':
@@ -279,6 +346,36 @@ class Shortcode {
     }
 
     return implode(', ', $links);
+  }
+
+  /**
+   * The labels of the chosen collection items
+   *
+   * The stored value is an item ID such as entry_65a1…, which means nothing
+   * on a page. The label is what the editor picked it by.
+   *
+   * @param mixed $value Entry ID or IDs
+   * @param array $definition Field definition
+   * @return string
+   */
+  private function collectionItems($value, $definition) {
+    $object_type = isset($definition['options']['object_type']) && is_string($definition['options']['object_type'])
+      ? $definition['options']['object_type']
+      : '';
+    if ($object_type === '') {
+      return '';
+    }
+
+    $labels = \YamlCF\Core\Plugin::getInstance()->get('data_object_repository')->getLabels($object_type);
+
+    $names = [];
+    foreach ((array) $value as $entry_id) {
+      if (is_scalar($entry_id) && isset($labels[(string) $entry_id])) {
+        $names[] = $labels[(string) $entry_id];
+      }
+    }
+
+    return esc_html(implode(', ', $names));
   }
 
   /**

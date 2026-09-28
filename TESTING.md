@@ -22,7 +22,7 @@ This document explains how to run and write tests for the YAML Custom Fields Wor
 composer test
 ```
 
-**Current Coverage:** 120 tests, 258 assertions
+**Current Coverage:** 254 unit tests (`composer test`, no WordPress needed) and 483 integration tests (`composer test:integration`, against a real WordPress)
 
 **See also:** [MANUAL-TESTING.md](MANUAL-TESTING.md) for comprehensive manual test suite
 
@@ -479,6 +479,6 @@ The manual testing guide includes:
 
 ---
 
-**Last Updated:** 2025-12-28
-**Plugin Version:** 1.2.2
-**Test Coverage:** 120 tests, 258 assertions
+**Last Updated:** 2026-09-26
+**Plugin Version:** 2.0.0
+**Test Coverage:** 254 unit and 483 integration tests

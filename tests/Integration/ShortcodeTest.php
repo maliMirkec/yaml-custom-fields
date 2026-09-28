@@ -183,6 +183,50 @@ class ShortcodeTest extends WPTestCase {
 		$this->assertStringNotContainsString('Array', $out);
 	}
 
+	/**
+	 * A collection field stores item IDs, which mean nothing on a page
+	 */
+	public function testACollectionFieldPrintsItemLabels() {
+		update_option('yaml_cf_schemas', [self::TEMPLATE => self::SCHEMA . "  - name: speakers\n    label: Speakers\n    type: data_object\n    list: true\n    options:\n      object_type: people\n"], false);
+		update_option('yaml_cf_data_object_types', ['people' => ['name' => 'People', 'schema' => "fields:\n  - name: name\n    type: string\n"]], false);
+		$store = new \YamlCF\Data\EntryStore();
+		$store->save('people', 'entry_1', ['name' => 'Ada'], 'name');
+		$store->save('people', 'entry_2', ['name' => '<b>Grace</b>'], 'name');
+
+		$post_id = $this->createTestPost([], ['speakers' => ['entry_2', 'entry_1']]);
+
+		$this->assertSame('&lt;b&gt;Grace&lt;/b&gt;, Ada', $this->onPost($post_id, '[ycf field="speakers"]'));
+	}
+
+	// ------------------------------------------- values from other schemas
+
+	/**
+	 * A field only in the template's shared schema is typed by that schema, so
+	 * an image prints as an image rather than as its attachment ID.
+	 */
+	public function testASharedImagePrintsAsAnImage() {
+		$attachment_id = self::factory()->attachment->create_upload_object(DIR_TESTDATA . '/images/canola.jpg');
+		update_option('yaml_cf_template_global_schemas', [self::TEMPLATE => "fields:\n  - name: banner\n    label: Banner\n    type: image\n"], false);
+		update_option('yaml_cf_template_global_data', [self::TEMPLATE => ['banner' => (string) $attachment_id]], false);
+
+		$post_id = $this->createTestPost([], []);
+
+		$this->assertStringContainsString('<img', $this->onPost($post_id, '[ycf field="banner"]'));
+	}
+
+	/**
+	 * A site detail the page falls back to is typed by the site details schema
+	 */
+	public function testASiteDetailCodeFieldReachedThroughThePagePrintsAsCode() {
+		update_option('yaml_cf_template_settings', [self::TEMPLATE => true, self::TEMPLATE . '_use_global' => true], false);
+		update_option('yaml_cf_global_schema', "fields:\n  - name: tracking\n    label: Tracking\n    type: code\n", false);
+		update_option('yaml_cf_global_data', ['tracking' => \YAML_Custom_Fields::CODE_FIELD_MARKER . base64_encode('<div class="t">x</div>')], false);
+
+		$post_id = $this->createTestPost([], []);
+
+		$this->assertSame('<div class="t">x</div>', $this->onPost($post_id, '[ycf field="tracking"]'));
+	}
+
 	// ------------------------------------------------------- site details
 
 	public function testItCanPrintASiteDetail() {
@@ -226,6 +270,20 @@ class ShortcodeTest extends WPTestCase {
 		$here = $this->createTestPost([], []);
 
 		$this->assertSame('Mine', $this->onPost($here, '[ycf field="headline" post="' . $draft . '"]'));
+	}
+
+	/**
+	 * Published and public, but behind a password: its fields stay hidden until
+	 * the visitor has entered it, like its content.
+	 */
+	public function testItRefusesToReadFromAPasswordProtectedPage() {
+		$locked = $this->createTestPost(['post_password' => 'open sesame'], ['headline' => 'Behind the password']);
+		$here = $this->createTestPost([], []);
+
+		wp_set_current_user(0);
+		$out = $this->onPost($here, '[ycf field="headline" post="' . $locked . '"]');
+
+		$this->assertSame('', $out);
 	}
 
 	public function testAPostIdThatDoesNotExistPrintsNothing() {

@@ -36,13 +36,6 @@ class ValidationController extends AdminController {
   }
 
   /**
-   * Kept for backward compatibility with the admin_init hook in the main plugin file.
-   * Validation now runs while rendering, for the requested page only.
-   */
-  public function handleValidation() {
-  }
-
-  /**
    * Validate one page of imported posts
    *
    * @param int $paged Page number
@@ -149,6 +142,33 @@ class ValidationController extends AdminController {
     }
 
     return $orphaned;
+  }
+
+  /**
+   * Remove the ticked values before the page is drawn, then come back to it
+   *
+   * Hooked to admin_init. Done inside render() the removal ran after WordPress
+   * had printed its notices, so "3 stored values were removed" only showed on
+   * whatever page was opened next, and reloading the page sent the form again.
+   *
+   * @return void
+   */
+  public function handleFormSubmissions() {
+    if (RequestHelper::getParam('page') !== 'yaml-cf-data-validation' || !isset($_POST['yaml_cf_remove_orphans_nonce'])) {
+      return;
+    }
+
+    if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['yaml_cf_remove_orphans_nonce'])), 'yaml_cf_remove_orphans')) {
+      wp_die(esc_html__('This link has expired. Go back, reload the page and try again.', 'yaml-custom-fields'));
+    }
+
+    $this->handleRemoval();
+
+    wp_safe_redirect(add_query_arg([
+      'page' => 'yaml-cf-data-validation',
+      'paged' => max(1, RequestHelper::getParamInt('paged', 1)),
+    ], admin_url('admin.php')));
+    exit;
   }
 
   /**

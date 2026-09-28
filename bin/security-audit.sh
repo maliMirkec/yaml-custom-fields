@@ -39,7 +39,8 @@ echo "1. Checking Nonce Verification..."
 echo "-----------------------------------"
 
 # Check if AJAX actions have nonce verification
-AJAX_ACTIONS=$(grep -rn "check_ajax_referer\|wp_verify_nonce" yaml-custom-fields.php | wc -l)
+# Scans src/ too: the form handlers and AJAX handlers live there since 2.0.0
+AJAX_ACTIONS=$(grep -rn "check_ajax_referer\|wp_verify_nonce" src/ yaml-custom-fields.php --include="*.php" | wc -l)
 if [ "$AJAX_ACTIONS" -gt 10 ]; then
     print_check "AJAX actions have nonce verification ($AJAX_ACTIONS checks found)" 0
 else
@@ -128,7 +129,7 @@ FILE_UPLOADS=$(grep -rn "\$_FILES" src/ yaml-custom-fields.php --include="*.php"
 if [ "$FILE_UPLOADS" -gt 0 ]; then
     print_info "File upload handling found ($FILE_UPLOADS instances)"
     # Check if file uploads are validated
-    FILE_VALIDATION=$(grep -A 10 "\$_FILES" yaml-custom-fields.php | grep -c "wp_check_filetype\|mime\|size")
+    FILE_VALIDATION=$(grep -rh -A 10 "\$_FILES" src/ yaml-custom-fields.php --include="*.php" | grep -c "wp_check_filetype\|mime\|size")
     if [ "$FILE_VALIDATION" -gt 0 ]; then
         print_check "File upload validation found" 0
     else

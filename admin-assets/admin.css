@@ -1417,10 +1417,6 @@
   margin: 0;
 }
 
-.yaml-cf-notice-spaced {
-  margin-top: 20px;
-}
-
 .yaml-cf-muted {
   color: #646970;
 }
@@ -1664,10 +1660,6 @@
   margin-bottom: 20px;
 }
 
-.yaml-cf-notice-tight {
-  margin: 10px 0;
-}
-
 .yaml-cf-meta-box-header {
   margin-bottom: 15px;
   padding-bottom: 10px;
@@ -1883,6 +1875,12 @@
   --ycf-mint: #12e09f;
   --ycf-mint-soft: #dcfaef;
   --ycf-mint-text: #04533a;     /* on mint-soft: 8.9:1 */
+  --ycf-info-soft: #eef5fc;
+  --ycf-info-text: #0a4b78;     /* on info-soft: 8.3:1 */
+  --ycf-warning-soft: #fdf3e4;
+  --ycf-warning-text: #6b4405;  /* on warning-soft: 7.8:1 */
+  --ycf-error-soft: #fcefef;
+  --ycf-error-text: #8a1f21;    /* on error-soft: 8.2:1 */
   --ycf-ink: #121212;
   --ycf-lavender: #f7f5fc;
   --ycf-line: #e2e0ea;
@@ -3732,4 +3730,80 @@
 .yaml-cf-after-title {
   margin-top: 20px;
   margin-bottom: 20px;
+}
+
+
+/* ==========================================================================
+   Notices
+   ==========================================================================
+
+   One look for every notice the plugin prints, so a saved-message and a note
+   about what was skipped read as the same kind of object.
+
+   Two families end up on screen and they are NOT in the same place in the DOM,
+   which is what let them drift apart:
+
+     .yaml-cf-notice                        queued messages from
+                                            NotificationManager, printed on
+                                            admin_notices, so they sit above the
+                                            plugin's container, not inside it
+     .yaml-cf-admin-container .notice.inline  contextual notes printed by a
+                                            template, inside the container
+
+   Both are styled here together. WordPress's own notice-info / -success /
+   -warning / -error class still carries the severity, so markup stays plain and
+   neither family needs a bespoke class.
+
+   The floating toasts in #yaml-cf-notifications are deliberately not included:
+   they are a transient overlay with their own shape, and they borrow the same
+   colour tokens further down. */
+.notice.yaml-cf-notice,
+.yaml-cf-admin-container .notice.inline {
+  background: var(--ycf-info-soft);
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  color: var(--ycf-info-text);
+  margin: 16px 0;
+  padding: 12px 14px;
+}
+
+/* Room for the dismiss button WordPress positions in the corner */
+.notice.yaml-cf-notice.is-dismissible,
+.yaml-cf-admin-container .notice.inline.is-dismissible {
+  padding-right: 38px;
+}
+
+.notice.yaml-cf-notice p,
+.yaml-cf-admin-container .notice.inline p {
+  color: inherit;
+  margin: 0.4em 0;
+}
+
+.notice.yaml-cf-notice p:first-child,
+.yaml-cf-admin-container .notice.inline p:first-child {
+  margin-top: 0;
+}
+
+.notice.yaml-cf-notice p:last-child,
+.yaml-cf-admin-container .notice.inline p:last-child {
+  margin-bottom: 0;
+}
+
+.notice.yaml-cf-notice.notice-success,
+.yaml-cf-admin-container .notice.inline.notice-success {
+  background: var(--ycf-mint-soft);
+  color: var(--ycf-mint-text);
+}
+
+.notice.yaml-cf-notice.notice-warning,
+.yaml-cf-admin-container .notice.inline.notice-warning {
+  background: var(--ycf-warning-soft);
+  color: var(--ycf-warning-text);
+}
+
+.notice.yaml-cf-notice.notice-error,
+.yaml-cf-admin-container .notice.inline.notice-error {
+  background: var(--ycf-error-soft);
+  color: var(--ycf-error-text);
 }

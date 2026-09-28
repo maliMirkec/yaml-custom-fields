@@ -194,7 +194,8 @@ point, but it needs to refuse the right things.
 - [ ] `type: break` still works.
 
 **If it fails:** the list of valid types is `SchemaValidator::FIELD_TYPES`, and
-it is meant to match the `switch` in `render_fields_flat()` exactly.
+it is meant to match the renderers registered in `YamlCF\Rendering\FieldRenderer`
+exactly (a unit test checks the two agree).
 
 ### 4a. Legacy schemas with a bad type *(advanced, optional)*
 
@@ -322,7 +323,8 @@ happens at a small number of write points, and this adds one reachable over HTTP
 - [ ] As an Editor (no `unfiltered_html`), sending `<script>` in a rich-text
       field stores it stripped, exactly as the editor would.
 - [ ] `add_filter('yaml_cf_rest_public_read', '__return_false');` makes the two
-      site-wide routes require a logged-in editor.
+      site-wide routes require a logged-in user who can edit posts. A
+      Contributor holds `edit_posts`, so test with a logged-out request.
 
 **Decide before release:** those two routes read **publicly** by default. That is
 deliberate — they hold content the plugin renders into public pages — but if any

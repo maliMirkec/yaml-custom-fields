@@ -238,31 +238,34 @@ class TemplateScanner {
     // get_page_templates() searches the parent theme itself, and on a block
     // theme it also returns block template slugs; those have no .php and are
     // picked up by scanBlockTemplates() instead.
+    //
+    // It looks one folder deep, as WordPress does, and themes often keep these
+    // in page-templates/. The file is listed as WordPress names it, folder
+    // included, because that is what a page stores as its template and so what
+    // its schema is looked up by. Keeping only root-level files left pages on
+    // such a template with no fields and no way to give them any.
     $page_templates = get_page_templates();
     foreach ($page_templates as $name => $file) {
       if (substr($file, -4) !== '.php') {
         continue;
       }
 
-      // Only include templates in the root directory
-      if (strpos($file, '/') === false) {
-        // Avoid duplicates
-        $already_added = false;
-        foreach ($templates as $existing) {
-          if ($existing['file'] === $file) {
-            $already_added = true;
-            break;
-          }
+      // Avoid duplicates
+      $already_added = false;
+      foreach ($templates as $existing) {
+        if ($existing['file'] === $file) {
+          $already_added = true;
+          break;
         }
+      }
 
-        if (!$already_added) {
-          $templates[] = [
-            'file' => $file,
-            // The file may live in the child theme or in the parent
-            'path' => $this->locateThemeFile($file),
-            'name' => $name
-          ];
-        }
+      if (!$already_added) {
+        $templates[] = [
+          'file' => $file,
+          // The file may live in the child theme or in the parent
+          'path' => $this->locateThemeFile($file),
+          'name' => $name
+        ];
       }
     }
 
@@ -285,8 +288,7 @@ class TemplateScanner {
     $templates = [];
     $partials = [];
 
-    // get_block_templates() arrived in WordPress 5.8; the plugin still runs on 5.0
-    if (!function_exists('get_block_templates') || !$this->themeIsBlockTheme()) {
+    if (!$this->themeIsBlockTheme()) {
       return ['templates' => $templates, 'partials' => $partials];
     }
 
@@ -359,13 +361,7 @@ class TemplateScanner {
    * @return bool
    */
   private function themeIsBlockTheme() {
-    if (function_exists('wp_is_block_theme')) {
-      return (bool) wp_is_block_theme();
-    }
-
-    $theme = wp_get_theme();
-
-    return method_exists($theme, 'is_block_theme') && $theme->is_block_theme();
+    return (bool) wp_is_block_theme();
   }
 
   /**

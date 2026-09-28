@@ -34,6 +34,131 @@ class ExportImportRoundTripTest extends WPTestCase {
 		$this->assertSame('<div>Widget</div>', ycf_get_field('embed', $target_id));
 	}
 
+	/**
+	 * "Use the shared value on this page" travels with the page. It used to be
+	 * left out, so an imported page went back to its own, older copy.
+	 */
+	public function testSharedValueTicksSurviveARoundTrip() {
+		$this->actingAs($this->createTestUser('administrator'));
+		update_option('yaml_cf_schemas', ['single.php' => "fields:\n  - name: title\n    type: string\n"]);
+
+		$source_id = $this->createTestPost(['post_name' => 'ticked'], ['title' => 'Own']);
+		update_post_meta($source_id, '_yaml_cf_use_template_global_fields', ['title' => '1']);
+
+		$export = $this->service('page_data_exporter')->exportPost($source_id);
+		wp_delete_post($source_id, true);
+		$target_id = $this->createTestPost(['post_name' => 'ticked']);
+
+		$this->service('page_data_importer')->importMany(json_decode(wp_json_encode($export), true));
+
+		$this->assertSame(['title' => '1'], get_post_meta($target_id, '_yaml_cf_use_template_global_fields', true));
+	}
+
+	/**
+	 * Matching by ID across sites: the ID here can belong to anything. Only a
+	 * post of the type the file names is written to.
+	 */
+	public function testMatchingByIdNeverWritesToAPostOfAnotherType() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$menu_item = $this->createTestPost(['post_type' => 'nav_menu_item', 'post_status' => 'publish']);
+
+		$result = $this->service('page_data_importer')->importMany([
+			'plugin' => 'yaml-custom-fields',
+			'match_by' => 'id',
+			'posts' => [['id' => $menu_item, 'slug' => 'about', 'type' => 'page', 'data' => ['title' => 'Stray']]],
+		]);
+
+		$this->assertSame(0, $result['imported']);
+		$this->assertSame('', get_post_meta($menu_item, '_yaml_cf_data', true));
+	}
+
+	/**
+	 * The editor's "Import fields" button, given a file of several pages, uses
+	 * the file's own matching rule. An ID from another site must not beat the
+	 * entry with this page's web address.
+	 */
+	public function testTheEditorImportMatchesTheWayTheFileSays() {
+		$post = get_post($this->createTestPost(['post_name' => 'about']));
+
+		$file = [
+			'plugin' => 'yaml-custom-fields',
+			'match_by' => 'slug',
+			'posts' => [
+				['id' => $post->ID, 'slug' => 'contact', 'type' => 'post', 'data' => ['title' => 'Wrong page']],
+				['id' => 99999, 'slug' => 'about', 'type' => 'post', 'data' => ['title' => 'Right page']],
+			],
+		];
+
+		$match = $this->service('page_data_importer')->findEntryForPost($file, $post);
+
+		$this->assertSame('Right page', $match['entry']['data']['title']);
+	}
+
+	/**
+	 * Two child pages can share a slug under different parents. The export
+	 * records each page's full path, and the import writes to the right one.
+	 */
+	public function testChildPagesWithTheSameSlugImportIntoTheRightPage() {
+		$this->actingAs($this->createTestUser('administrator'));
+		update_option('yaml_cf_schemas', ['page.php' => "fields:\n  - name: title\n    type: string\n"]);
+
+		$about = $this->createTestPost(['post_type' => 'page', 'post_name' => 'about']);
+		$careers = $this->createTestPost(['post_type' => 'page', 'post_name' => 'careers']);
+		$about_team = $this->createTestPost(['post_type' => 'page', 'post_name' => 'team', 'post_parent' => $about]);
+		$careers_team = $this->createTestPost(['post_type' => 'page', 'post_name' => 'team', 'post_parent' => $careers], ['title' => 'Careers team']);
+
+		$export = $this->service('page_data_exporter')->exportMultiple([$careers_team]);
+		$this->assertSame('careers/team', $export['posts'][0]['path']);
+
+		delete_post_meta($careers_team, '_yaml_cf_data');
+		$result = $this->service('page_data_importer')->importMany(json_decode(wp_json_encode($export), true));
+
+		$this->assertSame(1, $result['imported']);
+		$this->assertSame('Careers team', ycf_get_field('title', $careers_team));
+		$this->assertSame('', get_post_meta($about_team, '_yaml_cf_data', true));
+	}
+
+	/**
+	 * A file from an older version has no path. When its slug fits more than one
+	 * page, guessing would overwrite the wrong one, so the entry is skipped.
+	 */
+	public function testAnAmbiguousSlugWithoutAPathIsSkipped() {
+		$this->actingAs($this->createTestUser('administrator'));
+		$about = $this->createTestPost(['post_type' => 'page', 'post_name' => 'about']);
+		$careers = $this->createTestPost(['post_type' => 'page', 'post_name' => 'careers']);
+		$one = $this->createTestPost(['post_type' => 'page', 'post_name' => 'team', 'post_parent' => $about]);
+		$two = $this->createTestPost(['post_type' => 'page', 'post_name' => 'team', 'post_parent' => $careers]);
+
+		$result = $this->service('page_data_importer')->importMany([
+			'plugin' => 'yaml-custom-fields',
+			'match_by' => 'slug',
+			'posts' => [['slug' => 'team', 'type' => 'page', 'data' => ['title' => 'Which one?']]],
+		]);
+
+		$this->assertSame(0, $result['imported']);
+		$this->assertSame(1, $result['skipped']);
+		$this->assertSame('', get_post_meta($one, '_yaml_cf_data', true));
+		$this->assertSame('', get_post_meta($two, '_yaml_cf_data', true));
+	}
+
+	/**
+	 * Files from before the post type was recorded came from pages too
+	 */
+	public function testAFileWithoutATypeStillFindsAPage() {
+		$this->actingAs($this->createTestUser('administrator'));
+		update_option('yaml_cf_schemas', ['page.php' => "fields:\n  - name: title\n    type: string\n"]);
+		$page = $this->createTestPost(['post_type' => 'page', 'post_name' => 'contact']);
+
+		$result = $this->service('page_data_importer')->importMany([
+			'plugin' => 'yaml-custom-fields',
+			'match_by' => 'slug',
+			'posts' => [['slug' => 'contact', 'data' => ['title' => 'Old file']]],
+		]);
+
+		$this->assertSame(1, $result['imported']);
+		$this->assertSame('Old file', ycf_get_field('title', $page));
+	}
+
 	public function testSettingsRoundTrip() {
 		$this->actingAs($this->createTestUser('administrator'));
 		update_option('yaml_cf_schemas', ['header.php' => "fields:\n  - name: logo_text\n    type: string\n"]);
