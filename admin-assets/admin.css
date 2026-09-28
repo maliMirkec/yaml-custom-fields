@@ -2979,80 +2979,13 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Field grid
+ * One field per row, everywhere
  *
- * On the plugin's own full-width screens (site details, site parts, shared
- * content, collection items), short fields - a line of text, a number, a date,
- * a dropdown - sit side by side on wide screens. Anything that needs room
- * (editors, code, media, groups, blocks, tick-box lists) keeps the whole row.
- * The page and post editor is not one of these screens: it stays one column.
- *
- * Below the breakpoints nothing changes: one field per row.
+ * Every screen that holds fields (the page editor, site details, site parts,
+ * shared content, collection items) lists them one per row at every width.
+ * Side by side, fields of different kinds (a text box next to a date next to
+ * a dropdown) made an uneven, hard-to-scan form.
  * ------------------------------------------------------------------------ */
-@media screen and (min-width: 1100px) {
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 32px;
-    align-items: start;
-  }
-
-  /* Rows no longer line up, so the underlines would go ragged. Fields are
-     separated by space instead. */
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field {
-    min-width: 0;
-    border-bottom: 0;
-    padding: 12px 0;
-  }
-
-  /* Field types that need the whole row */
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:is(
-    [data-type='text'],
-    [data-type='rich-text'],
-    [data-type='code'],
-    [data-type='file'],
-    [data-type='object'],
-    [data-type='block'],
-    [data-type='info']
-  ) {
-    grid-column: 1 / -1;
-  }
-
-  /* Tick-box lists and multi-selects grow tall - give them the row too */
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:has(
-    :is(.yaml-cf-taxonomy-checkboxes, .yaml-cf-data-object-checkboxes, select[multiple])
-  ) {
-    grid-column: 1 / -1;
-  }
-
-  /* Headings, notes and shared-vs-this-page pairs break the row */
-  .yaml-cf-admin-container .yaml-cf-fields > :not(.yaml-cf-field) {
-    grid-column: 1 / -1;
-  }
-
-  /* Inputs fill their column instead of stopping at the old fixed width */
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field :is(input[type='text'], select:not([multiple])) {
-    max-width: 100%;
-  }
-
-  /* Text boxes, editors and code take the whole row they sit on */
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field:is([data-type='text'], [data-type='code']) :is(textarea, .yaml-cf-code-editor),
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) > .yaml-cf-field[data-type='rich-text'] .wp-editor-container {
-    max-width: 100%;
-    width: 100%;
-  }
-}
-
-/* The page and post editor keeps one field per row at every width. Side by
-   side, fields of different kinds (a text box next to a date next to a
-   dropdown) made an uneven, hard-to-scan form. */
-
-/* Very wide screens: three columns on the full-width admin screens only */
-@media screen and (min-width: 1650px) {
-  .yaml-cf-admin-container :is(.yaml-cf-fields, .yaml-cf-field-group-fields, .yaml-cf-object, .yaml-cf-block-fields) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 
 /* ---------------------------------------------------------------------------
  * Section breaks

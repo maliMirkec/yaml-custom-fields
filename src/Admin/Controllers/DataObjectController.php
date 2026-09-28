@@ -245,9 +245,17 @@ class DataObjectController extends AdminController {
 
       $repository->saveEntry($type_id, $entry_id_to_save, $entry_data, $this->labelFieldFor($schema));
 
+      // "Save and add another" goes on to an empty form for the next item;
+      // "Save item" comes back to the one just saved. Either way it is a
+      // redirect, so reloading does not send the form again.
+      if (RequestHelper::postSanitized('yaml_cf_after_save', '') === 'add_another') {
+        $this->notifications->success(__('Item saved. Fill in the next one below.', 'yaml-custom-fields'));
+        wp_safe_redirect($this->entriesUrl($type_id, ['action' => 'add']));
+        exit;
+      }
+
       $this->notifications->success(__('Item saved.', 'yaml-custom-fields'));
 
-      // Redirect back to edit page to prevent form resubmission
       wp_safe_redirect($this->entriesUrl($type_id, [
         'action' => 'edit',
         'entry' => $entry_id_to_save,

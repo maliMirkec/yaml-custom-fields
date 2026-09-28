@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-28T10:07:22+00:00\n"
+"POT-Creation-Date: 2026-09-28T11:22:57+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: yaml-custom-fields\n"
@@ -66,7 +66,7 @@ msgstr ""
 #: src/Admin/Controllers/DataObjectController.php:66
 #: src/Admin/Controllers/DataObjectController.php:100
 #: src/Admin/Controllers/DataObjectController.php:195
-#: src/Admin/Controllers/DataObjectController.php:261
+#: src/Admin/Controllers/DataObjectController.php:269
 #: src/Admin/Controllers/ValidationController.php:189
 #: src/Admin/Controllers/ValidationController.php:230
 #: src/Form/ExportRequestHandler.php:42
@@ -79,7 +79,7 @@ msgstr ""
 #: src/Admin/Controllers/DataObjectController.php:70
 #: src/Admin/Controllers/DataObjectController.php:104
 #: src/Admin/Controllers/DataObjectController.php:199
-#: src/Admin/Controllers/DataObjectController.php:265
+#: src/Admin/Controllers/DataObjectController.php:273
 #: src/Admin/Controllers/SettingsController.php:96
 #: src/Admin/Controllers/SettingsController.php:126
 #: src/Admin/Controllers/SettingsController.php:160
@@ -136,11 +136,15 @@ msgstr ""
 msgid "The list \"%s\" was saved."
 msgstr ""
 
-#: src/Admin/Controllers/DataObjectController.php:248
+#: src/Admin/Controllers/DataObjectController.php:252
+msgid "Item saved. Fill in the next one below."
+msgstr ""
+
+#: src/Admin/Controllers/DataObjectController.php:257
 msgid "Item saved."
 msgstr ""
 
-#: src/Admin/Controllers/DataObjectController.php:280
+#: src/Admin/Controllers/DataObjectController.php:288
 msgid "Item deleted."
 msgstr ""
 
@@ -213,7 +217,7 @@ msgstr ""
 
 #: src/Admin/MenuManager.php:49
 #: src/Admin/MenuManager.php:50
-#: src/PostEditor/MetaBox.php:169
+#: src/PostEditor/MetaBox.php:191
 #: templates/admin-page.php:195
 #: templates/admin-page.php:264
 #: templates/admin-page.php:303
@@ -238,7 +242,7 @@ msgstr ""
 #: src/Admin/MenuManager.php:77
 #: src/Admin/MenuManager.php:78
 #: src/ImportExport/BundleCatalog.php:333
-#: src/PostEditor/MetaBox.php:321
+#: src/PostEditor/MetaBox.php:343
 #: templates/admin-page.php:168
 #: templates/edit-global-schema-page.php:34
 #: templates/manage-global-data-page.php:18
@@ -388,22 +392,22 @@ msgid "%1$s by %2$s"
 msgstr ""
 
 #: src/Core/NotificationManager.php:163
-#: admin-assets/admin.js:1552
+#: admin-assets/admin.js:1555
 msgid "Done:"
 msgstr ""
 
 #: src/Core/NotificationManager.php:164
-#: admin-assets/admin.js:1553
+#: admin-assets/admin.js:1556
 msgid "Error:"
 msgstr ""
 
 #: src/Core/NotificationManager.php:165
-#: admin-assets/admin.js:1554
+#: admin-assets/admin.js:1557
 msgid "Warning:"
 msgstr ""
 
 #: src/Core/NotificationManager.php:166
-#: admin-assets/admin.js:1555
+#: admin-assets/admin.js:1558
 msgid "Note:"
 msgstr ""
 
@@ -571,7 +575,7 @@ msgid "schema"
 msgstr ""
 
 #: src/ImportExport/BundleCatalog.php:269
-#: src/PostEditor/MetaBox.php:283
+#: src/PostEditor/MetaBox.php:305
 #: templates/admin-page.php:241
 #: templates/admin-page.php:291
 msgid "Shared fields"
@@ -776,8 +780,8 @@ msgstr ""
 msgid "The schema for %1$s was imported, but %2$s"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:112
-#: src/PostEditor/MetaBox.php:372
+#: src/PostEditor/MetaBox.php:134
+#: src/PostEditor/MetaBox.php:394
 #: templates/admin-page.php:235
 #: templates/admin-page.php:253
 #: templates/admin-page.php:349
@@ -786,50 +790,50 @@ msgid "Custom fields"
 msgstr ""
 
 #. translators: %s: template file name
-#: src/PostEditor/MetaBox.php:158
+#: src/PostEditor/MetaBox.php:180
 #: templates/manage-template-global-data-page.php:22
 #, php-format
 msgid "Template: %s"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:162
+#: src/PostEditor/MetaBox.php:184
 msgid "Fill in the fields below, then save."
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:170
+#: src/PostEditor/MetaBox.php:192
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:176
+#: src/PostEditor/MetaBox.php:198
 msgid "Export fields"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:183
+#: src/PostEditor/MetaBox.php:205
 msgid "Import fields"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:188
+#: src/PostEditor/MetaBox.php:210
 msgid "Empty all fields"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:285
+#: src/PostEditor/MetaBox.php:307
 msgid "These fields are the same on every page with this template. Edit them in one place."
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:286
+#: src/PostEditor/MetaBox.php:308
 msgid "Edit shared content"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:323
+#: src/PostEditor/MetaBox.php:345
 msgid "These details are the same on the whole website. Edit them in one place."
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:324
+#: src/PostEditor/MetaBox.php:346
 #: templates/admin-page.php:191
 msgid "Edit site details"
 msgstr ""
 
-#: src/PostEditor/MetaBox.php:379
+#: src/PostEditor/MetaBox.php:401
 msgid "Show or hide panel"
 msgstr ""
 
@@ -858,7 +862,7 @@ msgstr ""
 #: admin-assets/admin.js:535
 #: admin-assets/admin.js:593
 #: admin-assets/admin.js:639
-#: admin-assets/admin.js:1014
+#: admin-assets/admin.js:1017
 msgid "Remove"
 msgstr ""
 
@@ -881,29 +885,29 @@ msgid "Use the shared value on this page"
 msgstr ""
 
 #. translators: 1: field name, 2: type as written in the schema
-#: src/Rendering/FieldRenderer.php:412
+#: src/Rendering/FieldRenderer.php:414
 #, php-format
 msgid "The field \"%1$s\" has a type this plugin does not know: \"%2$s\". Nothing is shown for it, and whatever it already holds is left alone. An administrator can fix the type in the schema."
 msgstr ""
 
-#: src/Rendering/FieldRenderers/BlockRenderer.php:33
-#: admin-assets/admin.js:792
+#: src/Rendering/FieldRenderers/BlockRenderer.php:34
+#: admin-assets/admin.js:795
 msgid "Collapse all"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/BlockRenderer.php:83
+#: src/Rendering/FieldRenderers/BlockRenderer.php:84
 msgid "Sections inside a section cannot be edited here yet. What they hold is kept as it is when the page is saved."
 msgstr ""
 
-#: src/Rendering/FieldRenderers/BlockRenderer.php:122
+#: src/Rendering/FieldRenderers/BlockRenderer.php:123
 msgid "Choose a section type to add"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/BlockRenderer.php:124
+#: src/Rendering/FieldRenderers/BlockRenderer.php:125
 msgid "Choose a section type"
 msgstr ""
 
-#: src/Rendering/FieldRenderers/BlockRenderer.php:135
+#: src/Rendering/FieldRenderers/BlockRenderer.php:136
 msgid "Add section"
 msgstr ""
 
@@ -1685,7 +1689,7 @@ msgstr ""
 #: templates/edit-partial-page.php:64
 #: templates/edit-schema-page.php:64
 #: templates/edit-template-global-schema-page.php:57
-#: templates/manage-data-object-entries-page.php:210
+#: templates/manage-data-object-entries-page.php:215
 #: templates/manage-global-data-page.php:59
 #: templates/manage-template-global-data-page.php:68
 msgid "Cancel"
@@ -1986,6 +1990,10 @@ msgstr[1] ""
 msgid "Save item"
 msgstr ""
 
+#: templates/manage-data-object-entries-page.php:212
+msgid "Save and add another"
+msgstr ""
+
 #: templates/manage-global-data-page.php:19
 msgid "Fill in the details used across the whole website"
 msgstr ""
@@ -2087,7 +2095,7 @@ msgid "Splitting up a long form"
 msgstr ""
 
 #: templates/partials/schema-reference.php:127
-msgid "A section break groups the fields that follow it under a heading. Write \"- section: Heading\", or leave the heading out for a plain line. Use \"- break: true\" to start a new row without drawing anything."
+msgid "A section break groups the fields that follow it under a heading. Write \"- section: Heading\", or leave the heading out for a plain line. Use \"- break: true\" for a gap between fields without a heading or a line."
 msgstr ""
 
 #: templates/partials/schema-reference.php:130
@@ -2095,7 +2103,7 @@ msgid "A heading that starts a new group of fields."
 msgstr ""
 
 #: templates/partials/schema-reference.php:131
-msgid "Starts a new row without a heading or a line."
+msgid "Adds a gap between fields, without a heading or a line."
 msgstr ""
 
 #: templates/partials/schema-reference.php:132
@@ -2427,40 +2435,40 @@ msgstr ""
 msgid "Choose images"
 msgstr ""
 
-#: admin-assets/admin.js:792
+#: admin-assets/admin.js:795
 msgid "Expand all"
 msgstr ""
 
-#: admin-assets/admin.js:863
+#: admin-assets/admin.js:866
 msgid "The search could not be finished. Try again."
 msgstr ""
 
-#: admin-assets/admin.js:881
-#: admin-assets/admin.js:886
+#: admin-assets/admin.js:884
+#: admin-assets/admin.js:889
 msgid "Nothing matched."
 msgstr ""
 
-#: admin-assets/admin.js:911
+#: admin-assets/admin.js:914
 msgid "More matches exist. Keep typing to narrow them down."
 msgstr ""
 
-#: admin-assets/admin.js:924
+#: admin-assets/admin.js:927
 #, js-format
 msgid "%d results shown. Keep typing to narrow them down."
 msgstr ""
 
-#: admin-assets/admin.js:926
+#: admin-assets/admin.js:929
 #, js-format
 msgid "%d result."
 msgid_plural "%d results."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin-assets/admin.js:1116
+#: admin-assets/admin.js:1119
 msgid "Removed. Save to keep the change."
 msgstr ""
 
-#: admin-assets/admin.js:1127
+#: admin-assets/admin.js:1130
 msgid ""
 "This empties every field on this page. Shared fields and site details stay as they are.\n"
 "\n"
@@ -2469,38 +2477,38 @@ msgid ""
 "Continue?"
 msgstr ""
 
-#: admin-assets/admin.js:1235
+#: admin-assets/admin.js:1238
 msgid "All fields on this page are now empty. Save to keep this change."
 msgstr ""
 
-#: admin-assets/admin.js:1388
+#: admin-assets/admin.js:1391
 msgid "Changes not saved yet. Save to keep them."
 msgstr ""
 
-#: admin-assets/admin.js:1585
+#: admin-assets/admin.js:1588
 msgid "Dismiss this notice."
 msgstr ""
 
-#: admin-assets/admin.js:1796
+#: admin-assets/admin.js:1799
 msgid "Not copied"
 msgstr ""
 
-#: admin-assets/admin.js:1797
+#: admin-assets/admin.js:1800
 msgid "Could not copy. Select the code and copy it by hand."
 msgstr ""
 
-#: admin-assets/admin.js:1811
+#: admin-assets/admin.js:1814
 msgid "Copied"
 msgstr ""
 
-#: admin-assets/admin.js:1812
+#: admin-assets/admin.js:1815
 msgid "Code copied. Paste it into the theme file."
 msgstr ""
 
-#: admin-assets/admin.js:1827
+#: admin-assets/admin.js:1830
 msgid "This fills in this page's fields from the file. Fields the file does not mention keep their content. The page then reloads, so changes you have not saved yet are lost. Continue?"
 msgstr ""
 
-#: admin-assets/admin.js:1852
+#: admin-assets/admin.js:1855
 msgid "The import did not work. Please try again."
 msgstr ""

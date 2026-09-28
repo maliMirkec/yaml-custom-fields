@@ -206,6 +206,11 @@ if ($yaml_cf_action === 'edit') {
           <button type="submit" class="button button-primary button-large">
             <?php esc_html_e('Save item', 'yaml-custom-fields'); ?>
           </button>
+          <?php // Filling in a collection is usually several items in a row ?>
+          <button type="submit" name="yaml_cf_after_save" value="add_another" class="button button-large">
+            <?php \YamlCF\Helpers\Icons::render('add'); ?>
+            <?php esc_html_e('Save and add another', 'yaml-custom-fields'); ?>
+          </button>
           <a href="<?php echo esc_url(admin_url('admin.php?page=yaml-cf-manage-data-object-entries&type_id=' . rawurlencode($yaml_cf_type_slug) . $yaml_cf_paged_arg)); ?>" class="button button-large">
             <?php esc_html_e('Cancel', 'yaml-custom-fields'); ?>
           </a>

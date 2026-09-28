@@ -337,6 +337,8 @@ fields:
 - ✅ The page's own box is greyed out. In the theme (section 16), `ycf_get_field('headline')` shows the shared value.
 - Untick it, type a page value, Update.
 - ✅ The theme shows the page's own value.
+- Remove the page schema of `page.php` (save it empty), keeping the shared fields.
+- ✅ The page editor still shows the **Custom fields** box, with **Disclaimer** and **Headline** read-only under **Shared fields**.
 
 ---
 
@@ -392,7 +394,10 @@ fields:
 - ✅ The short name does not change.
 
 ### 11a. Items
-- Click **Edit items → Add an item**, fill in Ada / Engineer, **Save item**. Add two more.
+- Click **Edit items → Add an item**, fill in Ada / Engineer, **Save item**.
+- ✅ You stay on Ada's item, with a "saved" notice.
+- Click **Add an item**, fill in Grace / Designer, and click **Save and add another**.
+- ✅ The item is saved and an empty form opens for the next one, with a notice saying so. Fill in a third and **Save item**.
 - ✅ Items are listed by name.
 - Edit one, change the role, save.
 - ✅ The change is kept.

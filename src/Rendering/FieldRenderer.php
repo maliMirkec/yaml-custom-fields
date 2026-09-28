@@ -322,13 +322,15 @@ class FieldRenderer {
       $field_value = isset($saved_data[$field['name']]) ? $saved_data[$field['name']] : (isset($field['default']) ? $field['default'] : '');
       $field_label = isset($field['label']) ? $field['label'] : ucfirst($field['name']);
 
+      echo '<div class="yaml-cf-field' . esc_attr($readonly_class) . '" data-type="' . esc_attr($field['type']) . '">';
+
       // Read-only fields sit in a disabled fieldset so their inputs are never submitted
-      // (they share yaml_cf[...] names with editable fields and would overwrite them)
+      // (they share yaml_cf[...] names with editable fields and would overwrite them).
+      // The fieldset holds the label and inputs only: a disabled fieldset disables
+      // every button in it, and the "Copy code" button below has to keep working.
       if ($readonly) {
         echo '<fieldset class="yaml-cf-readonly-fieldset" disabled="disabled">';
       }
-
-      echo '<div class="yaml-cf-field' . esc_attr($readonly_class) . '" data-type="' . esc_attr($field['type']) . '">';
 
       $code_snippet = $this->snippets->forField($field, $context);
 
@@ -347,16 +349,16 @@ class FieldRenderer {
         $this->renderUnknownType($field, $field_name);
       }
 
+      if ($readonly) {
+        echo '</fieldset>';
+      }
+
       // A block field prints its own snippet, below its sections
       if ($field['type'] !== 'block' && $code_snippet) {
         $this->snippets->render($code_snippet, 'snippet-' . sanitize_html_class($field_id));
       }
 
       echo '</div>';
-
-      if ($readonly) {
-        echo '</fieldset>';
-      }
     }
   }
 

@@ -74,7 +74,7 @@ if (!defined('ABSPATH')) {
 <p><strong>Choose image</strong> and <strong>Choose file</strong> open the media library. <strong>Remove</strong> empties the field.</p>
 
 <h3>Sections</h3>
-<p>Some pages are built from sections, like a banner, a text block or a gallery. <strong>Add section</strong> adds one. The arrows change the order. The trash icon removes a section.</p>
+<p>Some pages are built from sections, like a banner, a text block or a gallery. <strong>Add section</strong> adds one. The arrows change the order. <strong>Remove</strong> takes a section out.</p>
 
 <h3>Shared values</h3>
 <p>Some fields show two boxes. The top box holds the <strong>shared value</strong>, the same on every page with this template. The second box is for <strong>this page only</strong>.</p>
@@ -305,9 +305,9 @@ if (!defined('ABSPATH')) {
   description: Shown in the footer of every page</code></pre>
 <p>Leave the heading out for a plain break with no title:</p>
 <pre><code>- section:</code></pre>
-<p>On the site details, site part, shared content and collection item screens, a wide screen puts short fields two or three to a row. (The page and post editor always shows one field per row.) To start a new row there without drawing anything &mdash; no heading, no line &mdash; use a row break:</p>
+<p>Every screen shows one field per row. To put a little space between fields without drawing anything &mdash; no heading, no line &mdash; use a plain break:</p>
 <pre><code>- break: true</code></pre>
-<p>It is the quiet version of a section break, for when fields belong together but the form reads better with them on their own row.</p>
+<p>It is the quiet version of a section break, for when a long form reads better in a few groups but the groups need no names.</p>
 <p>Section breaks hold no content, so they change nothing about how fields are saved or read in a theme. Fields written before the first break stay where they are, outside any group.</p>
 
 <h3>Extra settings for every field</h3>

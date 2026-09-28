@@ -124,11 +124,11 @@ YAML;
 
       <h3 class="yaml-cf-reference-subhead"><?php esc_html_e('Splitting up a long form', 'yaml-custom-fields'); ?></h3>
       <p class="yaml-cf-reference-note">
-        <?php esc_html_e('A section break groups the fields that follow it under a heading. Write "- section: Heading", or leave the heading out for a plain line. Use "- break: true" to start a new row without drawing anything.', 'yaml-custom-fields'); ?>
+        <?php esc_html_e('A section break groups the fields that follow it under a heading. Write "- section: Heading", or leave the heading out for a plain line. Use "- break: true" for a gap between fields without a heading or a line.', 'yaml-custom-fields'); ?>
       </p>
       <dl class="yaml-cf-field-types">
         <dt>section</dt><dd><?php esc_html_e('A heading that starts a new group of fields.', 'yaml-custom-fields'); ?></dd>
-        <dt>break: true</dt><dd><?php esc_html_e('Starts a new row without a heading or a line.', 'yaml-custom-fields'); ?></dd>
+        <dt>break: true</dt><dd><?php esc_html_e('Adds a gap between fields, without a heading or a line.', 'yaml-custom-fields'); ?></dd>
         <dt>info</dt><dd><?php esc_html_e('A note for whoever fills in the form. It holds no content.', 'yaml-custom-fields'); ?></dd>
       </dl>
     </div>

@@ -109,8 +109,10 @@ class FieldRendererTest extends TestCase {
       ['type' => 'template_global', 'readonly' => true, 'id_suffix' => '_global']
     );
 
-    $this->assertStringStartsWith('<fieldset class="yaml-cf-readonly-fieldset" disabled="disabled">', $html);
-    $this->assertStringContainsString('class="yaml-cf-field yaml-cf-readonly"', $html);
+    $this->assertStringStartsWith('<div class="yaml-cf-field yaml-cf-readonly"', $html);
+    $this->assertStringContainsString('<fieldset class="yaml-cf-readonly-fieldset" disabled="disabled">', $html);
+    // Everything the field posts is inside the disabled fieldset
+    $this->assertMatchesRegularExpression('/<fieldset[^>]*disabled[^>]*>.*name="yaml_cf\[title\]".*<\/fieldset>/s', $html);
     $this->assertStringContainsString('id="ycf_title_global"', $html);
   }
 
