@@ -18,8 +18,10 @@ node_modules
 .phpcs.cache
 phpcs.xml.dist
 .eslintrc
+/composer.json
 composer.lock
 composer.phar
+check.json
 package.json
 package-lock.json
 
@@ -54,8 +56,10 @@ phpunit-integration.xml.dist
 .phpunit.result.cache
 
 # WordPress.org specific assets (uploaded separately to SVN assets/ folder)
-# Exclude banners and small icon, but keep screenshots (used in docs) and icon-256x256.png (used in admin UI)
+# Keep icon-256x256.png only: it is the logo on every admin screen. Nothing in the
+# plugin shows the screenshots, which were ~4 MB of the ZIP.
 assets/banner-*.png
 assets/icon-128x128.png
+assets/screenshot-*.png
 *.jpg
 *.gif
