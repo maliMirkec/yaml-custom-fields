@@ -43,7 +43,7 @@ What must be true before a version goes to WordPress.org.
 | `banner-772x250.png` | 772 × 250 |
 | `banner-1544x500.png` | 1544 × 500 |
 
-`assets/` goes to the WordPress.org SVN `assets/` folder. It is **not** in the ZIP.
+The deploy workflow copies `assets/` to the WordPress.org SVN `assets/` folder on every release. Only `icon-256x256.png` is in the ZIP (the admin logo).
 
 ---
 
@@ -146,7 +146,7 @@ The plugin is already on WordPress.org, so:
 
 1. Push a version tag: `git tag 2.0.0 && git push origin 2.0.0`
 2. GitHub tests, builds and sends it to SVN.
-3. Upload new screenshots to the SVN `assets/` folder.
+3. Nothing else: the workflow also uploads the banners, icons and screenshots from `assets/`.
 
 Full steps: [RELEASE.md](RELEASE.md).
 

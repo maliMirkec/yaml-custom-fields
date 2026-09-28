@@ -28,7 +28,8 @@ How to ship a new version.
 2. GitHub (`.github/workflows/deploy-to-wporg.yml`) then:
    - runs the unit tests;
    - builds the libraries;
-   - sends the plugin to WordPress.org (SVN).
+   - sends the plugin to WordPress.org (SVN);
+   - uploads the banners, icons and screenshots from `assets/`.
 
 - It needs `SVN_USERNAME` and `SVN_PASSWORD` in the GitHub repo secrets.
 - The update shows up on WordPress.org in about 15 minutes.
@@ -67,7 +68,7 @@ How to ship a new version.
 
 ## Pictures (banners, icons, screenshots)
 
-These go to the SVN `assets/` folder, not into the ZIP:
+They live in the repo's `assets/` folder. On every release, GitHub copies them to the SVN `assets/` folder (`ASSETS_DIR: assets` in the deploy workflow). To change them, replace the file and release. They're not in the ZIP, except `icon-256x256.png`, which the admin screens use as a logo.
 
 - `banner-772x250.png` and `banner-1544x500.png`: the header picture
 - `icon-128x128.png` and `icon-256x256.png`: the plugin icon

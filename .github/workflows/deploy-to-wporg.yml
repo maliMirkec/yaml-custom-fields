@@ -42,3 +42,6 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: yaml-custom-fields
+          # Banners, icons and screenshots go to the SVN assets/ folder, which the
+          # plugin page shows. The action looks in .wordpress-org/ unless told otherwise.
+          ASSETS_DIR: assets
