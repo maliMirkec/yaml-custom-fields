@@ -23,7 +23,6 @@
 .yaml-cf-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 30px;
-  margin-bottom: 30px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -258,25 +257,9 @@
   color: #1d2327;
 }
 
-.yaml-cf-field input[type='text'],
-.yaml-cf-field input[type='number'],
-.yaml-cf-field input[type='date'],
-.yaml-cf-field input[type='datetime-local'],
-.yaml-cf-field textarea,
-.yaml-cf-field select {
-  width: 100%;
-  max-width: 600px;
-}
-
 .yaml-cf-field input[type='checkbox'] {
   /* width: auto; */
   margin-right: 5px;
-}
-
-.yaml-cf-field textarea.code {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
-  background: #f5f5f5;
 }
 
 /* Page header */
@@ -291,7 +274,6 @@
 /* Image and File Upload */
 .yaml-cf-media-buttons {
   display: flex;
-  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -316,18 +298,10 @@
   margin-top: -10px;
 }
 
-.yaml-cf-image-preview img {
-  border: 1px solid #ddd;
-  padding: 5px;
-  background: #efedec;
-}
-
 .yaml-cf-file-name {
   margin-top: 10px;
   padding: 8px 12px;
-  background: #f5f5f5;
   border: 1px solid #ddd;
-  border-radius: 3px;
   display: inline-block;
 }
 
@@ -554,41 +528,12 @@
   gap: 5px;
 }
 
-/* Object Fields */
-.yaml-cf-object {
-  margin-left: 20px;
-  padding-left: 20px;
-  border-left: 3px solid #2271b1;
-}
-
 /* Block/Repeater Fields */
-.yaml-cf-block-container {
-  border: 1px solid #ddd;
-  padding: 15px;
-  background: #fafafa;
-  border-radius: 3px;
-}
-
-.yaml-cf-block-list {
-  margin-bottom: 15px;
-}
-
-.yaml-cf-block-item {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 3px;
-}
-
 .yaml-cf-block-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
 }
 
 .yaml-cf-block-header strong {
@@ -632,10 +577,6 @@
   border-color: #b32d2e;
 }
 
-.yaml-cf-block-fields {
-  margin-top: 10px;
-}
-
 .yaml-cf-block-fields .yaml-cf-field {
   margin-bottom: 15px;
   padding-bottom: 15px;
@@ -643,7 +584,6 @@
 
 .yaml-cf-block-controls {
   display: flex;
-  gap: 10px;
   align-items: center;
 }
 
@@ -841,11 +781,6 @@
   gap: 4px;
   transition: color 0.2s;
   font-size: 12px;
-  color: #2271b1;
-}
-
-.yaml-cf-copy-snippet:hover {
-  color: #135e96;
 }
 
 .yaml-cf-copy-snippet .dashicons {
@@ -1152,27 +1087,11 @@
 }
 
 /* Dual Field Layout (Template Global + Local) */
-.yaml-cf-dual-field {
-  margin-bottom: 25px;
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-}
-
 .yaml-cf-dual-field h4 {
   margin: 0 0 15px 0;
   font-size: 14px;
   font-weight: 600;
   color: #1d2327;
-}
-
-.yaml-cf-template-global-part {
-  margin-bottom: 15px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #2271b1;
-  border-radius: 3px;
 }
 
 .yaml-cf-template-global-part strong {
@@ -1181,11 +1100,6 @@
 }
 
 .yaml-cf-local-part {
-  margin-bottom: 15px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #046b99;
-  border-radius: 3px;
   transition: opacity 0.2s ease-in-out;
 }
 
@@ -1198,23 +1112,11 @@
   opacity: 0.6;
 }
 
-.yaml-cf-field-toggle {
-  padding: 10px;
-  background: #fff;
-  border: 1px solid #46b450;
-  border-radius: 3px;
-}
-
 .yaml-cf-field-toggle label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
   margin: 0;
 }
 
 .yaml-cf-field-toggle label span {
-  font-weight: 500;
   color: #1d2327;
 }
 
@@ -1224,10 +1126,6 @@
 
 /* Responsive adjustments for dual fields */
 @media (max-width: 782px) {
-  .yaml-cf-dual-field {
-    padding: 12px;
-  }
-
   .yaml-cf-template-global-part,
   .yaml-cf-local-part {
     padding: 10px;
@@ -1555,7 +1453,6 @@
 }
 
 .yaml-cf-image-preview-img {
-  max-width: 200px;
   display: block;
   margin-top: 10px;
 }
@@ -1567,10 +1464,7 @@
 }
 
 .yaml-cf-meta-box-header {
-  margin-bottom: 15px;
-  padding-bottom: 10px;
   border-top: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
 }
 
 .yaml-cf-meta-box-header p {
@@ -1595,13 +1489,11 @@
 .yaml-cf-global-fields {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 2px solid #2271b1;
 }
 
 .yaml-cf-section-intro {
   margin-bottom: 15px;
   padding: 10px;
-  background: #f0f6fc;
   border-left: 4px solid #2271b1;
 }
 
@@ -1616,13 +1508,6 @@
   color: #646970;
 }
 
-.yaml-cf-dual-field {
-  margin-bottom: 25px;
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 4px;
-}
-
 .yaml-cf-dual-field-title {
   margin: 0 0 15px 0;
   font-size: 14px;
@@ -1634,7 +1519,6 @@
   padding: 12px;
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 3px;
 }
 
 .yaml-cf-part-header {
@@ -1648,19 +1532,9 @@
   font-size: 13px;
 }
 
-.yaml-cf-part-title.is-global {
-  color: #2271b1;
-}
-
-.yaml-cf-part-title.is-local {
-  color: #046b99;
-}
-
 .yaml-cf-field-toggle {
   padding: 10px;
-  background: #fff;
   border: 1px solid #46b450;
-  border-radius: 3px;
 }
 
 .yaml-cf-field-toggle label {
@@ -2871,6 +2745,7 @@
 
 /* Shared value / this page only */
 .yaml-cf-dual-field {
+  margin-block: 16px;
   padding: 16px;
   border: 1px solid var(--ycf-line);
   border-radius: 12px;

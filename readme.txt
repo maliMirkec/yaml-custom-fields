@@ -4,7 +4,7 @@ Tags: custom fields, fields, content, yaml, schema
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -142,6 +142,16 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Please say
 5. The Documentation page, written in plain words.
 
 == Changelog ==
+
+= 2.0.1 =
+
+**Fixed**
+
+* The shared value box no longer touches the field above it. It has space above and below.
+
+**Better**
+
+* Smaller admin stylesheet. Old rules that newer ones replaced are gone. Nothing else looks different.
 
 = 2.0.0 =
 
@@ -321,6 +331,9 @@ On [GitHub](https://github.com/maliMirkec/yaml-custom-fields/issues). Please say
 * Copy snippet buttons for all field types with complete function signatures
 
 == Upgrade Notice ==
+
+= 2.0.1 =
+Small style fix: space around the shared value box. Safe to update.
 
 = 2.0.0 =
 Back up first. Needs WordPress 6.4+. The shared value tick now wins in ycf_get_fields(), and a page value beats a site detail with the same name. Schemas with mistakes are refused. The database is tidied once, by itself.

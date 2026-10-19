@@ -1,6 +1,6 @@
 # YAML Custom Fields
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/maliMirkec/yaml-custom-fields)
 [![WordPress](https://img.shields.io/badge/wordpress-6.4%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/php-8.1%2B-purple.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
@@ -538,6 +538,6 @@ GNU General Public License for more details.
 
 ---
 
-**Last updated:** 2026-09-28
-**Plugin version:** 2.0.0
+**Last updated:** 2026-10-19
+**Plugin version:** 2.0.1
 **Maintained by:** [Studio Cita](https://www.cita.hr)

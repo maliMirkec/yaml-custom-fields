@@ -3,7 +3,7 @@
  * Plugin Name: YAML Custom Fields
  * Plugin URI: https://github.com/maliMirkec/yaml-custom-fields
  * Description: Add your own fields to pages, posts and every part of your site. You choose the fields; writers fill them in.
- * Version: 2.0.0
+ * Version: 2.0.1
  * Requires at least: 6.4
  * Requires PHP: 8.1
  * Author: Studio Cita
